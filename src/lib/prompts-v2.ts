@@ -193,7 +193,7 @@ export function buildTurnPrompt(
   const turnData = gameState.current_turn_data;
 
   let prompt = `## CURRENT GAME STATE
-Turn: ${gameState.meta.turn_count}/${gameState.meta.maxTurns}
+Turn: ${gameState.meta.turn_count}/${gameState.meta.max_turns}
 Phase: ${phase}
 Current Player: ${currentPlayer?.name} (${currentPlayer?.avatar})
 Current Mini-Game: ${turnData.mini_game || 'None'}
