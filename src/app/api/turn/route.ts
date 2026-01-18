@@ -3,12 +3,15 @@ import OpenAI from 'openai';
 import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts';
 import type { GameState } from '@/types/game';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
     const body = await request.json();
     const { gameState, userInput, inputType } = body as {
       gameState: GameState;
