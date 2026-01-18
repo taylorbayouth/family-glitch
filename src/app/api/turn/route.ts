@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const turnPrompt = buildTurnPrompt(game_state, user_input, input_type);
 
     console.log('[AI] 🤖 Sending request to OpenAI:', {
-      model: 'gpt-4o',
+      model: 'gpt-5.2',
       turn: game_state.meta.turn_count,
       act: game_state.meta.arc.current_act,
       phase: game_state.meta.phase,
@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
     });
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5.2',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: turnPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7, // Slightly lower for sharper, more consistent responses
-      max_tokens: 2000,
+      temperature: 0.7,
+      max_tokens: 3000, // Increased for GPT-5.2's expanded capabilities
     });
 
     const content = response.choices[0]?.message?.content;
