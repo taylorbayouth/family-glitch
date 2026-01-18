@@ -64,7 +64,7 @@
  * CSS Variables - Font Family
  */
 :root {
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
 
 /**
@@ -384,16 +384,16 @@ img {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: #6366f1;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #2563eb;
+  background-color: #4f46e5;
 }
 
 .btn-primary:active {
-  background-color: #1d4ed8;
+  background-color: #4338ca;
 }
 
 .btn-secondary {
@@ -410,17 +410,17 @@ img {
 }
 
 .btn-outline {
-  border: 2px solid #3b82f6;
-  color: #3b82f6;
+  border: 2px solid #6366f1;
+  color: #6366f1;
   background-color: transparent;
 }
 
 .btn-outline:hover {
-  background-color: #f0f9ff;
+  background-color: #eef2ff;
 }
 
 .btn-outline:active {
-  background-color: #e0f2fe;
+  background-color: #e0e7ff;
 }
 
 .btn-danger {
@@ -464,8 +464,8 @@ img {
 
 .input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .textarea {
@@ -485,8 +485,8 @@ img {
 
 .textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 /**
@@ -534,7 +534,7 @@ img {
   width: 2rem;
   height: 2rem;
   border: 4px solid #d4d4d4;
-  border-top-color: #3b82f6;
+  border-top-color: #6366f1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -558,7 +558,7 @@ img {
 
 .progress-bar-fill {
   height: 100%;
-  background-color: #3b82f6;
+  background-color: #6366f1;
   transition: all 300ms ease-out;
 }
 

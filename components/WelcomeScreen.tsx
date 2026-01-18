@@ -58,7 +58,7 @@ export function WelcomeScreen({
   const playerNames = session.setup.players.map((p) => p.name).join(', ');
 
   return (
-    <div className="viewport-container bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-600">
+    <div className="viewport-container bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-md w-full">
           {/* Header */}

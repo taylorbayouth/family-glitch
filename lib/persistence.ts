@@ -35,6 +35,9 @@ const STORAGE_PREFIX = 'family-glitch';
 /** Key for tracking most recent session */
 const LAST_SESSION_KEY = `${STORAGE_PREFIX}-last-session`;
 
+/** Key for storing player profiles (persists across games) */
+const PLAYER_PROFILES_KEY = `${STORAGE_PREFIX}-player-profiles`;
+
 // ============================================================================
 // ERROR HANDLING
 // ============================================================================
@@ -140,6 +143,9 @@ export function clearAllGameData(): void {
   if (typeof window === 'undefined') return;
 
   try {
+    // Save player profiles before clearing
+    const playerProfiles = localStorage.getItem(PLAYER_PROFILES_KEY);
+
     // Clear all keys that start with our prefix
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -150,10 +156,51 @@ export function clearAllGameData(): void {
     }
 
     keysToRemove.forEach(key => localStorage.removeItem(key));
-    console.log(`✅ Game data cleared (${keysToRemove.length} items)`);
+
+    // Restore player profiles
+    if (playerProfiles) {
+      localStorage.setItem(PLAYER_PROFILES_KEY, playerProfiles);
+    }
+
+    console.log(`✅ Game data cleared (${keysToRemove.length} items, player profiles preserved)`);
   } catch (error) {
     console.error('Failed to clear game data:', error);
     throw new PersistenceError('Could not clear game data', error);
+  }
+}
+
+/**
+ * Save player profiles for reuse in future games
+ *
+ * @param players - Player setup data to save
+ */
+export function savePlayerProfiles(players: Array<{ name: string; age: number; role: string; avatarId: string }>): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.setItem(PLAYER_PROFILES_KEY, JSON.stringify(players));
+    console.log('✅ Player profiles saved');
+  } catch (error) {
+    console.error('Failed to save player profiles:', error);
+  }
+}
+
+/**
+ * Load saved player profiles
+ *
+ * @returns Array of player profiles or null if none saved
+ */
+export function loadPlayerProfiles(): Array<{ name: string; age: number; role: string; avatarId: string }> | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const data = localStorage.getItem(PLAYER_PROFILES_KEY);
+    if (!data) return null;
+
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Failed to load player profiles:', error);
+    return null;
   }
 }
 

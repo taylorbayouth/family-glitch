@@ -21,7 +21,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Player,
@@ -31,6 +31,7 @@ import {
 } from '@/types/game';
 import { PLAYERS } from '@/lib/constants';
 import { assignTurnOrder, selectFirstPlayer } from '@/lib/turnManager';
+import { savePlayerProfiles, loadPlayerProfiles } from '@/lib/persistence';
 
 /**
  * Props for SetupScreen
@@ -51,6 +52,15 @@ interface PlayerSetupData {
 }
 
 /**
+ * Available avatar emojis
+ */
+const AVATAR_OPTIONS = [
+  '😀', '😎', '🤓', '🥳', '😇', '🤠', '🥸', '🤡',
+  '👻', '👽', '🤖', '😺', '🐶', '🐼', '🦊', '🐯',
+  '🦁', '🐸', '🐵', '🦄',
+];
+
+/**
  * Setup Screen Component
  */
 export function SetupScreen({ onStart }: SetupScreenProps) {
@@ -59,16 +69,33 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
   // ===========================================================================
 
   const [players, setPlayers] = useState<PlayerSetupData[]>([
-    { name: '', age: '', role: 'mom', avatarId: 'avatar-000' },
-    { name: '', age: '', role: 'dad', avatarId: 'avatar-001' },
+    { name: '', age: '', role: 'mom', avatarId: AVATAR_OPTIONS[0] },
+    { name: '', age: '', role: 'dad', avatarId: AVATAR_OPTIONS[1] },
+    { name: '', age: '', role: 'son', avatarId: AVATAR_OPTIONS[2] },
   ]);
 
-  const [safetyMode, setSafetyMode] = useState<SafetyMode>('kid-safe');
+  const [safetyMode] = useState<SafetyMode>('teen-adult'); // Always teen-adult mode
   const [turnOrderStrategy, _setTurnOrderStrategy] = useState<
     'clockwise' | 'random-fair'
   >('clockwise');
 
   const [errors, setErrors] = useState<string[]>([]);
+
+  // ===========================================================================
+  // LOAD PLAYER PROFILES ON MOUNT
+  // ===========================================================================
+
+  useEffect(() => {
+    const savedProfiles = loadPlayerProfiles();
+    if (savedProfiles && savedProfiles.length >= PLAYERS.MIN_COUNT) {
+      setPlayers(savedProfiles.map(p => ({
+        name: p.name,
+        age: String(p.age),
+        role: p.role as PlayerRole,
+        avatarId: p.avatarId,
+      })));
+    }
+  }, []);
 
   // ===========================================================================
   // PLAYER MANAGEMENT
@@ -97,7 +124,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
         name: '',
         age: '',
         role: 'daughter',
-        avatarId: `avatar-00${prev.length}`,
+        avatarId: AVATAR_OPTIONS[prev.length % AVATAR_OPTIONS.length],
       },
     ]);
   };
@@ -137,12 +164,10 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
         errors.push(`Player ${index + 1} needs a valid age`);
       }
 
-      // Check age appropriateness for safety mode
-      if (safetyMode === 'kid-safe' && age > 12) {
-        // Warning but not error
-      } else if (safetyMode === 'teen-adult' && age < 13) {
+      // Check minimum age (13+ for teen-adult mode)
+      if (age < 13) {
         errors.push(
-          `Player ${index + 1} is too young for teen/adult mode (minimum age 13)`
+          `Player ${index + 1} must be at least 13 years old`
         );
       }
     });
@@ -189,6 +214,14 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
     // Select first player
     const _firstPlayerId = selectFirstPlayer(playersWithOrder);
 
+    // Save player profiles for next time
+    savePlayerProfiles(fullPlayers.map(p => ({
+      name: p.name,
+      age: p.age,
+      role: p.role,
+      avatarId: p.avatarId,
+    })));
+
     // Create GameSetup object
     const setup: GameSetup = {
       players: playersWithOrder,
@@ -207,7 +240,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
   // ===========================================================================
 
   return (
-    <div className="viewport-container bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-600">
+    <div className="viewport-container bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
@@ -225,65 +258,87 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
             <h2 className="text-2xl font-bold mb-6">Who's Playing?</h2>
 
             {/* Player inputs */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-6 mb-6">
               {players.map((player, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                  <div className="flex-1 space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={player.name}
-                      onChange={(e) =>
-                        updatePlayer(index, 'name', e.target.value)
-                      }
-                      className="input"
-                      maxLength={20}
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        placeholder="Age"
-                        value={player.age}
-                        onChange={(e) =>
-                          updatePlayer(index, 'age', e.target.value)
-                        }
-                        className="input w-20"
-                        min="1"
-                        max="120"
-                      />
-                      <select
-                        value={player.role}
-                        onChange={(e) =>
-                          updatePlayer(index, 'role', e.target.value as PlayerRole)
-                        }
-                        className="input flex-1"
-                      >
-                        <option value="mom">Mom</option>
-                        <option value="dad">Dad</option>
-                        <option value="daughter">Daughter</option>
-                        <option value="son">Son</option>
-                        <option value="brother">Brother</option>
-                        <option value="sister">Sister</option>
-                        <option value="grandma">Grandma</option>
-                        <option value="grandpa">Grandpa</option>
-                        <option value="aunt">Aunt</option>
-                        <option value="uncle">Uncle</option>
-                        <option value="cousin">Cousin</option>
-                        <option value="friend">Friend</option>
-                      </select>
+                <div key={index} className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
+                  <div className="flex gap-3 items-start">
+                    {/* Avatar picker */}
+                    <div className="flex-shrink-0">
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          className="w-16 h-16 text-4xl flex items-center justify-center bg-white border-2 border-neutral-300 rounded-full hover:border-indigo-400 transition-all"
+                          onClick={() => {
+                            const currentIndex = AVATAR_OPTIONS.indexOf(player.avatarId);
+                            const nextIndex = (currentIndex + 1) % AVATAR_OPTIONS.length;
+                            updatePlayer(index, 'avatarId', AVATAR_OPTIONS[nextIndex]);
+                          }}
+                        >
+                          {player.avatarId}
+                        </button>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                          Click to change
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Remove button */}
-                  {players.length > PLAYERS.MIN_COUNT && (
-                    <button
-                      onClick={() => removePlayer(index)}
-                      className="btn-ghost text-danger-500 mt-2"
-                      title="Remove player"
-                    >
-                      ✕
-                    </button>
-                  )}
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Name"
+                        value={player.name}
+                        onChange={(e) =>
+                          updatePlayer(index, 'name', e.target.value)
+                        }
+                        className="input"
+                        maxLength={20}
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          placeholder="Age"
+                          value={player.age}
+                          onChange={(e) =>
+                            updatePlayer(index, 'age', e.target.value)
+                          }
+                          className="input w-20"
+                          min="1"
+                          max="120"
+                        />
+                        <select
+                          value={player.role}
+                          onChange={(e) =>
+                            updatePlayer(index, 'role', e.target.value as PlayerRole)
+                          }
+                          className="input flex-1"
+                        >
+                          <option value="mom">Mom</option>
+                          <option value="dad">Dad</option>
+                          <option value="daughter">Daughter</option>
+                          <option value="son">Son</option>
+                          <option value="brother">Brother</option>
+                          <option value="sister">Sister</option>
+                          <option value="grandma">Grandma</option>
+                          <option value="grandpa">Grandpa</option>
+                          <option value="aunt">Aunt</option>
+                          <option value="uncle">Uncle</option>
+                          <option value="cousin">Cousin</option>
+                          <option value="friend">Friend</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Remove button */}
+                    {players.length > PLAYERS.MIN_COUNT && (
+                      <button
+                        onClick={() => removePlayer(index)}
+                        className="btn-ghost text-danger-500"
+                        title="Remove player"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -294,35 +349,6 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                 + Add Player
               </button>
             )}
-
-            {/* Safety mode */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold mb-2">
-                Content Mode
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSafetyMode('kid-safe')}
-                  className={
-                    safetyMode === 'kid-safe'
-                      ? 'btn-primary flex-1'
-                      : 'btn-outline flex-1'
-                  }
-                >
-                  Kid-Safe (10+)
-                </button>
-                <button
-                  onClick={() => setSafetyMode('teen-adult')}
-                  className={
-                    safetyMode === 'teen-adult'
-                      ? 'btn-primary flex-1'
-                      : 'btn-outline flex-1'
-                  }
-                >
-                  Teen/Adult (13+)
-                </button>
-              </div>
-            </div>
 
             {/* Errors */}
             {errors.length > 0 && (
@@ -346,7 +372,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
 
           {/* Footer */}
           <p className="text-center text-primary-100 text-sm mt-6">
-            Game takes 10-15 minutes • Best played at restaurants
+            15-20 minute game • Ages 13+ • Best with food and drinks
           </p>
         </div>
       </div>
