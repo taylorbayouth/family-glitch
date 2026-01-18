@@ -215,7 +215,7 @@ Always return valid JSON with this structure:
   },
   "interface": {
     "type": "THE_SECRET_CONFESSIONAL" | "THE_GALLERY" | "THE_SELECTOR" | "THE_HANDOFF" | "THE_IMAGE_GENERATOR" | "THE_RATING_SCREEN",
-    "data": { /* interface-specific data */ }
+    "data": { /* interface-specific data - SEE EXAMPLES BELOW */ }
   },
   "updates": {
     "turn_count": number,
@@ -226,12 +226,44 @@ Always return valid JSON with this structure:
     }
   },
   "score_event": {
-    "player_id": "string",
+    "player_id": "p1" | "p2" | "p3" | etc,  // CRITICAL: Use player ID (p1, p2, p3...), NOT player name!
     "points": number,
     "bonus": number,
     "reason": "string",
     "turn": number,
     "cartridge": "string"
+  }
+}
+
+## CRITICAL: INTERFACE DATA EXAMPLES (Include ALL required fields!)
+
+THE_SECRET_CONFESSIONAL:
+{
+  "type": "THE_SECRET_CONFESSIONAL",
+  "data": {
+    "question": "Look at Mom. What's her tell that shows she's hungry?",
+    "placeholder": "Be specific..."
+  }
+}
+
+THE_HANDOFF: (MUST include next_player_name, next_player_avatar, require_unlock)
+{
+  "type": "THE_HANDOFF",
+  "data": {
+    "next_player_name": "Beth",  // Use player name (not ID) here
+    "next_player_avatar": "🦄",  // Use player's avatar emoji
+    "hint": "Get ready for a callback question",
+    "require_unlock": true  // true = slide to unlock, false = tap
+  }
+}
+
+THE_SELECTOR:
+{
+  "type": "THE_SELECTOR",
+  "data": {
+    "question": "Who investigates first?",
+    "options": ["Beth", "Dave", "Sarah"],
+    "allow_multi_select": false
   }
 }`;
 }
@@ -413,8 +445,13 @@ Input type: ${inputType || 'text'}
 
 3. Move to next player
    - Increment turn_count
-   - Calculate next current_player_index
-   - Show THE_HANDOFF interface with hint about next turn
+   - Calculate next current_player_index (wraps around to 0 after last player)
+   - Show THE_HANDOFF interface with:
+     * next_player_name: Use the NEXT player's NAME (not ID)
+     * next_player_avatar: Use the NEXT player's AVATAR emoji
+     * hint: Optional preview of what's coming
+     * require_unlock: true (slide to unlock)
+   - CRITICAL: In score_event, use player_id = "p1" | "p2" | etc, NOT the player name
 
 # SCORING EXAMPLES
 - "The Silent Stare" = 5 base + 2 bonus = "Specific, observable behavioral tell"

@@ -16,101 +16,84 @@
 
 ---
 
-## The 7 Question Categories
+## **The 7 Question Categories**
 
-### 1. 🍽️ Current Vibe (Context-Dependent)
-**Changes every time you play because the context changes**
+### **1\. 🍽️ Current Vibe (Context-Dependent)**
 
-Examples:
-- "Look at [Player]. What's their 'tell' that shows they're hungry RIGHT NOW?"
-- "If [Player] ordered a drink now, exactly how many ice cubes would they want?"
-- "What's the first thing [Player] will complain about THIS SPECIFIC restaurant?"
-- "Predict: Who's going to spill something first tonight?"
+**Changes every time you play because the context changes.** *Focuses on sensory details, menu analysis, and "spy" work.*
 
-**Why it works**: References the specific location (stored in `gameState.meta.vibe`)
+* **The Spy Mission:** "Don't point, but look at the table to our left. Invent a dramatic backstory for why they are eating dinner together."  
+* **The Menu Audit:** "Scan the menu. What is the *one* item that \[Player\] would refuse to eat, even for $100?"  
+* **Sensory Overload:** "Close your eyes. What is the specific smell or sound in this restaurant that is slightly annoying \[Player\] right now?"  
+* **The Prediction:** "Look at the waiter. Based on their walking speed, predict exactly how many minutes until our food arrives."
 
-**Tags**: `['current_vibe', 'observation', 'prediction', 'restaurant']`
+**Tags:** `['observation', 'sensory', 'spying', 'restaurant_meta']`
 
-### 2. 📚 Deep Lore (Specific Stories)
-**Dig up stories that might not come up in normal conversation**
+### **2\. 📚 Deep Lore (Specific History)**
 
-Examples:
-- "Think of a vacation that went wrong. What SPECIFIC item was lost/broken?"
-- "What movie has [Player] seen 100 times but [Other Player] secretly hates?"
-- "What was [Child Player]'s favorite stuffed animal's NAME at age 4?"
-- "What weird hobby did [Player] pick up during 2020 then quit after 2 weeks?"
+**Digs up distinct eras: Early Marriage, Toddler Years, and "The Before Times."** *Focuses on the "Forbidden," the "Lost," and the "Glitchy" memories.*
 
-**Why it works**: Asks for NAMES, SPECIFIC ITEMS, EXACT DETAILS (not generic "a trip")
+* **The Banned Item:** "Think back to when \[Player\] was 5\. What specific toy or object was 'accidentally' thrown away or banned from the house?"  
+* **The Glitch:** "What is one specific memory from a family vacation that Mom remembers one way, but Dad remembers completely differently?"  
+* **The Origin Story:** "What was the exact username or character name of the first video game \[Player\] ever played seriously?"  
+* **The Lost Artifact:** "Name a piece of technology (e.g., an old iPod, a specific controller) that the family owned but has mysteriously vanished."
 
-**Tags**: `['deep_lore', 'specific_memory', 'family_history', 'vacation']`
+**Tags:** `['family_mythology', 'disputed_memory', 'gaming_history', 'childhood']`
 
-### 3. 🧠 Behavioral Tells (Psychology)
-**Build a profile of how each person behaves**
+### **3\. 🧠 Behavioral Tells (Psychology)**
 
-Examples:
-- "What EXACT 3-word phrase does [Player] use when they're 'done' with a conversation?"
-- "When [Player] is working on a problem, describe their face in 3 words."
-- "What's [Player]'s 'guilt face' when hiding something?"
-- "What sound (chewing, clicking, humming) instantly makes [Player] angry?"
+**Builds a user manual for each family member.** *Focuses on gaming posture, social masking, and stress signals.*
 
-**Why it works**: Creates a behavioral database for future callbacks
+* **The Gamer Lean:** "Without looking, describe the exact change in \[Player\]'s posture when they are about to lose a boss battle."  
+* **The Social Mask:** "What specific noise or face does \[Player\] make when they didn't hear what someone said but pretend to laugh anyway?"  
+* **The 'Done' Signal:** "We are at a boring party. What is the subtle physical signal \[Player\] gives to say 'We need to leave immediately'?"  
+* **The Lie Detector:** "When \[Player\] is trying to convince us of something that isn't true, what do their hands do?"
 
-**Tags**: `['behavioral_tell', 'psychology', 'trigger', 'player_id']`
+**Tags:** `['body_language', 'gaming_tells', 'social_cues', 'lie_detection']`
 
-**Callback Example:**
-- Turn 2: "Dad's hungry tell is 'The Silent Stare'"
-- Turn 9: "Look at Dad RIGHT NOW. Is he doing 'The Silent Stare' from turn 2?"
+### **4\. 🧟 Hypotheticals (Roles & Scenarios)**
 
-### 4. 🧟 Hypotheticals (Character Traits)
-**Reveals how the family views each other's competence**
+**Reveals competence, fears, and fantasy roles.** *Ranges from "Heist Movie" logic to "Video Game" logic.*
 
-Examples:
-- "In a horror movie, who's the first to investigate the scary noise?"
-- "Smuggling a puppy into a hotel: who's the distraction, who carries the bag?"
-- "If [Player] became President, what's the first law they ban?"
-- "If [Player] was a video game character, what's their Special Ability called?"
+* **The Heist:** "We are stealing the Declaration of Independence. Who is the Hacker, who is the Getaway Driver, and who gets caught immediately?"  
+* **The Isekai:** "The family gets sucked into Minecraft/Roblox. Who builds the shelter, and who immediately wanders off and dies?"  
+* **The Body Swap:** "If \[Player\] woke up in the family cat's body for 24 hours, what is the first malicious thing they would do?"  
+* **The Castaway:** "We are stranded on an island. We have to sacrifice one iPad to start a fire. Whose device gets thrown in?"
 
-**Why it works**: Infinite variations, reveals family dynamics
+**Tags:** `['heist_roles', 'video_game_logic', 'survival', 'fantasy']`
 
-**Tags**: `['hypothetical', 'zombie_scenario', 'character_trait', 'brave']`
+### **5\. 😬 The Cringe (Vulnerabilities)**
 
-**Callback Example:**
-- Turn 3: "Eliana investigates the scary noise"
-- Turn 10: "Given that Eliana is the brave one, who's SECOND to follow her?"
+**Playful embarrassment that bridges the generational gap.** *Focuses on weird fears, guilty pleasures, and "Phases."*
 
-### 5. 😬 The Cringe (Vulnerabilities)
-**Family games thrive on mild embarrassment**
+* **The 'Phase':** "Describe a specific outfit or haircut from 5 years ago that \[Player\] hopes no one has a photo of."  
+* **The Irrational Fear:** "What is a normal object (e.g., balloons, cotton balls) that \[Player\] is weirdly afraid of or grossed out by?"  
+* **The Guilty Pleasure:** "It's 2 AM. What terrible movie or YouTube channel is \[Player\] watching when no one is around?"  
+* **The Mispronunciation:** "What is a word that \[Player\] insisted on saying wrong for years until they were corrected?"
 
-Examples:
-- "What slang does [Young Player] use that [Old Player] says wrong?"
-- "Most embarrassing song on [Player]'s playlist RIGHT NOW?"
-- "What food combo does [Player] eat that everyone thinks is gross?"
-- "What did the family argue about last in the car?"
+**Tags:** `['mild_embarrassment', 'regret', 'irrational_fear', 'guilty_pleasure']`
 
-**Why it works**: Funny, memorable, great for ACT 3 reveals
+### **6\. 🔬 Fermi Problems (Logic & Scale)**
 
-**Tags**: `['cringe', 'embarrassing', 'vulnerability', 'slang']`
+**Visualizing math and physics in the real world.** *Focuses on volume, time, and "impossible" measurements.*
 
-### 6. 🔬 Fermi Problems (Logic & Estimation)
-**Named after physicist Enrico Fermi**
+* **The Volume:** "Look at this room. If we filled it entirely with ping pong balls, would they all fit inside \[Player\]'s car? Yes or No?"  
+* **The Lifespan:** "Calculate roughly how many hours \[Player\] has spent looking at a glowing screen in their entire life."  
+* **The Stack:** "If we stacked every pancake \[Player\] has ever eaten, would it reach the ceiling of this restaurant?"  
+* **The Speed:** "If we shrunk the family down to the size of ants, how many days would it take to walk from our table to the exit?"
 
-Examples:
-- "Look around. How many french fries are being eaten in this building RIGHT NOW?"
-- "If Earth was marble-sized, how far away would the Moon (also a marble) be?"
-- "How many LEGO bricks to build a wall from table to ceiling?"
-- "If [Player] could run at the speed of sound, how many seconds to get home?"
+**Tags:** `['fermi_estimation', 'scale', 'physics', 'thought_experiment']`
 
-**Why it works**: No "correct" answer, tests logic and estimation
+### **7\. 🤖 Techno-Ethics (Black Mirror for Kids)**
 
-**Tags**: `['fermi_problem', 'estimation', 'logic', 'physics']`
+**Dilemmas about AI, Animals, and the Future.** *Focuses on values rather than dark dystopias.*
 
-### 7. 🤖 Techno-Ethics (Black Mirror)
-**Moral dilemmas involving future tech**
+* **The Pet Collar:** "You can buy a collar that lets the cat talk, but the cat is brutally honest and mean. Do you buy it?"  
+* **The AR Glasses:** "You can see a floating stat above everyone's head. You can only pick one: 'Happiness Level' or 'Truthfulness %'. Which does \[Player\] pick?"  
+* **The Undo Button:** "You have a remote with an 'Undo' button that works on real life, but it only has 3 charges. What event from today does \[Player\] use a charge on?"  
+* **The NPC Dilemma:** "We discover we are all NPCs in a video game. Who is the 'Main Character' player controlling us?"
 
-Examples:
-- "Robot butler programmed to never let you be sad: Utopia or Dystopia?"
-- "Teleportation destroys you, prints a copy. Does [Player] get in? Yes/No."
-- "Cure all diseases, but everyone wears a recording hat. Vote Yes/No?"
+**Tags:** `['future_tech', 'moral_choice', 'simulation_theory', 'animal_intelligence']`
 
 **Why it works**: Reveals values, philosophical differences
 
