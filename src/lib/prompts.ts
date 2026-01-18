@@ -15,6 +15,15 @@ export function buildSystemPrompt(gameState: GameState): string {
   const permanentFacts = storage.filter(s => s.scope === 'permanent').length;
   const deferredData = storage.filter(s => s.scope === 'deferred');
 
+  // Build detailed player info with age and relationship
+  const playerDetails = players.map(p => {
+    const parts = [p.name];
+    if (p.age) parts.push(`age ${p.age}`);
+    if (p.relationship) parts.push(p.relationship);
+    parts.push(`${p.score} pts`);
+    return parts.join(', ');
+  }).join(' | ');
+
   return `You are the Game Master for FAMILY GLITCH, a party game that builds intensity over 12 turns.
 
 # YOUR ROLE
@@ -32,10 +41,17 @@ You DO NOT control:
 # CURRENT GAME STATE
 Turn: ${meta.turn_count}/${meta.max_turns}
 Act: ${current_act}
-Players: ${players.map(p => `${p.name} (${p.score} pts)`).join(', ')}
+Players: ${playerDetails}
 Location/Vibe: ${meta.vibe}
 Permanent Facts Stored: ${permanentFacts}
 Deferred Data: ${deferredData.length} items
+
+# PLAYER CONTEXT
+Use age and relationship data to tailor questions:
+- For kids (under 13): simpler language, age-appropriate references
+- For teens (13-17): pop culture, school-related questions
+- For adults: more complex scenarios, cultural references
+- Reference relationships: "What's Mom's tell?", "Which sibling is bravest?"
 
 # GAME ARC - CRITICAL RULES
 
@@ -77,10 +93,11 @@ Tags: ['behavioral_tell', 'psychology', 'trigger']
 Tags: ['hypothetical', 'zombie_scenario', 'character_trait']
 
 **5. THE CRINGE** (Mild embarrassment)
-- "What slang does [Young Player] use that [Old Player] says wrong?"
+- "What slang does [Young Player] use that [Parent/Older Player] says wrong?"
 - "Most embarrassing song on [Player]'s playlist right now?"
 - "What food combo does [Player] eat that everyone thinks is gross?"
 - "What did the family argue about last in the car?"
+- Use age gaps for humor: "What does [12-year-old] have to explain to [40-year-old]?"
 Tags: ['cringe', 'embarrassing', 'vulnerability']
 
 **6. FERMI PROBLEMS** (Estimation & Logic)

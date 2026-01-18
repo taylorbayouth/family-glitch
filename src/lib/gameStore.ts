@@ -79,7 +79,7 @@ interface GameStore {
   setInterface: (config: InterfaceConfig | null) => void;
 
   // Player Actions
-  initializePlayers: (names: string[], vibe: string) => void;
+  initializePlayers: (playerData: Array<{ name: string; age?: number; relationship?: string }>, vibe: string) => void;
   updatePlayerScore: (player_id: string, points: number, bonus: number) => void;
   nextPlayer: () => void;
   getCurrentPlayer: () => Player | null;
@@ -136,20 +136,20 @@ export const useGameStore = create<GameStore>()(
 
       setInterface: (config) => set({ currentInterface: config }),
 
-      initializePlayers: (names, vibe) =>
+      initializePlayers: (playerData, vibe) =>
         set((state) => {
           const avatars = ['👨‍💻', '🍷', '🦄', '🎮', '🎸', '🎨', '🚀', '🌟'];
-          const players: Player[] = names.map((name, i) => ({
+          const players: Player[] = playerData.map((p, i) => ({
             id: `p${i + 1}`,
-            name,
+            name: p.name,
             score: 0,
             avatar: avatars[i] || '👤',
-            age: undefined,
-            relationship: undefined,
+            age: p.age,
+            relationship: p.relationship as any,
           }));
 
           console.log('[STORAGE] 💾 Game initialized - saving to localStorage:', {
-            players: names,
+            players: playerData.map(p => ({ name: p.name, age: p.age, relationship: p.relationship })),
             vibe,
             phase: 'PLAYING',
             turn: 1,
