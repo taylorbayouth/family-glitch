@@ -1,70 +1,127 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, GamePhase, Player, Challenge, ScoreUpdate, MiniGame } from '@/types/game';
+import type {
+  GameState,
+  Player,
+  StoredData,
+  RatingResult,
+  GamePhase,
+  GameAct,
+  ScoreEvent,
+  InterfaceConfig,
+  GameCartridge,
+  CurrentTurn,
+} from '@/types/game';
 
-const DEFAULT_PLAYERS: Record<string, Player> = {
-  'Player 1': { name: 'Player 1', score: 0, tags: [] },
-  'Player 2': { name: 'Player 2', score: 0, tags: [] },
-  'Player 3': { name: 'Player 3', score: 0, tags: [] },
+// -----------------
+// HELPER: Calculate Current Act
+// -----------------
+
+const calculateAct = (turn: number): GameAct => {
+  if (turn <= 4) return 'ACT_1';
+  if (turn <= 8) return 'ACT_2';
+  return 'ACT_3';
 };
+
+// -----------------
+// INITIAL STATE
+// -----------------
 
 const createInitialState = (): GameState => ({
   meta: {
-    turn: 0,
-    maxTurns: 10,
+    turn_count: 0,
+    max_turns: 12,
+    current_player_index: 0,
     phase: 'SETUP',
-    currentPlayer: '',
-    currentMiniGame: null,
+    arc: {
+      current_act: 'ACT_1',
+      act_1_range: [1, 4],
+      act_2_range: [5, 8],
+      act_3_range: [9, 12],
+    },
+    game_started_at: Date.now(),
     vibe: '',
   },
-  players: { ...DEFAULT_PLAYERS },
-  shadowData: {
-    adjectives: [],
-    verbs: [],
-    nouns: [],
-    observations: [],
+  players: [],
+  storage: [],
+  ratings: [],
+  current_turn: {
+    player_id: '',
+    actions: [],
+    current_action_index: 0,
+    temp_data: {},
   },
-  history: [],
-  currentChallenge: null,
-  pendingAnswers: {},
+  score_history: [],
 });
 
+// -----------------
+// STORE INTERFACE
+// -----------------
+
 interface GameStore {
+  // State
   gameState: GameState;
   isLoading: boolean;
+  currentInterface: InterfaceConfig | null;
   lastAIResponse: {
     display?: { title: string; message: string; subtext?: string };
-    scoreUpdates?: ScoreUpdate[];
-    poem?: string;
+    score_event?: ScoreEvent;
+    finale?: {
+      winner_id: string;
+      recap: string;
+      highlights: string[];
+    };
   } | null;
 
-  // Actions
+  // Basic Actions
   setPhase: (phase: GamePhase) => void;
-  setCurrentPlayer: (player: string) => void;
-  setCurrentMiniGame: (game: MiniGame | null) => void;
-  setVibe: (vibe: string) => void;
-  updatePlayerNames: (names: string[]) => void;
-  updateScore: (player: string, points: number) => void;
-  addShadowData: (type: keyof GameState['shadowData'], value: string) => void;
-  addHistory: (entry: string) => void;
-  setChallenge: (challenge: Challenge | null) => void;
-  addPendingAnswer: (player: string, answer: string) => void;
-  clearPendingAnswers: () => void;
-  nextTurn: () => void;
   setLoading: (loading: boolean) => void;
-  setAIResponse: (response: GameStore['lastAIResponse']) => void;
-  updateFromAI: (newState: Partial<GameState>) => void;
-  setHiveMindQuestion: (question: string) => void;
-  setVentriloquistData: (answer: string, target: string) => void;
-  setWagerData: (bid: number, topic: string) => void;
+  setInterface: (config: InterfaceConfig | null) => void;
+
+  // Player Actions
+  initializePlayers: (names: string[], vibe: string) => void;
+  updatePlayerScore: (player_id: string, points: number, bonus: number) => void;
+  nextPlayer: () => void;
+  getCurrentPlayer: () => Player | null;
+
+  // Storage Actions
+  addStoredData: (data: StoredData) => void;
+  getStoredData: (tags?: string[], scope?: StoredData['scope']) => StoredData[];
+  clearTurnScopedStorage: () => void;
+
+  // Rating Actions
+  addRating: (rating: RatingResult) => void;
+  getRatingsForData: (data_id: string) => RatingResult[];
+
+  // Turn Management
+  nextTurn: () => void;
+  updateCurrentTurn: (data: Partial<CurrentTurn>) => void;
+  clearCurrentTurn: () => void;
+
+  // Scoring
+  addScoreEvent: (event: ScoreEvent) => void;
+
+  // Arc Management
+  getCurrentAct: () => GameAct;
+  isInAct: (act: GameAct) => boolean;
+
+  // AI Response Handling
+  applyAIResponse: (response: any) => void;
+
+  // Reset
   resetGame: () => void;
 }
 
+// -----------------
+// STORE IMPLEMENTATION
+// -----------------
+
 export const useGameStore = create<GameStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       gameState: createInitialState(),
       isLoading: false,
+      currentInterface: null,
       lastAIResponse: null,
 
       setPhase: (phase) =>
@@ -75,169 +132,264 @@ export const useGameStore = create<GameStore>()(
           },
         })),
 
-      setCurrentPlayer: (player) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            meta: { ...state.gameState.meta, currentPlayer: player },
-          },
-        })),
+      setLoading: (loading) => set({ isLoading: loading }),
 
-      setCurrentMiniGame: (game) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            meta: { ...state.gameState.meta, currentMiniGame: game },
-          },
-        })),
+      setInterface: (config) => set({ currentInterface: config }),
 
-      setVibe: (vibe) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            meta: { ...state.gameState.meta, vibe },
-          },
-        })),
-
-      updatePlayerNames: (names) =>
+      initializePlayers: (names, vibe) =>
         set((state) => {
-          const newPlayers: Record<string, Player> = {};
-          names.forEach((name) => {
-            newPlayers[name] = { name, score: 0, tags: [] };
-          });
+          const avatars = ['👨‍💻', '🍷', '🦄', '🎮', '🎸', '🎨', '🚀', '🌟'];
+          const players: Player[] = names.map((name, i) => ({
+            id: `p${i + 1}`,
+            name,
+            score: 0,
+            avatar: avatars[i] || '👤',
+            age: undefined,
+            relationship: undefined,
+          }));
+
           return {
             gameState: {
               ...state.gameState,
-              players: newPlayers,
+              players,
+              meta: {
+                ...state.gameState.meta,
+                vibe,
+                phase: 'PLAYING',
+                game_started_at: Date.now(),
+                turn_count: 1,
+              },
+              current_turn: {
+                player_id: players[0].id,
+                actions: [],
+                current_action_index: 0,
+                temp_data: {},
+              },
             },
           };
         }),
 
-      updateScore: (player, points) =>
+      updatePlayerScore: (player_id, points, bonus) =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            players: {
-              ...state.gameState.players,
-              [player]: {
-                ...state.gameState.players[player],
-                score: (state.gameState.players[player]?.score || 0) + points,
+            players: state.gameState.players.map((p) =>
+              p.id === player_id ? { ...p, score: p.score + points + bonus } : p
+            ),
+          },
+        })),
+
+      nextPlayer: () =>
+        set((state) => {
+          const nextIndex =
+            (state.gameState.meta.current_player_index + 1) %
+            state.gameState.players.length;
+          const nextPlayer = state.gameState.players[nextIndex];
+          return {
+            gameState: {
+              ...state.gameState,
+              meta: {
+                ...state.gameState.meta,
+                current_player_index: nextIndex,
+              },
+              current_turn: {
+                ...state.gameState.current_turn,
+                player_id: nextPlayer.id,
               },
             },
-          },
-        })),
+          };
+        }),
 
-      addShadowData: (type, value) =>
+      getCurrentPlayer: () => {
+        const state = get().gameState;
+        return state.players[state.meta.current_player_index] || null;
+      },
+
+      addStoredData: (data) =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            shadowData: {
-              ...state.gameState.shadowData,
-              [type]: [...state.gameState.shadowData[type], value],
-            },
+            storage: [...state.gameState.storage, data],
           },
         })),
 
-      addHistory: (entry) =>
+      getStoredData: (tags, scope) => {
+        const storage = get().gameState.storage;
+        let filtered = storage;
+
+        if (tags && tags.length > 0) {
+          filtered = filtered.filter((item) =>
+            tags.some((tag) => item.tags.includes(tag))
+          );
+        }
+
+        if (scope) {
+          filtered = filtered.filter((item) => item.scope === scope);
+        }
+
+        return filtered;
+      },
+
+      clearTurnScopedStorage: () =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            history: [...state.gameState.history, entry],
+            storage: state.gameState.storage.filter((item) => item.scope !== 'turn'),
           },
         })),
 
-      setChallenge: (challenge) =>
+      addRating: (rating) =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            currentChallenge: challenge,
+            ratings: [...state.gameState.ratings, rating],
           },
         })),
 
-      addPendingAnswer: (player, answer) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            pendingAnswers: {
-              ...state.gameState.pendingAnswers,
-              [player]: answer,
-            },
-          },
-        })),
-
-      clearPendingAnswers: () =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            pendingAnswers: {},
-          },
-        })),
+      getRatingsForData: (data_id) => {
+        return get().gameState.ratings.filter((r) => r.data_id === data_id);
+      },
 
       nextTurn: () =>
+        set((state) => {
+          const newTurnCount = state.gameState.meta.turn_count + 1;
+          const newAct = calculateAct(newTurnCount);
+
+          return {
+            gameState: {
+              ...state.gameState,
+              meta: {
+                ...state.gameState.meta,
+                turn_count: newTurnCount,
+                arc: {
+                  ...state.gameState.meta.arc,
+                  current_act: newAct,
+                },
+              },
+            },
+          };
+        }),
+
+      updateCurrentTurn: (data) =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            meta: {
-              ...state.gameState.meta,
-              turn: state.gameState.meta.turn + 1,
+            current_turn: {
+              ...state.gameState.current_turn,
+              ...data,
             },
           },
         })),
 
-      setLoading: (loading) => set({ isLoading: loading }),
-
-      setAIResponse: (response) => set({ lastAIResponse: response }),
-
-      updateFromAI: (newState) =>
+      clearCurrentTurn: () =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            ...newState,
-            meta: {
-              ...state.gameState.meta,
-              ...(newState.meta || {}),
-            },
-            players: {
-              ...state.gameState.players,
-              ...(newState.players || {}),
-            },
-            shadowData: {
-              ...state.gameState.shadowData,
-              ...(newState.shadowData || {}),
+            current_turn: {
+              player_id: state.gameState.current_turn.player_id,
+              actions: [],
+              current_action_index: 0,
+              temp_data: {},
             },
           },
         })),
 
-      setHiveMindQuestion: (question) =>
+      addScoreEvent: (event) =>
         set((state) => ({
           gameState: {
             ...state.gameState,
-            hiveMindQuestion: question,
+            score_history: [...state.gameState.score_history, event],
           },
         })),
 
-      setVentriloquistData: (answer, target) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            ventriloquistAnswer: answer,
-            ventriloquistTarget: target,
-          },
-        })),
+      getCurrentAct: () => {
+        return get().gameState.meta.arc.current_act;
+      },
 
-      setWagerData: (bid, topic) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            wagerBid: bid,
-            wagerTopic: topic,
-          },
-        })),
+      isInAct: (act) => {
+        return get().gameState.meta.arc.current_act === act;
+      },
+
+      applyAIResponse: (response) =>
+        set((state) => {
+          const newState = { ...state };
+
+          // Store the response for display
+          if (response.display || response.score_event || response.finale) {
+            newState.lastAIResponse = {
+              display: response.display,
+              score_event: response.score_event,
+              finale: response.finale,
+            };
+          }
+
+          // Update interface
+          if (response.interface) {
+            newState.currentInterface = response.interface;
+          }
+
+          // Apply state updates
+          if (response.updates) {
+            const updates = response.updates;
+
+            if (updates.phase) {
+              newState.gameState.meta.phase = updates.phase;
+            }
+
+            if (updates.turn_count !== undefined) {
+              const newTurnCount = updates.turn_count;
+              newState.gameState.meta.turn_count = newTurnCount;
+              newState.gameState.meta.arc.current_act = calculateAct(newTurnCount);
+            }
+
+            if (updates.current_player_index !== undefined) {
+              newState.gameState.meta.current_player_index =
+                updates.current_player_index;
+            }
+
+            if (updates.current_turn) {
+              newState.gameState.current_turn = {
+                ...newState.gameState.current_turn,
+                ...updates.current_turn,
+              };
+            }
+
+            if (updates.storage) {
+              newState.gameState.storage = [
+                ...newState.gameState.storage,
+                ...updates.storage,
+              ];
+            }
+
+            if (updates.ratings) {
+              newState.gameState.ratings = [
+                ...newState.gameState.ratings,
+                ...updates.ratings,
+              ];
+            }
+          }
+
+          // Apply score event
+          if (response.score_event) {
+            const event = response.score_event;
+            newState.gameState.score_history.push(event);
+
+            // Update player score
+            newState.gameState.players = newState.gameState.players.map((p) =>
+              p.id === event.player_id
+                ? { ...p, score: p.score + event.points + event.bonus }
+                : p
+            );
+          }
+
+          return newState;
+        }),
 
       resetGame: () =>
         set({
           gameState: createInitialState(),
           isLoading: false,
+          currentInterface: null,
           lastAIResponse: null,
         }),
     }),

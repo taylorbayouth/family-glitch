@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useGameStore } from '@/lib/gameStore-v2';
+import { useGameStore } from '@/lib/gameStore';
 
 export function ProgressBar() {
   const { gameState } = useGameStore();

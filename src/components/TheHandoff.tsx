@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import type { HandoffData } from '@/types/game-v2';
+import type { HandoffData } from '@/types/game';
 
 interface TheHandoffProps {
   data: HandoffData;

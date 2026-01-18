@@ -1,29 +1,25 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
-import { useGameStore } from '@/lib/gameStore-v2';
+import { useGameStore } from '@/lib/gameStore';
 import { TheSecretConfessional } from './TheSecretConfessional';
 import { TheHandoff } from './TheHandoff';
 import { TheGallery } from './TheGallery';
 import { TheSelector } from './TheSelector';
-import { ScoreReveal } from './ScoreReveal';
-import { GlitchLoader } from '../GlitchLoader';
+import { TheRatingScreen } from './TheRatingScreen';
+import { GlitchLoader } from './GlitchLoader';
+import type { RatingDimension } from '@/types/game';
 
 export function GameOrchestrator() {
   const {
     gameState,
     isLoading,
     currentInterface,
-    lastAIResponse,
     setLoading,
-    setPhase,
-    nextPlayer,
-    nextTurn,
-    getCurrentPlayer,
   } = useGameStore();
 
   const callAI = useCallback(
-    async (userInput?: string | string[], inputType?: string) => {
+    async (userInput?: string | string[] | Record<string, number>, inputType?: string) => {
       setLoading(true);
       try {
         const response = await fetch('/api/turn', {
@@ -57,12 +53,10 @@ export function GameOrchestrator() {
     [gameState, setLoading]
   );
 
-  // Handle phase-specific auto-calls
+  // Handle auto-calls when needed
   useEffect(() => {
-    const phase = gameState.meta.phase;
-
-    // Auto-call AI when entering certain phases
-    if (phase === 'PASS_SCREEN' && !isLoading && !currentInterface) {
+    // Auto-call AI when we're in PLAYING phase but have no interface
+    if (gameState.meta.phase === 'PLAYING' && !isLoading && !currentInterface) {
       callAI();
     }
   }, [gameState.meta.phase, isLoading, currentInterface, callAI]);
@@ -94,40 +88,16 @@ export function GameOrchestrator() {
     [callAI]
   );
 
-  const handleScoreContinue = useCallback(() => {
-    const { turn_count, max_turns } = gameState.meta;
-
-    // Check if game should end
-    if (turn_count >= max_turns) {
-      setPhase('FINALE');
-      callAI();
-    } else {
-      // Advance to next player
-      nextPlayer();
-      nextTurn();
-      setPhase('PASS_SCREEN');
-      callAI();
-    }
-  }, [gameState.meta, setPhase, nextPlayer, nextTurn, callAI]);
+  const handleRatingSubmit = useCallback(
+    (ratings: Record<RatingDimension, number>) => {
+      callAI(ratings, 'rating');
+    },
+    [callAI]
+  );
 
   // Loading state
   if (isLoading) {
     return <GlitchLoader />;
-  }
-
-  // Show scoring screen if we have a score event
-  if (gameState.meta.phase === 'SCORING' && lastAIResponse?.score_event) {
-    const currentPlayer = getCurrentPlayer();
-    if (!currentPlayer) return <GlitchLoader />;
-
-    return (
-      <ScoreReveal
-        scoreEvent={lastAIResponse.score_event}
-        playerName={currentPlayer.name}
-        playerAvatar={currentPlayer.avatar}
-        onContinue={handleScoreContinue}
-      />
-    );
   }
 
   // Route to appropriate interface
@@ -166,6 +136,31 @@ export function GameOrchestrator() {
           data={currentInterface.data as any}
           onSubmit={handleSelectorSubmit}
         />
+      );
+
+    case 'THE_RATING_SCREEN':
+      return (
+        <TheRatingScreen
+          data={currentInterface.data as any}
+          onSubmit={handleRatingSubmit}
+        />
+      );
+
+    case 'THE_IMAGE_GENERATOR':
+      // TODO: Implement image display with DALL-E integration
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+          <div className="text-center">
+            <p className="text-cyan-400 text-xl mb-4">Image Generator</p>
+            <p className="text-gray-400 mb-8">Coming soon - DALL-E integration needed</p>
+            <button
+              onClick={() => callAI('placeholder', 'text')}
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
       );
 
     default:

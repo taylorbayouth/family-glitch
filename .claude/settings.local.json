@@ -20,7 +20,10 @@
       "Bash(vercel logs:*)",
       "Bash(vercel ls:*)",
       "Bash(vercel --prod:*)",
-      "Bash(vercel env rm:*)"
+      "Bash(vercel env rm:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ]
   }
 }

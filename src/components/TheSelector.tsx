@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { SelectorData } from '@/types/game-v2';
+import type { SelectorData } from '@/types/game';
 
 interface TheSelectorProps {
   data: SelectorData;

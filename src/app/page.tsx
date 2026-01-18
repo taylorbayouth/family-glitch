@@ -1,11 +1,11 @@
 'use client';
 
-import { useGameStore } from '@/lib/gameStore-v2';
-import { SetupScreen } from '@/components/v2/SetupScreen';
-import { GameOrchestrator } from '@/components/v2/GameOrchestrator';
-import { FinaleScreen } from '@/components/v2/FinaleScreen';
+import { useGameStore } from '@/lib/gameStore';
+import { SetupScreen } from '@/components/SetupScreen';
+import { GameOrchestrator } from '@/components/GameOrchestrator';
+import { FinaleScreen } from '@/components/FinaleScreen';
 
-export default function GameV2Page() {
+export default function GamePage() {
   const { gameState, resetGame, lastAIResponse } = useGameStore();
 
   const phase = gameState.meta.phase;

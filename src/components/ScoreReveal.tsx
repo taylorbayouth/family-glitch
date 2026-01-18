@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ScoreEvent } from '@/types/game-v2';
+import type { ScoreEvent } from '@/types/game';
 
 interface ScoreRevealProps {
   scoreEvent: ScoreEvent;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts-v2';
-import type { GameState, AIRequest } from '@/types/game-v2';
+import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts';
+import type { AIRequest } from '@/types/game';
 
 export async function POST(request: NextRequest) {
   try {

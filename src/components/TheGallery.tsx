@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { GalleryData } from '@/types/game-v2';
+import type { GalleryData } from '@/types/game';
 
 interface TheGalleryProps {
   data: GalleryData;

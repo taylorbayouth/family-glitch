@@ -1,8 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useGameStore } from '@/lib/gameStore-v2';
-import type { Player } from '@/types/game-v2';
+import { useGameStore } from '@/lib/gameStore';
+import type { Player } from '@/types/game';
 
 interface FinaleScreenProps {
   finale?: {
@@ -155,7 +155,7 @@ export function FinaleScreen({ finale, onPlayAgain }: FinaleScreenProps) {
         className="mb-8 text-center"
       >
         <p className="text-gray-600 text-sm">
-          🔒 {gameState.the_vault.length} memories collected
+          🔒 {gameState.storage.filter(s => s.scope === 'permanent').length} memories collected
         </p>
       </motion.div>
 

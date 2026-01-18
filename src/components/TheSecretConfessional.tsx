@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ConfessionalData } from '@/types/game-v2';
+import type { ConfessionalData } from '@/types/game';
 import { ProgressBar } from './ProgressBar';
 
 interface TheSecretConfessionalProps {
