@@ -18,7 +18,10 @@ export type MiniGame =
   | 'LETTER_CHAOS'    // Fill in 2 words with given letters
   | 'ASCII_RORSCHACH' // Describe/guess ASCII art
   | 'VAULT_RECALL'    // Trivia from stored facts
-  | 'FAMILY_FEUD';    // Group voting/guessing
+  | 'FAMILY_FEUD'     // Group voting/guessing
+  | 'CAPTION_THIS'    // Write caption for generated image
+  | 'GUESS_THE_IMAGE' // Identify obscured/generated image
+  | 'RATE_CAPTION';   // Rate another player's caption
 
 export interface Player {
   id: string;
@@ -84,7 +87,9 @@ export type InputInterface =
   | 'THE_SECRET_CONFESSIONAL'
   | 'THE_GALLERY'
   | 'THE_SELECTOR'
-  | 'THE_HANDOFF';
+  | 'THE_HANDOFF'
+  | 'THE_IMAGE_GENERATOR'
+  | 'THE_RATING_SCREEN';
 
 export interface InterfaceConfig {
   type: InputInterface;
@@ -95,7 +100,9 @@ export type InterfaceData =
   | ConfessionalData
   | GalleryData
   | SelectorData
-  | HandoffData;
+  | HandoffData
+  | ImageGeneratorData
+  | RatingScreenData;
 
 export interface ConfessionalData {
   question: string;
@@ -124,6 +131,22 @@ export interface HandoffData {
   next_player_avatar: string;
   hint?: string;             // Optional tease
   require_unlock: boolean;
+}
+
+export interface ImageGeneratorData {
+  image_url: string;          // Generated image URL
+  prompt_used?: string;       // What GPT was told to generate
+  task: 'caption' | 'identify' | 'guess_obscured';
+  caption_prompt?: string;    // "Write a funny caption"
+  obscured_hint?: string;     // "What animal is this?"
+}
+
+export interface RatingScreenData {
+  image_url: string;          // The image being rated
+  caption: string;            // The caption to rate
+  author_name: string;        // Who wrote it
+  author_avatar: string;      // Their emoji/avatar
+  prompt: string;             // "Rate this caption (1-5 stars)"
 }
 
 // -----------------

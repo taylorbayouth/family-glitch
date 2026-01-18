@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts-v2';
-import type { GameState, AIRequest } from '@/types/game-v2';
+import { buildSystemPrompt, buildTurnPrompt } from '@/lib/prompts';
+import type { GameState } from '@/types/game';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,12 +12,15 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+    const body = await request.json();
+    const { gameState, userInput, inputType } = body as {
+      gameState: GameState;
+      userInput?: string;
+      inputType?: string;
+    };
 
-    const body = (await request.json()) as AIRequest;
-    const { game_state, user_input, input_type } = body;
-
-    const systemPrompt = buildSystemPrompt(game_state);
-    const turnPrompt = buildTurnPrompt(game_state, user_input, input_type);
+    const systemPrompt = buildSystemPrompt(gameState);
+    const turnPrompt = buildTurnPrompt(gameState, userInput, inputType);
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -26,8 +29,8 @@ export async function POST(request: NextRequest) {
         { role: 'user', content: turnPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7, // Slightly lower for sharper, more consistent responses
-      max_tokens: 2000,
+      temperature: 0.9,
+      max_tokens: 1500,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -44,8 +47,8 @@ export async function POST(request: NextRequest) {
         {
           error: 'Invalid AI response',
           display: {
-            title: 'Parse Error',
-            message: 'The Glitch garbled its response. Try again.',
+            title: 'Glitch Error!',
+            message: 'The Glitch garbled its reply. Tap to retry.',
           },
         },
         { status: 502 }
@@ -59,8 +62,8 @@ export async function POST(request: NextRequest) {
       {
         error: 'Failed to get AI response',
         display: {
-          title: 'Connection Error',
-          message: 'The Glitch encountered interference. Try again.',
+          title: 'Glitch Error!',
+          message: 'The Glitch encountered a temporal anomaly. Try again!',
         },
       },
       { status: 500 }

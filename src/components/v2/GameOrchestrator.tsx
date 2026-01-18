@@ -26,7 +26,7 @@ export function GameOrchestrator() {
     async (userInput?: string | string[], inputType?: string) => {
       setLoading(true);
       try {
-        const response = await fetch('/api/v2/turn', {
+        const response = await fetch('/api/turn', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

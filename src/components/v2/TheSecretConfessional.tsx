@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ConfessionalData } from '@/types/game-v2';
+import { ProgressBar } from './ProgressBar';
 
 interface TheSecretConfessionalProps {
   data: ConfessionalData;
@@ -37,8 +38,10 @@ export function TheSecretConfessional({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-black text-white flex flex-col p-6 relative overflow-hidden"
+      className="h-screen bg-black text-white flex flex-col p-6 relative overflow-hidden"
     >
+      <ProgressBar />
+
       {/* Background spotlight effect */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
