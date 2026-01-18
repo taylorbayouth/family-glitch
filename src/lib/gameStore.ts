@@ -148,6 +148,13 @@ export const useGameStore = create<GameStore>()(
             relationship: undefined,
           }));
 
+          console.log('[STORAGE] 💾 Game initialized - saving to localStorage:', {
+            players: names,
+            vibe,
+            phase: 'PLAYING',
+            turn: 1,
+          });
+
           return {
             gameState: {
               ...state.gameState,
@@ -206,12 +213,20 @@ export const useGameStore = create<GameStore>()(
       },
 
       addStoredData: (data) =>
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            storage: [...state.gameState.storage, data],
-          },
-        })),
+        set((state) => {
+          console.log('[STORAGE] 💾 Storing data:', {
+            scope: data.scope,
+            tags: data.tags,
+            value: data.value,
+            turn: data.turn_collected,
+          });
+          return {
+            gameState: {
+              ...state.gameState,
+              storage: [...state.gameState.storage, data],
+            },
+          };
+        }),
 
       getStoredData: (tags, scope) => {
         const storage = get().gameState.storage;
@@ -314,6 +329,16 @@ export const useGameStore = create<GameStore>()(
         set((state) => {
           const newState = { ...state };
 
+          console.log('[STORAGE] 💾 Applying AI response - saving to localStorage:', {
+            has_display: !!response.display,
+            has_interface: !!response.interface,
+            interface_type: response.interface?.type,
+            has_updates: !!response.updates,
+            has_score_event: !!response.score_event,
+            new_storage_items: response.updates?.storage?.length || 0,
+            new_ratings: response.updates?.ratings?.length || 0,
+          });
+
           // Store the response for display
           if (response.display || response.score_event || response.finale) {
             newState.lastAIResponse = {
@@ -340,6 +365,10 @@ export const useGameStore = create<GameStore>()(
               const newTurnCount = updates.turn_count;
               newState.gameState.meta.turn_count = newTurnCount;
               newState.gameState.meta.arc.current_act = calculateAct(newTurnCount);
+              console.log('[STORAGE] 📊 Turn advanced:', {
+                turn: newTurnCount,
+                act: calculateAct(newTurnCount),
+              });
             }
 
             if (updates.current_player_index !== undefined) {
@@ -380,6 +409,12 @@ export const useGameStore = create<GameStore>()(
                 ? { ...p, score: p.score + event.points + event.bonus }
                 : p
             );
+            console.log('[STORAGE] 🎯 Score updated:', {
+              player_id: event.player_id,
+              points: event.points,
+              bonus: event.bonus,
+              total: event.points + event.bonus,
+            });
           }
 
           return newState;
@@ -396,6 +431,24 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'family-glitch-storage',
       partialize: (state) => ({ gameState: state.gameState }),
+      onRehydrateStorage: () => {
+        console.log('[STORAGE] 🔄 Loading from localStorage...');
+        return (state) => {
+          if (state) {
+            console.log('[STORAGE] ✅ Loaded from localStorage:', {
+              turn: state.gameState.meta.turn_count,
+              act: state.gameState.meta.arc.current_act,
+              phase: state.gameState.meta.phase,
+              players: state.gameState.players.length,
+              permanent_facts: state.gameState.storage.filter(s => s.scope === 'permanent').length,
+              total_storage: state.gameState.storage.length,
+              ratings: state.gameState.ratings.length,
+            });
+          } else {
+            console.log('[STORAGE] ℹ️ No existing localStorage found - starting fresh');
+          }
+        };
+      },
     }
   )
 );
