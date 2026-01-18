@@ -1,29 +1,13 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npx create-next-app@latest:*)",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
-      "Bash(lsof:*)",
-      "Bash(xargs kill:*)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial Family Glitch game implementation\n\n- Next.js 16 with TypeScript and Tailwind CSS\n- OpenAI API integration for AI Game Master \"The Glitch\"\n- 5 mini-games: Hive Mind, Letter Chaos, Ventriloquist, Wager, Tribunal\n- Shadow Collector mechanic for finale roast poem\n- Zustand state management with localStorage persistence\n- Mobile-first UI with glitch animations\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(vercel login)",
-      "Bash(vercel whoami:*)",
-      "Bash(vercel --yes:*)",
-      "Bash(git commit:*)",
-      "Bash(vercel --prod --yes:*)",
-      "Bash(git remote add:*)",
-      "Bash(git remote set-url:*)",
-      "Bash(git push:*)",
-      "Bash(tree:*)",
-      "Bash(vercel logs:*)",
-      "Bash(vercel ls:*)",
-      "Bash(vercel --prod:*)",
-      "Bash(vercel env rm:*)",
-      "Bash(ls:*)",
-      "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(curl:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)"
     ]
   }
 }
