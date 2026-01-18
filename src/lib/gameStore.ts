@@ -3,9 +3,9 @@ import { persist } from 'zustand/middleware';
 import type { GameState, GamePhase, Player, Challenge, ScoreUpdate, MiniGame } from '@/types/game';
 
 const DEFAULT_PLAYERS: Record<string, Player> = {
-  'Taylor': { name: 'Taylor', score: 0, tags: ['Dad'] },
-  'Beth': { name: 'Beth', score: 0, tags: ['Mom'] },
-  'Eliana': { name: 'Eliana', score: 0, tags: ['Daughter'] },
+  'Player 1': { name: 'Player 1', score: 0, tags: [] },
+  'Player 2': { name: 'Player 2', score: 0, tags: [] },
+  'Player 3': { name: 'Player 3', score: 0, tags: [] },
 };
 
 const createInitialState = (): GameState => ({
@@ -62,7 +62,7 @@ interface GameStore {
 
 export const useGameStore = create<GameStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       gameState: createInitialState(),
       isLoading: false,
       lastAIResponse: null,
@@ -102,9 +102,8 @@ export const useGameStore = create<GameStore>()(
       updatePlayerNames: (names) =>
         set((state) => {
           const newPlayers: Record<string, Player> = {};
-          names.forEach((name, index) => {
-            const tags = index === 0 ? ['Dad'] : index === 1 ? ['Mom'] : ['Daughter'];
-            newPlayers[name] = { name, score: 0, tags };
+          names.forEach((name) => {
+            newPlayers[name] = { name, score: 0, tags: [] };
           });
           return {
             gameState: {

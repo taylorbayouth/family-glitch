@@ -11,7 +11,7 @@ const glitchMessages = [
 ];
 
 export function GlitchLoader() {
-  const message = glitchMessages[Math.floor(Math.random() * glitchMessages.length)];
+  const message = glitchMessages[0];
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">

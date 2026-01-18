@@ -9,6 +9,7 @@ interface PlayPhaseProps {
   message: string;
   subtext?: string;
   challenge?: Challenge;
+  players: string[];
   onSubmit: (value: string, type: string) => void;
 }
 
@@ -17,14 +18,36 @@ export function PlayPhase({
   message,
   subtext,
   challenge,
+  players,
   onSubmit,
 }: PlayPhaseProps) {
   const [inputValue, setInputValue] = useState('');
   const [bidValue, setBidValue] = useState(3);
   const [ratingValue, setRatingValue] = useState(0);
+  const [groupAnswers, setGroupAnswers] = useState<Record<string, string>>({});
+
+  const isGroupInput =
+    challenge &&
+    challenge.type === 'input' &&
+    challenge.context &&
+    ['HIVE_MIND', 'TRIBUNAL'].includes(challenge.context.toUpperCase().replace(' ', '_'));
+
+  const hasGroupAnswer = players.some((player) => (groupAnswers[player] || '').trim());
+  const disableSubmit =
+    (challenge?.type === 'input' && !isGroupInput && !inputValue.trim()) ||
+    (challenge?.type === 'input' && isGroupInput && !hasGroupAnswer) ||
+    (challenge?.type === 'rating' && ratingValue === 0);
 
   const handleSubmit = () => {
     if (!challenge) return;
+
+    if (isGroupInput) {
+      const hasAnswers = Object.values(groupAnswers).some((answer) => answer.trim());
+      if (hasAnswers) {
+        onSubmit(JSON.stringify(groupAnswers), 'group');
+      }
+      return;
+    }
 
     switch (challenge.type) {
       case 'input':
@@ -96,15 +119,38 @@ export function PlayPhase({
             {challenge.type === 'input' && (
               <>
                 <p className="text-lg text-center mb-4">{challenge.prompt}</p>
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Your answer..."
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-lg text-center focus:border-cyan-500 focus:outline-none"
-                />
+                {!isGroupInput && (
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Your answer..."
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-lg text-center focus:border-cyan-500 focus:outline-none"
+                  />
+                )}
+                {isGroupInput && (
+                  <div className="space-y-3">
+                    {players.map((player) => (
+                      <div key={player} className="space-y-2">
+                        <p className="text-sm text-gray-400 text-center">{player}</p>
+                        <input
+                          type="text"
+                          value={groupAnswers[player] || ''}
+                          onChange={(e) =>
+                            setGroupAnswers((prev) => ({
+                              ...prev,
+                              [player]: e.target.value,
+                            }))
+                          }
+                          placeholder="Their answer..."
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-lg text-center focus:border-cyan-500 focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
@@ -183,10 +229,7 @@ export function PlayPhase({
           transition={{ delay: 0.6 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleSubmit}
-          disabled={
-            (challenge.type === 'input' && !inputValue.trim()) ||
-            (challenge.type === 'rating' && ratingValue === 0)
-          }
+          disabled={disableSubmit}
           className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold py-4 rounded-lg text-xl disabled:opacity-50"
         >
           SUBMIT

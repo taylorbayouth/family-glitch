@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       ],
       response_format: { type: 'json_object' },
       temperature: 0.9,
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -38,7 +38,23 @@ export async function POST(request: NextRequest) {
       throw new Error('No response from AI');
     }
 
-    const aiResponse = JSON.parse(content);
+    let aiResponse;
+    try {
+      aiResponse = JSON.parse(content);
+    } catch {
+      console.error('AI JSON parse error:', content);
+      return NextResponse.json(
+        {
+          error: 'Invalid AI response',
+          display: {
+            title: 'Glitch Error!',
+            message: 'The Glitch garbled its reply. Tap to retry.',
+          },
+        },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json(aiResponse);
   } catch (error) {
     console.error('API Error:', error);

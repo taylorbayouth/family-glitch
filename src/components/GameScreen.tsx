@@ -28,6 +28,8 @@ export function GameScreen() {
     resetGame,
     setChallenge,
     setCurrentMiniGame,
+    addPendingAnswer,
+    clearPendingAnswers,
   } = useGameStore();
 
   const [currentDisplay, setCurrentDisplay] = useState<{
@@ -47,15 +49,26 @@ export function GameScreen() {
     async (userInput?: string, inputType?: string) => {
       setLoading(true);
       try {
+        const { gameState: latestGameState } = useGameStore.getState();
         const response = await fetch('/api/turn', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            gameState,
+            gameState: latestGameState,
             userInput,
             inputType,
           }),
         });
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('AI Error:', text);
+          setCurrentDisplay({
+            title: 'Glitch Error!',
+            message: 'The Glitch hit interference. Tap to retry.',
+          });
+          return;
+        }
 
         const data = await response.json();
 
@@ -75,6 +88,9 @@ export function GameScreen() {
         // Update display
         if (data.display) {
           setCurrentDisplay(data.display);
+          if (latestGameState.meta.phase === 'SHADOW') {
+            setShadowPrompt(data.display.message);
+          }
         }
 
         // Update challenge
@@ -84,7 +100,7 @@ export function GameScreen() {
           if (data.challenge.context) {
             const miniGame = data.challenge.context.toUpperCase().replace(' ', '_');
             if (['HIVE_MIND', 'LETTER_CHAOS', 'VENTRILOQUIST', 'WAGER', 'TRIBUNAL'].includes(miniGame)) {
-              setCurrentMiniGame(miniGame as typeof gameState.meta.currentMiniGame);
+              setCurrentMiniGame(miniGame as typeof latestGameState.meta.currentMiniGame);
             }
           }
         }
@@ -113,7 +129,11 @@ export function GameScreen() {
         }
 
         // Handle phase transition
-        if (data.nextPhase) {
+        const shouldQueuePhase = !(latestGameState.meta.phase === 'HANDOFF' || (latestGameState.meta.phase === 'SHADOW' && !userInput));
+        if (data.nextPhase && shouldQueuePhase) {
+          setPendingPhase(data.nextPhase);
+        } else if (data.nextPhase && latestGameState.meta.phase === 'HANDOFF') {
+          // Keep pending for manual advance
           setPendingPhase(data.nextPhase);
         }
       } catch (error) {
@@ -126,7 +146,7 @@ export function GameScreen() {
         setLoading(false);
       }
     },
-    [gameState, setLoading, setAIResponse, updateScore, addHistory, addShadowData, setChallenge, setCurrentMiniGame]
+    [addHistory, addShadowData, setAIResponse, setChallenge, setCurrentMiniGame, setLoading, updateScore]
   );
 
   const getNextPlayer = useCallback(() => {
@@ -136,27 +156,20 @@ export function GameScreen() {
   }, [playerNames, gameState.meta.currentPlayer]);
 
   const handleSetupStart = useCallback(async () => {
-    setPhase('SETUP');
-    await callAI();
-  }, [setPhase, callAI]);
-
-  const handleSetupComplete = useCallback(() => {
-    // Move to first handoff
-    const firstPlayer = playerNames[0];
+    const currentPlayers = Object.keys(useGameStore.getState().gameState.players);
+    const firstPlayer = currentPlayers[0] || '';
     setCurrentPlayer(firstPlayer);
     nextTurn();
     setPhase('HANDOFF');
-    setCurrentDisplay({
-      title: 'Game Starting!',
-      message: `Pass the phone to ${firstPlayer}`,
-    });
-  }, [playerNames, setCurrentPlayer, nextTurn, setPhase]);
+    await callAI();
+  }, [setCurrentPlayer, nextTurn, setPhase, callAI]);
 
   const handleHandoffReady = useCallback(async () => {
-    // After handoff, go to shadow phase
-    setPhase('SHADOW');
+    const nextPhase = pendingPhase || 'SHADOW';
+    setPendingPhase(null);
+    setPhase(nextPhase);
     await callAI();
-  }, [setPhase, callAI]);
+  }, [pendingPhase, setPhase, callAI]);
 
   const handleShadowSubmit = useCallback(
     async (value: string) => {
@@ -168,41 +181,53 @@ export function GameScreen() {
       else if (promptLower.includes('noun')) shadowType = 'nouns';
 
       addShadowData(shadowType, value);
-
-      // Move to play phase
-      setPhase('PLAY');
       setCurrentChallengeLocal(null);
-      await callAI();
+      await callAI(value, shadowType);
     },
-    [shadowPrompt, addShadowData, setPhase, callAI]
+    [shadowPrompt, addShadowData, callAI]
   );
 
   const handlePlaySubmit = useCallback(
     async (value: string, type: string) => {
-      // Submit answer and move to judgment
-      setPhase('JUDGMENT');
+      if (type === 'group') {
+        clearPendingAnswers();
+        try {
+          const answers = JSON.parse(value) as Record<string, string>;
+          Object.entries(answers).forEach(([player, answer]) => {
+            if (answer.trim()) {
+              addPendingAnswer(player, answer.trim());
+            }
+          });
+        } catch (e) {
+          console.error('Failed to parse group answers', e);
+        }
+      }
       await callAI(value, type);
     },
-    [setPhase, callAI]
+    [callAI, addPendingAnswer, clearPendingAnswers]
   );
 
-  const handleJudgmentContinue = useCallback(() => {
-    // Check if game should end
-    if (gameState.meta.turn >= gameState.meta.maxTurns) {
+  const handleJudgmentContinue = useCallback(async () => {
+    clearPendingAnswers();
+    const targetPhase = pendingPhase || (gameState.meta.turn >= gameState.meta.maxTurns ? 'FINALE' : 'HANDOFF');
+
+    if (targetPhase === 'FINALE') {
       setPhase('FINALE');
-      callAI();
-    } else {
-      // Move to next player's handoff
-      const nextPlayer = getNextPlayer();
-      setCurrentPlayer(nextPlayer);
-      nextTurn();
-      setPhase('HANDOFF');
-      setCurrentDisplay({
-        title: 'Next Up!',
-        message: `Pass the phone to ${nextPlayer}`,
-      });
+      await callAI();
+      setPendingPhase(null);
+      return;
     }
-  }, [gameState.meta.turn, gameState.meta.maxTurns, getNextPlayer, setCurrentPlayer, nextTurn, setPhase, callAI]);
+
+    const nextPlayer = getNextPlayer();
+    setCurrentPlayer(nextPlayer);
+    nextTurn();
+    setCurrentChallengeLocal(null);
+    setChallenge(null);
+    setPendingPhase(null);
+    setPhase('HANDOFF');
+    setCurrentDisplay(null);
+    await callAI();
+  }, [pendingPhase, gameState.meta.turn, gameState.meta.maxTurns, getNextPlayer, setCurrentPlayer, nextTurn, setPhase, callAI, clearPendingAnswers, setChallenge]);
 
   const handlePlayAgain = useCallback(() => {
     resetGame();
@@ -214,14 +239,22 @@ export function GameScreen() {
   // Handle pending phase transitions after display updates
   useEffect(() => {
     if (pendingPhase && !isLoading) {
+      const phase = gameState.meta.phase;
+      if (phase === 'HANDOFF' || phase === 'JUDGMENT') return;
       if (pendingPhase === 'SHADOW' && currentDisplay?.message) {
-        // Extract shadow prompt from display
         setShadowPrompt(currentDisplay.message);
       }
       setPhase(pendingPhase);
       setPendingPhase(null);
     }
-  }, [pendingPhase, isLoading, currentDisplay, setPhase]);
+  }, [pendingPhase, isLoading, currentDisplay, setPhase, gameState.meta.phase]);
+
+  // If we enter PLAY without a challenge, ask the AI for one
+  useEffect(() => {
+    if (gameState.meta.phase === 'PLAY' && !currentChallenge && !isLoading) {
+      callAI();
+    }
+  }, [gameState.meta.phase, currentChallenge, isLoading, callAI]);
 
   // Loading screen
   if (isLoading) {
@@ -260,6 +293,7 @@ export function GameScreen() {
           message={currentDisplay?.message || 'Loading...'}
           subtext={currentDisplay?.subtext}
           challenge={currentChallenge || undefined}
+          players={playerNames}
           onSubmit={handlePlaySubmit}
         />
       )}

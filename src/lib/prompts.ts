@@ -2,7 +2,7 @@ import type { GameState } from '@/types/game';
 
 export function buildSystemPrompt(gameState: GameState): string {
   const playerList = Object.values(gameState.players)
-    .map((p) => `${p.name} (${p.tags.join(', ')})`)
+    .map((p) => (p.tags.length ? `${p.name} (${p.tags.join(', ')})` : p.name))
     .join(', ');
 
   return `You are "The Glitch," a snarky, witty, and slightly chaotic AI game show host for a family party game called "Family Glitch." You have a fun, mischievous personality—think a mix between a carnival barker and a playful trickster. You roast the players lovingly but never mean-spiritedly.

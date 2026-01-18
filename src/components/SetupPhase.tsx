@@ -13,7 +13,7 @@ export function SetupPhase({ onStart }: SetupPhaseProps) {
   const playerNames = Object.keys(gameState.players);
 
   const [names, setNames] = useState<string[]>(
-    playerNames.length > 0 ? playerNames : ['Taylor', 'Beth', 'Eliana']
+    playerNames.length > 0 ? playerNames : ['Player 1', 'Player 2', 'Player 3']
   );
   const [vibe, setVibeLocal] = useState(gameState.meta.vibe || '');
 
