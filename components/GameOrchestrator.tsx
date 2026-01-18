@@ -31,6 +31,7 @@ import {
 import {
   autoSaveSession,
   createPersistedSession,
+  clearAllGameData,
 } from '@/lib/persistence';
 import { createEventLog, appendEvent, createAnswerSubmittedEvent, createFactStoredEvent } from '@/lib/eventLog';
 import { createFactsDB, createFactCard, addFact } from '@/lib/factsDB';
@@ -661,6 +662,23 @@ export function GameOrchestrator({
     }
   };
 
+  /**
+   * Handle Start Over - clears all game data and reloads
+   */
+  const handleStartOver = useCallback(() => {
+    if (!confirm('Are you sure? This will delete all saved game data and start fresh.')) {
+      return;
+    }
+
+    try {
+      clearAllGameData();
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to start over:', error);
+      alert('Failed to clear game data. Try manually clearing your browser cache.');
+    }
+  }, []);
+
   // ===========================================================================
   // RENDER
   // ===========================================================================
@@ -673,6 +691,17 @@ export function GameOrchestrator({
           State: {state.currentState} | Act: {state.currentAct} | Players:{' '}
           {setup?.players.length}
         </div>
+      )}
+
+      {/* Start Over button (floating, always visible) */}
+      {state && (
+        <button
+          onClick={handleStartOver}
+          className="fixed bottom-4 right-4 z-50 px-4 py-2 bg-danger-500 hover:bg-danger-600 text-white text-sm font-semibold rounded-lg shadow-lg transition-colors"
+          title="Clear all game data and start over"
+        >
+          Start Over
+        </button>
       )}
 
       {/* Main screen rendering */}

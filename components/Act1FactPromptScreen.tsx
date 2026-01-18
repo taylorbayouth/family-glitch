@@ -155,11 +155,22 @@ export function Act1FactPromptScreen({
   if (error || !llmResponse) {
     return (
       <div className="viewport-container flex-center bg-danger-50 p-6">
-        <div className="card max-w-md text-center">
+        <div className="card max-w-2xl text-center">
           <h1 className="text-xl font-bold text-danger-600 mb-4">
             Oops! Something went wrong
           </h1>
-          <p className="text-neutral-600 mb-6">{error || 'Unknown error'}</p>
+          <p className="text-neutral-700 mb-2 font-semibold">Error Details:</p>
+          <p className="text-neutral-600 mb-6 text-sm font-mono bg-neutral-100 p-3 rounded">
+            {error || 'Unknown error - failed to generate question'}
+          </p>
+          <div className="text-left mb-6 text-sm text-neutral-600">
+            <p className="font-semibold mb-2">Common causes:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>OpenAI API key not set or invalid</li>
+              <li>Network connection issues</li>
+              <li>OpenAI service temporarily unavailable</li>
+            </ul>
+          </div>
           <div className="flex gap-2">
             {onCancel && (
               <button onClick={onCancel} className="btn-outline flex-1">

@@ -130,6 +130,33 @@ export function autoSaveSession(session: PersistedSession): boolean {
   }
 }
 
+/**
+ * Clear all saved game data
+ *
+ * Use this for "Start Over" functionality or testing.
+ * Clears the entire game from localStorage.
+ */
+export function clearAllGameData(): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    // Clear all keys that start with our prefix
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(STORAGE_PREFIX)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log(`✅ Game data cleared (${keysToRemove.length} items)`);
+  } catch (error) {
+    console.error('Failed to clear game data:', error);
+    throw new PersistenceError('Could not clear game data', error);
+  }
+}
+
 // ============================================================================
 // LOAD OPERATIONS
 // ============================================================================
