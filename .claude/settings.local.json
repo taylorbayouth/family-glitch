@@ -11,7 +11,8 @@
       "Bash(vercel login)",
       "Bash(vercel whoami:*)",
       "Bash(vercel --yes:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(vercel --prod --yes:*)"
     ]
   }
 }
