@@ -247,13 +247,19 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
           </div>
 
           {/* Setup Card */}
-          <div className="card animate-slide-up">
-            <h2 className="text-2xl font-bold mb-6">Who's Playing?</h2>
+          <div className="bg-black/50 backdrop-blur-sm border-2 border-cyan-500/30 rounded-xl p-6 shadow-[0_0_30px_rgba(6,182,212,0.15)] animate-slide-up">
+            <h2 className="text-2xl font-extrabold mb-6 text-white">Who's Playing?</h2>
 
             {/* Player inputs */}
             <div className="space-y-4 mb-6">
               {players.map((player, index) => (
-                <div key={index} className="border border-neutral-200 rounded-lg p-4 bg-neutral-50 relative">
+                <div
+                  key={index}
+                  className="border-2 border-purple-500/40 rounded-lg p-4 bg-slate-900/80 relative transition-all duration-300 hover:border-cyan-400/60 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                  style={{
+                    animation: `slide-up 0.3s ease-out ${index * 0.1}s both`
+                  }}
+                >
                   <div className="space-y-3">
                     {/* Avatar and Name row */}
                     <div className="flex gap-2 items-center">
@@ -262,7 +268,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         onChange={(e) =>
                           updatePlayer(index, 'avatarId', e.target.value)
                         }
-                        className="input w-[100px] text-3xl text-center p-2"
+                        className="w-[100px] text-3xl text-center p-2 rounded-lg bg-black/60 border-2 border-cyan-500/40 text-white focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
                       >
                         {AVATAR_OPTIONS.map((emoji) => (
                           <option key={emoji} value={emoji}>
@@ -277,7 +283,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         onChange={(e) =>
                           updatePlayer(index, 'name', e.target.value)
                         }
-                        className="input flex-1"
+                        className="flex-1 px-4 py-2 rounded-lg bg-black/60 border-2 border-purple-500/40 text-white font-extrabold text-lg placeholder-purple-300/40 focus:outline-none focus:border-purple-400 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all"
                         maxLength={20}
                       />
                     </div>
@@ -291,7 +297,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         onChange={(e) =>
                           updatePlayer(index, 'age', e.target.value)
                         }
-                        className="input w-[100px] text-center"
+                        className="w-[100px] text-center px-4 py-2 rounded-lg bg-black/60 border-2 border-cyan-500/40 text-white font-semibold placeholder-cyan-300/40 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
                         min="1"
                         max="120"
                       />
@@ -300,7 +306,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         onChange={(e) =>
                           updatePlayer(index, 'role', e.target.value as PlayerRole)
                         }
-                        className="input flex-1"
+                        className="flex-1 px-4 py-2 rounded-lg bg-black/60 border-2 border-purple-500/40 text-white font-medium focus:outline-none focus:border-purple-400 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all"
                       >
                         <option value="mom">Mom</option>
                         <option value="dad">Dad</option>
@@ -322,7 +328,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                   {players.length > PLAYERS.MIN_COUNT && (
                     <button
                       onClick={() => removePlayer(index)}
-                      className="absolute top-2 right-2 btn-ghost text-danger-500 p-2 text-xl leading-none"
+                      className="absolute top-2 right-2 p-2 text-xl leading-none text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all"
                       title="Remove player"
                     >
                       ✕
@@ -334,18 +340,21 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
 
             {/* Add player button */}
             {players.length < PLAYERS.MAX_COUNT && (
-              <button onClick={addPlayer} className="btn-outline w-full mb-6">
+              <button
+                onClick={addPlayer}
+                className="w-full mb-6 px-6 py-3 rounded-lg border-2 border-cyan-500/50 text-cyan-400 font-bold hover:bg-cyan-500/10 hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] active:scale-95 transition-all"
+              >
                 + Add Player
               </button>
             )}
 
             {/* Errors */}
             {errors.length > 0 && (
-              <div className="bg-danger-50 border border-danger-300 rounded-lg p-4 mb-6">
-                <p className="font-semibold text-danger-700 mb-2">
+              <div className="bg-red-950/60 border-2 border-red-500/50 rounded-lg p-4 mb-6 backdrop-blur-sm">
+                <p className="font-bold text-red-400 mb-2">
                   Please fix these issues:
                 </p>
-                <ul className="list-disc list-inside text-sm text-danger-600">
+                <ul className="list-disc list-inside text-sm text-red-300">
                   {errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
@@ -354,7 +363,10 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
             )}
 
             {/* Start button */}
-            <button onClick={handleStart} className="btn-primary w-full text-lg">
+            <button
+              onClick={handleStart}
+              className="w-full text-lg px-8 py-4 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-extrabold hover:from-cyan-400 hover:to-purple-500 hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] active:scale-95 transition-all"
+            >
               Start Game
             </button>
           </div>

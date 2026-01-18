@@ -15,7 +15,9 @@
       "Bash(vercel env:*)",
       "Bash(vercel --prod:*)",
       "Bash(gh api:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(wait)",
+      "Bash(npx vercel:*)"
     ]
   }
 }
