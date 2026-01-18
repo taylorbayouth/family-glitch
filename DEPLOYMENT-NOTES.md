@@ -5,7 +5,30 @@
 ### Quick Reference
 - **Production URL:** https://family-glitch.vercel.app
 - **Git Branch:** main
-- **Auto-Deploy:** ✅ Enabled (deploys on push to main)
+- **Auto-Deploy:** ⚠️ **CURRENTLY BROKEN** - GitHub integration not triggering deploys
+
+### ⚠️ IMPORTANT: Manual Deployment Required
+
+**Current Issue:** Git pushes to `main` are NOT automatically triggering Vercel deployments.
+
+**Workaround - Manual Deploy via CLI:**
+```bash
+# This is currently the ONLY way to deploy changes
+npx vercel --prod --yes
+```
+
+**To Fix the Git Integration:**
+1. Go to: https://vercel.com/taylors-projects-76c75866/family-glitch/settings/git
+2. Check if Git repository is connected to `taylorbayouth/family-glitch`
+3. Verify it's deploying from `main` branch
+4. If disconnected, click "Connect Git Repository" and reconnect
+5. Make sure "Auto-deploy" is enabled
+
+**Until the integration is fixed:**
+- After making changes and pushing to GitHub, you MUST run `npx vercel --prod --yes`
+- The deployment takes ~30-40 seconds
+- You'll see the build output in your terminal
+- At the end, it will show the production URL
 
 ### Common Issues & Solutions
 
