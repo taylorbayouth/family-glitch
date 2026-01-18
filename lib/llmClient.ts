@@ -23,6 +23,20 @@ import { compactHistoryForLLM } from '@/lib/eventLog';
 import { getRelevantFactsForCartridge } from '@/lib/factsDB';
 
 // ============================================================================
+// GENERIC LLM REQUEST
+// ============================================================================
+
+/**
+ * Generic LLM request handler for cartridges and custom requests
+ *
+ * @param request - Full LLM request object
+ * @returns LLM response
+ */
+export async function requestLLM(request: LLMRequest): Promise<LLMResponse> {
+  return callLLM(request);
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 
@@ -136,6 +150,7 @@ function sleep(ms: number): Promise<void> {
  * @param players - All players
  * @param scores - Current scores
  * @param safetyMode - Content safety level
+ * @param factsDB - Facts database (to calculate fact count)
  * @returns LLM response with prompt
  */
 export async function requestFactPrompt(
@@ -143,7 +158,8 @@ export async function requestFactPrompt(
   eventLog: EventLog,
   players: Player[],
   scores: Record<string, number>,
-  safetyMode: SafetyMode
+  safetyMode: SafetyMode,
+  factsDB?: FactsDB
 ): Promise<LLMResponse> {
   const request: LLMRequest = {
     sessionId: state.sessionId,
@@ -156,7 +172,7 @@ export async function requestFactPrompt(
     currentScores: scores,
     timeElapsedMs: Date.now() - state.startTime,
     targetDurationMs: state.targetDurationMs,
-    act1FactCount: 0, // Will be calculated by caller
+    act1FactCount: factsDB?.facts.length || 0,
     act2RoundsCompleted: 0,
     requestType: 'next-prompt',
     safetyMode,
@@ -182,8 +198,13 @@ export async function requestCartridgeSelection(
   factsDB: FactsDB,
   players: Player[],
   scores: Record<string, number>,
-  safetyMode: 'kid-safe' | 'teen-adult'
+  safetyMode: SafetyMode
 ): Promise<LLMResponse> {
+  // Calculate Act 2 rounds completed from event log
+  const act2RoundsCompleted = eventLog.events.filter(
+    (e) => e.type === 'CARTRIDGE_COMPLETED' && e.actNumber === 2
+  ).length;
+
   const request: LLMRequest = {
     sessionId: state.sessionId,
     currentState: state.currentState,
@@ -196,7 +217,7 @@ export async function requestCartridgeSelection(
     timeElapsedMs: Date.now() - state.startTime,
     targetDurationMs: state.targetDurationMs,
     act1FactCount: factsDB.facts.length,
-    act2RoundsCompleted: 0, // TODO: Calculate from event log
+    act2RoundsCompleted,
     requestType: 'select-cartridge',
     safetyMode,
   };
@@ -217,7 +238,7 @@ export async function requestReveal(
   state: GameState,
   players: Player[],
   answer: any,
-  safetyMode: 'kid-safe' | 'teen-adult'
+  safetyMode: SafetyMode
 ): Promise<LLMResponse> {
   const request: LLMRequest = {
     sessionId: state.sessionId,
@@ -251,7 +272,7 @@ export async function requestReveal(
 export async function requestScoringGuidance(
   state: GameState,
   players: Player[],
-  safetyMode: 'kid-safe' | 'teen-adult'
+  safetyMode: SafetyMode
 ): Promise<LLMResponse> {
   const request: LLMRequest = {
     sessionId: state.sessionId,
@@ -288,7 +309,7 @@ export async function requestActTransition(
   players: Player[],
   fromAct: number,
   toAct: number,
-  safetyMode: 'kid-safe' | 'teen-adult'
+  safetyMode: SafetyMode
 ): Promise<LLMResponse> {
   const request: LLMRequest = {
     sessionId: state.sessionId,

@@ -21,7 +21,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { LLMRequest, LLMResponse } from '@/types/game';
+import type { LLMRequest, LLMResponse } from '@/types/game';
 import { LLM } from '@/lib/constants';
 
 // ============================================================================
@@ -37,150 +37,6 @@ import { LLM } from '@/lib/constants';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-// ============================================================================
-// JSON SCHEMA FOR FUNCTION CALLING
-// ============================================================================
-
-/**
- * Strict JSON schema for LLM responses
- *
- * This is enforced via OpenAI's function calling feature to ensure
- * the LLM always returns valid, parseable JSON.
- */
-const LLM_RESPONSE_SCHEMA = {
-  name: 'generate_game_content',
-  description: 'Generate game content for Family Glitch',
-  parameters: {
-    type: 'object',
-    required: ['nextState', 'screen', 'safetyFlags'],
-    properties: {
-      nextState: {
-        type: 'string',
-        enum: [
-          'ACT1_FACT_PROMPT_PRIVATE',
-          'ACT1_FACT_CONFIRM',
-          'ACT1_TRANSITION',
-          'ACT2_CARTRIDGE_INTRO',
-          'ACT2_TURN_PRIVATE_INPUT',
-          'ACT2_PUBLIC_REVEAL',
-          'ACT2_SCORING',
-          'ACT2_TRANSITION',
-          'ACT3_FINAL_REVEAL',
-          'ACT3_HIGHLIGHTS',
-          'ACT3_TALLY',
-          'END',
-        ],
-      },
-      screen: {
-        type: 'object',
-        required: ['title', 'body', 'modality', 'private', 'instructions'],
-        properties: {
-          title: { type: 'string', maxLength: 60 },
-          body: { type: 'string', maxLength: 500 },
-          modality: { type: 'string', enum: ['text', 'image', 'ascii'] },
-          private: { type: 'boolean' },
-          instructions: { type: 'string', maxLength: 100 },
-          imagePrompt: { type: 'string', maxLength: 300 },
-        },
-      },
-      inputModule: {
-        oneOf: [
-          { type: 'null' },
-          {
-            type: 'object',
-            required: ['type', 'privateMode'],
-            properties: {
-              type: {
-                type: 'string',
-                enum: ['textarea', 'input-field', 'timed-input', 'multiple-choice', 'word-checkbox-grid'],
-              },
-              privateMode: { type: 'boolean' },
-              placeholder: { type: 'string' },
-              maxLength: { type: 'number' },
-              timeLimitSec: { type: 'number' },
-              options: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    text: { type: 'string' },
-                  },
-                },
-              },
-              words: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    text: { type: 'string' },
-                    correct: { type: 'boolean' },
-                  },
-                },
-              },
-            },
-          },
-        ],
-      },
-      reveal: {
-        type: 'object',
-        properties: {
-          template: { type: 'string' },
-          format: { type: 'string', enum: ['text', 'comparison', 'list'] },
-        },
-      },
-      scoring: {
-        type: 'object',
-        properties: {
-          mode: { type: 'string', enum: ['judge', 'group-vote', 'auto', 'llm-score'] },
-          rubric: { type: 'string' },
-          whoVotes: { type: 'string' },
-          dimensions: {
-            type: 'array',
-            items: { type: 'string', enum: ['correctness', 'cleverness', 'humor', 'bonus'] },
-          },
-          allowBonus: { type: 'boolean' },
-        },
-      },
-      factsToStore: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['targetPlayerId', 'category', 'question', 'answer', 'privacyLevel'],
-          properties: {
-            targetPlayerId: { type: 'string' },
-            category: {
-              type: 'string',
-              enum: ['observational', 'preference', 'behavioral', 'reasoning', 'hypothetical', 'estimation', 'values'],
-            },
-            question: { type: 'string' },
-            answer: { type: 'string' },
-            privacyLevel: { type: 'string', enum: ['private-until-act3', 'reveal-immediately'] },
-          },
-        },
-      },
-      safetyFlags: {
-        type: 'object',
-        required: ['contentAppropriate', 'ageAppropriate'],
-        properties: {
-          contentAppropriate: { type: 'boolean' },
-          ageAppropriate: { type: 'boolean' },
-          warningMessage: { type: 'string' },
-        },
-      },
-      meta: {
-        type: 'object',
-        properties: {
-          cartridgeId: { type: 'string' },
-          shouldEndAct: { type: 'boolean' },
-          suggestedNextActivePlayerId: { type: 'string' },
-        },
-      },
-    },
-  },
-};
 
 // ============================================================================
 // REQUEST HANDLER
@@ -220,39 +76,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call OpenAI with tools API (ensures JSON response)
+    // Call OpenAI GPT-5.2 with chat completions API
+    // Note: GPT-5.2 uses standard chat completions format
     const completion = await openai.chat.completions.create({
       model: LLM.MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      tools: [
-        {
-          type: 'function',
-          function: LLM_RESPONSE_SCHEMA,
-        },
-      ],
-      tool_choice: {
-        type: 'function',
-        function: { name: 'generate_game_content' },
-      },
       temperature: LLM.TEMPERATURE,
       max_tokens: LLM.MAX_RESPONSE_TOKENS,
       top_p: LLM.TOP_P,
       frequency_penalty: LLM.FREQUENCY_PENALTY,
       presence_penalty: LLM.PRESENCE_PENALTY,
+      response_format: { type: 'json_object' },
     });
 
-    // Extract tool call response
-    const toolCall = completion.choices[0]?.message?.tool_calls?.[0];
-
-    if (!toolCall || toolCall.type !== 'function' || !toolCall.function.arguments) {
-      throw new Error('No tool call in response');
+    // Parse JSON response from message content
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No content in response');
     }
 
-    // Parse JSON response
-    const response: LLMResponse = JSON.parse(toolCall.function.arguments);
+    const response: LLMResponse = JSON.parse(content);
 
     // Validate safety flags
     if (!response.safetyFlags.contentAppropriate || !response.safetyFlags.ageAppropriate) {
@@ -260,18 +106,33 @@ export async function POST(request: NextRequest) {
 
       // Use fallback safe content
       return NextResponse.json({
-        ...response,
+        nextState: 'ACT1_FACT_PROMPT_PRIVATE',
         screen: {
-          modality: 'private',
+          modality: 'text',
           title: 'Quick Question',
           body: "What's something fun you did recently?",
           instructions: 'Share your answer privately',
+          private: true,
         },
+        inputModule: {
+          type: 'textarea',
+          privateMode: true,
+          placeholder: 'Type your answer...',
+          maxLength: 200,
+        },
+        factsToStore: [{
+          targetPlayerId: body.activePlayerId || body.players[0].id,
+          category: 'preference',
+          question: "What's something fun you did recently?",
+          answer: '',
+          privacyLevel: 'private-until-act3',
+        }],
         safetyFlags: {
           contentAppropriate: true,
           ageAppropriate: true,
-          explanation: 'Using fallback safe content',
+          warningMessage: 'Using fallback safe content',
         },
+        meta: {},
       });
     }
 
@@ -320,18 +181,36 @@ function buildSystemPrompt(request: LLMRequest): string {
 Your role is to generate prompts, select mini-games, format reveals, and suggest scoring based on the current game state.
 
 CRITICAL RULES:
-1. ALWAYS respond with valid JSON matching the exact schema provided
-2. NEVER include extra prose, commentary, or text outside the JSON structure
-3. NEVER exceed the specified character limits (title: 60, body: 500, instructions: 100)
-4. Respect the safety mode: ${request.safetyMode}
-5. Keep content concise - this is a mobile game with limited screen space
-6. Make prompts clever and engaging, not random or generic
+1. ALWAYS respond with valid JSON only (no other text)
+2. Use this exact structure:
+{
+  "nextState": string (one of: ACT1_FACT_PROMPT_PRIVATE, ACT1_FACT_CONFIRM, ACT1_TRANSITION, ACT2_CARTRIDGE_ACTIVE, ACT2_TRANSITION, ACT3_FINAL_REVEAL, ACT3_HIGHLIGHTS, ACT3_TALLY, END),
+  "screen": {
+    "title": string (max 60 chars),
+    "body": string (max 500 chars),
+    "modality": "text" | "image" | "ascii",
+    "private": boolean,
+    "instructions": string (max 100 chars),
+    "imagePrompt": string (optional, for DALL-E)
+  },
+  "inputModule": object or null,
+  "factsToStore": array (for Act 1 only),
+  "safetyFlags": {
+    "contentAppropriate": boolean,
+    "ageAppropriate": boolean,
+    "warningMessage": string (optional)
+  },
+  "meta": object
+}
+3. Respect the safety mode: ${request.safetyMode}
+4. Keep content concise - this is a mobile game
+5. Make prompts clever and engaging, not generic
 
 SAFETY MODE: ${request.safetyMode}
 ${
   request.safetyMode === 'kid-safe'
-    ? '- Appropriate for ages 10-12\n- Mild humor only\n- No adult themes, violence, alcohol, drugs, dating, politics, or religion'
-    : '- Appropriate for ages 13+\n- Sophisticated humor allowed\n- No extreme violence or explicit content'
+    ? '- Appropriate for ages 10-12\n- Mild humor only\n- No adult themes'
+    : '- Appropriate for ages 13+\n- Sophisticated humor allowed'
 }
 
 CURRENT GAME STATE:

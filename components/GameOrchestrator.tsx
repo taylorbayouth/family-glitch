@@ -385,10 +385,10 @@ export function GameOrchestrator({
         });
       },
 
-      requestLLM: async (_request: any) => {
-        // For now, delegate to requestFactPrompt
-        // In the future, we'll have a more general LLM request handler
-        return requestFactPrompt(state, eventLog, setup.players, scores, setup.safetyMode);
+      requestLLM: async (request: any) => {
+        // Use the generic LLM request handler
+        const { requestLLM } = await import('@/lib/llmClient');
+        return requestLLM(request);
       },
     };
   }, [state, setup, factsDB, eventLog, scores]);
@@ -430,7 +430,24 @@ export function GameOrchestrator({
    */
   const handleCartridgeComplete = useCallback((result: CartridgeResult) => {
     if (!result.completed) {
-      console.warn('Cartridge did not complete successfully');
+      console.warn('Cartridge did not complete successfully, clearing and retrying');
+
+      // Clear the stuck cartridge
+      setCurrentCartridge(null);
+
+      // Check if we should end Act 2 or try another cartridge
+      if (!state || !setup) return;
+
+      const pacing = calculatePacing(state, eventLog, factsDB, setup.players);
+
+      if (pacing.shouldEndAct2) {
+        // End Act 2
+        handleStateTransition('ACT2_TRANSITION');
+      } else {
+        // Try to select a different cartridge
+        handleSelectCartridge();
+      }
+
       return;
     }
 

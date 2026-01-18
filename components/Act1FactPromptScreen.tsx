@@ -63,6 +63,7 @@ export function Act1FactPromptScreen({
   state,
   players,
   eventLog,
+  factsDB,
   scores,
   safetyMode,
   onSubmit,
@@ -94,7 +95,8 @@ export function Act1FactPromptScreen({
           eventLog,
           players,
           scores,
-          safetyMode
+          safetyMode,
+          factsDB
         );
 
         setLlmResponse(response);

@@ -163,13 +163,6 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
       if (isNaN(age) || age < 1 || age > 120) {
         errors.push(`Player ${index + 1} needs a valid age`);
       }
-
-      // Check minimum age (13+ for teen-adult mode)
-      if (age < 13) {
-        errors.push(
-          `Player ${index + 1} must be at least 13 years old`
-        );
-      }
     });
 
     // Check for duplicate names
@@ -261,28 +254,8 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
             <div className="space-y-6 mb-6">
               {players.map((player, index) => (
                 <div key={index} className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
-                  <div className="flex gap-3 items-start">
-                    {/* Avatar picker */}
-                    <div className="flex-shrink-0">
-                      <div className="relative group">
-                        <button
-                          type="button"
-                          className="w-16 h-16 text-4xl flex items-center justify-center bg-white border-2 border-neutral-300 rounded-full hover:border-indigo-400 transition-all"
-                          onClick={() => {
-                            const currentIndex = AVATAR_OPTIONS.indexOf(player.avatarId);
-                            const nextIndex = (currentIndex + 1) % AVATAR_OPTIONS.length;
-                            updatePlayer(index, 'avatarId', AVATAR_OPTIONS[nextIndex]);
-                          }}
-                        >
-                          {player.avatarId}
-                        </button>
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                          Click to change
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 space-y-2">
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="Name"
@@ -290,55 +263,68 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         onChange={(e) =>
                           updatePlayer(index, 'name', e.target.value)
                         }
-                        className="input"
+                        className="input flex-1"
                         maxLength={20}
                       />
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          placeholder="Age"
-                          value={player.age}
-                          onChange={(e) =>
-                            updatePlayer(index, 'age', e.target.value)
-                          }
-                          className="input w-20"
-                          min="1"
-                          max="120"
-                        />
-                        <select
-                          value={player.role}
-                          onChange={(e) =>
-                            updatePlayer(index, 'role', e.target.value as PlayerRole)
-                          }
-                          className="input flex-1"
-                        >
-                          <option value="mom">Mom</option>
-                          <option value="dad">Dad</option>
-                          <option value="daughter">Daughter</option>
-                          <option value="son">Son</option>
-                          <option value="brother">Brother</option>
-                          <option value="sister">Sister</option>
-                          <option value="grandma">Grandma</option>
-                          <option value="grandpa">Grandpa</option>
-                          <option value="aunt">Aunt</option>
-                          <option value="uncle">Uncle</option>
-                          <option value="cousin">Cousin</option>
-                          <option value="friend">Friend</option>
-                        </select>
-                      </div>
+                      <input
+                        type="number"
+                        placeholder="Age"
+                        value={player.age}
+                        onChange={(e) =>
+                          updatePlayer(index, 'age', e.target.value)
+                        }
+                        className="input w-20"
+                        min="1"
+                        max="120"
+                      />
                     </div>
-
-                    {/* Remove button */}
-                    {players.length > PLAYERS.MIN_COUNT && (
-                      <button
-                        onClick={() => removePlayer(index)}
-                        className="btn-ghost text-danger-500"
-                        title="Remove player"
+                    <div className="flex gap-2">
+                      <select
+                        value={player.avatarId}
+                        onChange={(e) =>
+                          updatePlayer(index, 'avatarId', e.target.value)
+                        }
+                        className="input w-20 text-2xl text-center"
                       >
-                        ✕
-                      </button>
-                    )}
+                        {AVATAR_OPTIONS.map((emoji) => (
+                          <option key={emoji} value={emoji}>
+                            {emoji}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={player.role}
+                        onChange={(e) =>
+                          updatePlayer(index, 'role', e.target.value as PlayerRole)
+                        }
+                        className="input flex-1"
+                      >
+                        <option value="mom">Mom</option>
+                        <option value="dad">Dad</option>
+                        <option value="daughter">Daughter</option>
+                        <option value="son">Son</option>
+                        <option value="brother">Brother</option>
+                        <option value="sister">Sister</option>
+                        <option value="grandma">Grandma</option>
+                        <option value="grandpa">Grandpa</option>
+                        <option value="aunt">Aunt</option>
+                        <option value="uncle">Uncle</option>
+                        <option value="cousin">Cousin</option>
+                        <option value="friend">Friend</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* Remove button */}
+                  {players.length > PLAYERS.MIN_COUNT && (
+                    <button
+                      onClick={() => removePlayer(index)}
+                      className="btn-ghost text-danger-500 mt-2"
+                      title="Remove player"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -372,7 +358,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
 
           {/* Footer */}
           <p className="text-center text-primary-100 text-sm mt-6">
-            15-20 minute game • Ages 13+ • Best with food and drinks
+            15-20 minute game • Best with food and drinks
           </p>
         </div>
       </div>
