@@ -33,6 +33,7 @@ import {
   CartridgeSelectionRequest,
   CartridgeSelectionResponse,
 } from '@/types/cartridge';
+import { EventLog, LLMResponse } from '@/types/game';
 import { triviaCartridge } from '@/components/cartridges/TriviaCartridge';
 import { wouldYouRatherCartridge } from '@/components/cartridges/WouldYouRatherCartridge';
 
@@ -276,16 +277,16 @@ function selectWithHeuristic(
 /**
  * Get recent cartridge IDs from event log
  */
-function getRecentCartridgeIds(eventLog: any, count: number): string[] {
+function getRecentCartridgeIds(eventLog: EventLog, count: number): string[] {
   // Find cartridge_started events
   const cartridgeEvents = eventLog.events.filter(
-    (e: any) => e.type === 'CARTRIDGE_STARTED'
+    (e) => e.type === 'CARTRIDGE_STARTED'
   );
 
   // Get last N
   return cartridgeEvents
     .slice(-count)
-    .map((e: any) => e.cartridgeId)
+    .map((e) => (e as any).cartridgeId) // Safe cast - we know these events have cartridgeId
     .filter(Boolean);
 }
 
@@ -296,7 +297,7 @@ function getRecentCartridgeIds(eventLog: any, count: number): string[] {
  * If parsing fails, we'll extract what we can.
  */
 function parseCartridgeSelection(
-  response: any
+  response: LLMResponse
 ): CartridgeSelectionResponse {
   try {
     // Expect response.screen.body to contain cartridge ID

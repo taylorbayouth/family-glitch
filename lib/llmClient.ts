@@ -17,7 +17,7 @@
  * - Type-safe requests and responses
  */
 
-import { LLMRequest, LLMResponse, GameState, EventLog, FactsDB, Player } from '@/types/game';
+import { LLMRequest, LLMResponse, GameState, EventLog, FactsDB, Player, SafetyMode } from '@/types/game';
 import { LLM } from '@/lib/constants';
 import { compactHistoryForLLM } from '@/lib/eventLog';
 import { getRelevantFactsForCartridge } from '@/lib/factsDB';
@@ -135,13 +135,15 @@ function sleep(ms: number): Promise<void> {
  * @param eventLog - Event history
  * @param players - All players
  * @param scores - Current scores
+ * @param safetyMode - Content safety level
  * @returns LLM response with prompt
  */
 export async function requestFactPrompt(
   state: GameState,
   eventLog: EventLog,
   players: Player[],
-  scores: Record<string, number>
+  scores: Record<string, number>,
+  safetyMode: SafetyMode
 ): Promise<LLMResponse> {
   const request: LLMRequest = {
     sessionId: state.sessionId,
@@ -157,7 +159,7 @@ export async function requestFactPrompt(
     act1FactCount: 0, // Will be calculated by caller
     act2RoundsCompleted: 0,
     requestType: 'next-prompt',
-    safetyMode: 'kid-safe', // TODO: Get from GameSetup
+    safetyMode,
   };
 
   return callLLM(request);

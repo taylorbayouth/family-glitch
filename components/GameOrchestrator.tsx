@@ -387,7 +387,7 @@ export function GameOrchestrator({
       requestLLM: async (_request: any) => {
         // For now, delegate to requestFactPrompt
         // In the future, we'll have a more general LLM request handler
-        return requestFactPrompt(state, eventLog, setup.players, scores);
+        return requestFactPrompt(state, eventLog, setup.players, scores, setup.safetyMode);
       },
     };
   }, [state, setup, factsDB, eventLog, scores]);

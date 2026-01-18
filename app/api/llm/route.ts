@@ -249,7 +249,22 @@ export async function POST(request: NextRequest) {
     // Validate safety flags
     if (!response.safetyFlags.contentAppropriate || !response.safetyFlags.ageAppropriate) {
       console.warn('Content flagged as inappropriate:', response.safetyFlags);
-      // In production, you might want to retry or use a fallback
+
+      // Use fallback safe content
+      return NextResponse.json({
+        ...response,
+        screen: {
+          modality: 'private',
+          title: 'Quick Question',
+          body: "What's something fun you did recently?",
+          instructions: 'Share your answer privately',
+        },
+        safetyFlags: {
+          contentAppropriate: true,
+          ageAppropriate: true,
+          explanation: 'Using fallback safe content',
+        },
+      });
     }
 
     // Log response for debugging
