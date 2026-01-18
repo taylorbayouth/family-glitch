@@ -251,11 +251,12 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
             <h2 className="text-2xl font-bold mb-6">Who's Playing?</h2>
 
             {/* Player inputs */}
-            <div className="space-y-6 mb-6">
+            <div className="space-y-4 mb-6">
               {players.map((player, index) => (
                 <div key={index} className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
+                  <div className="space-y-3">
+                    {/* Name and Age row */}
+                    <div className="flex gap-2 items-center">
                       <input
                         type="text"
                         placeholder="Name"
@@ -273,18 +274,20 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         onChange={(e) =>
                           updatePlayer(index, 'age', e.target.value)
                         }
-                        className="input w-20"
+                        className="input w-16 text-center"
                         min="1"
                         max="120"
                       />
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Avatar and Role row */}
+                    <div className="flex gap-2 items-center">
                       <select
                         value={player.avatarId}
                         onChange={(e) =>
                           updatePlayer(index, 'avatarId', e.target.value)
                         }
-                        className="input w-20 text-2xl text-center"
+                        className="input w-14 text-2xl text-center p-2"
                       >
                         {AVATAR_OPTIONS.map((emoji) => (
                           <option key={emoji} value={emoji}>
@@ -312,19 +315,18 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                         <option value="cousin">Cousin</option>
                         <option value="friend">Friend</option>
                       </select>
+                      {/* Remove button inline */}
+                      {players.length > PLAYERS.MIN_COUNT && (
+                        <button
+                          onClick={() => removePlayer(index)}
+                          className="btn-ghost text-danger-500 p-2"
+                          title="Remove player"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Remove button */}
-                  {players.length > PLAYERS.MIN_COUNT && (
-                    <button
-                      onClick={() => removePlayer(index)}
-                      className="btn-ghost text-danger-500 mt-2"
-                      title="Remove player"
-                    >
-                      ✕
-                    </button>
-                  )}
                 </div>
               ))}
             </div>

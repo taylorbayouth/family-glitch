@@ -13,7 +13,9 @@
       "Bash(vercel link:*)",
       "Bash(vercel env add:*)",
       "Bash(vercel env:*)",
-      "Bash(vercel --prod:*)"
+      "Bash(vercel --prod:*)",
+      "Bash(gh api:*)",
+      "Bash(ls:*)"
     ]
   }
 }
