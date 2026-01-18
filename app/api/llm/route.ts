@@ -220,15 +220,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call OpenAI with function calling (ensures JSON response)
+    // Call OpenAI with tools API (ensures JSON response)
     const completion = await openai.chat.completions.create({
       model: LLM.MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      functions: [LLM_RESPONSE_SCHEMA],
-      function_call: { name: 'generate_game_content' },
+      tools: [
+        {
+          type: 'function',
+          function: LLM_RESPONSE_SCHEMA,
+        },
+      ],
+      tool_choice: {
+        type: 'function',
+        function: { name: 'generate_game_content' },
+      },
       temperature: LLM.TEMPERATURE,
       max_tokens: LLM.MAX_RESPONSE_TOKENS,
       top_p: LLM.TOP_P,
@@ -236,15 +244,15 @@ export async function POST(request: NextRequest) {
       presence_penalty: LLM.PRESENCE_PENALTY,
     });
 
-    // Extract function call response
-    const functionCall = completion.choices[0]?.message?.function_call;
+    // Extract tool call response
+    const toolCall = completion.choices[0]?.message?.tool_calls?.[0];
 
-    if (!functionCall || !functionCall.arguments) {
-      throw new Error('No function call in response');
+    if (!toolCall || toolCall.type !== 'function' || !toolCall.function.arguments) {
+      throw new Error('No tool call in response');
     }
 
     // Parse JSON response
-    const response: LLMResponse = JSON.parse(functionCall.arguments);
+    const response: LLMResponse = JSON.parse(toolCall.function.arguments);
 
     // Validate safety flags
     if (!response.safetyFlags.contentAppropriate || !response.safetyFlags.ageAppropriate) {

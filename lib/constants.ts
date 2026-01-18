@@ -353,7 +353,7 @@ export const UI = {
  */
 export const LLM = {
   /** Model to use for generation */
-  MODEL: 'gpt-4o-mini' as const,
+  MODEL: 'gpt-5.2' as const,
 
   /** Temperature (0.0 = deterministic, 1.0 = creative) */
   TEMPERATURE: 0.7,

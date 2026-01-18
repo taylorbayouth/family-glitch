@@ -9,7 +9,11 @@
       "Bash(npm run build:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(vercel link:*)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel env:*)",
+      "Bash(vercel --prod:*)"
     ]
   }
 }
