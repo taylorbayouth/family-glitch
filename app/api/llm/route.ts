@@ -76,11 +76,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call OpenAI GPT-5.2 with chat completions API
-    // Note: GPT-5.2 uses standard chat completions format
-    const completion = await openai.chat.completions.create({
+    // Call OpenAI GPT-5.2 with responses API
+    // Note: GPT-5.2 uses responses.create() with 'input' instead of 'messages'
+    const completion = await (openai as any).responses.create({
       model: LLM.MODEL,
-      messages: [
+      input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
@@ -89,11 +89,10 @@ export async function POST(request: NextRequest) {
       top_p: LLM.TOP_P,
       frequency_penalty: LLM.FREQUENCY_PENALTY,
       presence_penalty: LLM.PRESENCE_PENALTY,
-      response_format: { type: 'json_object' },
     });
 
-    // Parse JSON response from message content
-    const content = completion.choices[0]?.message?.content;
+    // Parse JSON response from output_text
+    const content = completion.output_text;
     if (!content) {
       throw new Error('No content in response');
     }

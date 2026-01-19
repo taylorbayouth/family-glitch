@@ -179,12 +179,12 @@ else
 fi
 ```
 
-## GPT-5.2 API Notes
+## OpenAI API Notes
 
 ### Current Configuration
 - Model: `gpt-5.2`
-- API: Standard chat completions (not deprecated functions API)
-- Response Format: `{ type: 'json_object' }` for reliable JSON parsing
+- API: Uses `responses.create()` with `input` parameter (not the older `chat.completions` format)
+- Response Format: JSON enforced via system prompt instructions
 - Retries: 3 attempts with exponential backoff
 
 ### Common API Errors
