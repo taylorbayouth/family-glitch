@@ -14,3 +14,4 @@ export * from './types';
 export * from './eligibility';
 export * from './trivia-challenge';
 export * from './personality-match';
+export * from './madlibs-challenge';

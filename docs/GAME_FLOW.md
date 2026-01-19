@@ -41,9 +41,9 @@ Family Glitch uses a **pass-and-play** model where:
                      ▼
 ┌─────────────────────────────────────────────────────────┐
 │  4. AI COMMENTARY SCREEN                                │
-│  - Shows AI's witty 2-3 sentence response              │
+│  - Shows AI's witty 10-word max response               │
 │  - Points awarded (visible in header)                  │
-│  - Auto-transitions after 2 seconds                    │
+│  - Tap "Pass to Next Player" to continue               │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
@@ -68,18 +68,21 @@ components/
 │   └── index.tsx                 # TemplateRenderer
 └── mini-games/
     ├── TriviaChallengeUI.tsx     # Trivia challenge mini-game UI
+    ├── PersonalityMatchUI.tsx    # Personality match mini-game UI
     └── index.tsx                 # Mini-game exports
 
 lib/
 ├── ai/
 │   ├── game-master-prompt.ts    # System prompt with examples
-│   ├── template-tools.ts        # 7 tools for AI to call
+│   ├── template-tools.ts        # 8 tools for AI to call
 │   └── client.ts                # API communication
 ├── mini-games/
 │   ├── index.ts                 # Mini-game exports
 │   ├── eligibility.ts           # Turn eligibility for trivia
-│   └── trivia-challenge/
-│       └── prompt.ts            # Quizmaster AI prompt
+│   ├── trivia-challenge/
+│   │   └── prompt.ts            # Quizmaster AI prompt
+│   └── personality-match/
+│       └── prompt.ts            # Analyst AI prompt
 └── store/
     ├── player-store.ts          # Persistent player data
     └── game-store.ts            # Game state & turns
@@ -101,7 +104,7 @@ lib/
 - Expandable player cards
 - Minimum 3, maximum 7 players
 - Form validation
-- Avatar selection (20 emojis)
+- Avatar selection (14 image avatars)
 
 ---
 
@@ -207,10 +210,10 @@ AI chooses from:
 
 **What happens:**
 1. Player's response sent to AI
-2. AI generates 2-3 sentence witty commentary
+2. AI generates 10-word max witty commentary
 3. Commentary displayed with robot emoji
 4. Points awarded (10 base points)
-5. Auto-transitions after 2 seconds
+5. Player taps to pass to the next player
 
 **Commentary generation:**
 ```typescript
@@ -223,17 +226,12 @@ const handleResponse = async (response: any) => {
     ...messages,
     {
       role: 'user',
-      content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. Provide brief, witty commentary (2-3 sentences max).`
+      content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`
     }
   ]);
 
   setAiCommentary(aiResponse.text);
-
-  // Move to next player after 2 seconds
-  setTimeout(() => {
-    setPhase('pass');
-    loadQuestion(); // Preload for next player
-  }, 2000);
+  // Wait for player to tap "Pass to Next Player" before advancing
 };
 ```
 
@@ -316,7 +314,7 @@ buildGameMasterPrompt(players, gameState)
 
 ### Tool Calls
 
-AI has access to 7 tools:
+AI has access to 8 tools:
 1. `ask_for_text` - Detailed paragraphs
 2. `ask_for_list` - Multiple short answers
 3. `ask_binary_choice` - Timed this-or-that
@@ -324,12 +322,13 @@ AI has access to 7 tools:
 5. `ask_rating` - Scale ratings
 6. `ask_player_vote` - Vote for another player
 7. `trigger_trivia_challenge` - Mini-game (Act 2+ only)
+8. `trigger_personality_match` - Mini-game (Act 2+ only)
 
 **Tool selection is automatic** - AI chooses based on:
 - Question type
 - Context
 - Tool descriptions in schema
-- Current act (trivia only available in Act 2+)
+- Current act (mini-games only available in Act 2+)
 
 ---
 
@@ -503,6 +502,7 @@ isGameComplete = (currentRound >= totalRounds)
 ### Overview
 
 Mini-games add variety to the main question flow. They become available in **Act 2+** when there are enough completed turns to draw from.
+Mini-games count as a completed turn and advance round/progress.
 
 ### Trivia Challenge
 
@@ -526,10 +526,27 @@ Mini-games add variety to the main question flow. They become available in **Act
 - Celebrates high scores with genuine surprise
 - MAX 10 words commentary
 
+### Personality Match
+
+**What it does:** Have the current player select ALL words that describe another player.
+
+**Requirements:**
+- Game must be in Act 2 or later (33%+ complete)
+- At least 3 eligible turns from other players
+- AI decides when to trigger (roughly once every 4-5 turns)
+
+**Flow:**
+1. Game Master triggers `trigger_personality_match` tool
+2. Analyst AI (separate personality) scores the word selections
+3. Player earns 0-5 points with a 10-word max commentary
+4. Game continues to next player
+
 **Files:**
 - [lib/mini-games/eligibility.ts](../lib/mini-games/eligibility.ts) - Turn selection
 - [lib/mini-games/trivia-challenge/prompt.ts](../lib/mini-games/trivia-challenge/prompt.ts) - Quizmaster AI
+- [lib/mini-games/personality-match/prompt.ts](../lib/mini-games/personality-match/prompt.ts) - Analyst AI
 - [components/mini-games/TriviaChallengeUI.tsx](../components/mini-games/TriviaChallengeUI.tsx) - UI
+- [components/mini-games/PersonalityMatchUI.tsx](../components/mini-games/PersonalityMatchUI.tsx) - UI
 
 ---
 
@@ -538,7 +555,7 @@ Mini-games add variety to the main question flow. They become available in **Act
 - [x] Game progression tracking with acts
 - [x] Visual progress bar
 - [x] Game completion detection
-- [x] Mini-games system (Trivia Challenge)
+- [x] Mini-games system (Trivia + Personality Match)
 - [ ] End-game summary screen with winner announcement
 - [ ] Leaderboard screen
 - [ ] Share results feature

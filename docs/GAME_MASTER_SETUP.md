@@ -7,7 +7,7 @@ Complete guide for integrating the AI Game Master with the input template system
 The Family Glitch game uses a sophisticated AI system where ChatGPT acts as a "Game Master" that:
 1. Selects appropriate input templates using **tool calls**
 2. Receives player responses
-3. Provides witty, snarky commentary
+3. Provides witty, snarky commentary (max 10 words)
 4. Awards points and tracks game state
 
 ## System Architecture
@@ -198,15 +198,15 @@ const handlePlayerResponse = async (response: any) => {
   // Send to AI for commentary
   const followUpMessage = {
     role: 'user',
-    content: `${currentPlayer.name} responded: ${JSON.stringify(response)}`
+    content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`
   };
 
-  const aiCommentary = await sendChatRequest([
-    ...conversationHistory,
-    followUpMessage
-  ]);
+  const aiCommentary = await sendChatRequest(
+    [...conversationHistory, followUpMessage],
+    { toolChoice: 'none' }
+  );
 
-  // Display commentary and get next question
+  // Display commentary and request the next question separately
 };
 ```
 

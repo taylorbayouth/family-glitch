@@ -127,6 +127,27 @@ function checkPersonalityMatchEligibility(context: EligibilityContext): Eligibil
 }
 
 // ============================================================================
+// MADLIBS CHALLENGE ELIGIBILITY
+// ============================================================================
+
+function checkMadLibsEligibility(context: EligibilityContext): EligibilityResult {
+  const { currentAct } = context;
+
+  // Rule 1: Must be in Act 2 or 3
+  if (currentAct < 2) {
+    return {
+      eligible: false,
+      reason: 'Mad Libs unlocks in Act II',
+    };
+  }
+
+  // Mad Libs doesn't require other players' turns - it's standalone
+  return {
+    eligible: true,
+  };
+}
+
+// ============================================================================
 // MINI-GAME REGISTRY
 // ============================================================================
 
@@ -144,6 +165,13 @@ export const MINI_GAME_REGISTRY: Record<MiniGameType, MiniGameDefinition> = {
     description: 'Select all words that describe another player based on their responses',
     minAct: 2,
     checkEligibility: checkPersonalityMatchEligibility,
+  },
+  madlibs_challenge: {
+    type: 'madlibs_challenge',
+    name: 'Mad Libs Challenge',
+    description: 'Fill in the blanks with words starting with specific letters - scored for creativity',
+    minAct: 2,
+    checkEligibility: checkMadLibsEligibility,
   },
 };
 

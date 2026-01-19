@@ -66,7 +66,7 @@ const startGame = async () => {
   ];
 
   try {
-    const response = await sendChatRequest(newMessages);
+    const response = await sendChatRequest(newMessages, { toolChoice: 'required' });
 
     // Response contains template configuration
     const templateConfig = JSON.parse(response.text);
@@ -115,27 +115,21 @@ const handlePlayerResponse = async (response: any) => {
 
   completeTurn(currentTurnId, response);
 
-  // Send response to AI for commentary
+  // Send response to AI for commentary (no tools)
   const newMessages = [
     ...messages,
     {
       role: 'user',
-      content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. Provide your commentary and ask the next player a question.`
+      content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`
     }
   ];
 
   try {
-    const aiResponse = await sendChatRequest(newMessages);
+    const aiResponse = await sendChatRequest(newMessages, { toolChoice: 'none' });
 
-    // Parse AI response (could contain commentary + new template)
     setAiCommentary(aiResponse.text);
     setMessages([...newMessages, { role: 'assistant', content: aiResponse.text }]);
-
-    // Get next template if AI called another tool
-    if (aiResponse.toolCalls) {
-      const nextTemplate = JSON.parse(aiResponse.text);
-      setCurrentTemplate(nextTemplate);
-    }
+    // Request the next question separately (toolChoice: 'required') after advancing players
   } catch (error) {
     console.error('Failed to submit response:', error);
   } finally {
@@ -188,19 +182,25 @@ export default function GamePage() {
     setMessages([{ role: 'system', content: systemPrompt }]);
   }, []);
 
-  const startGame = async () => {
-    setIsLoading(true);
-
+  const loadQuestion = async (playerIndex: number) => {
     const newMessages = [
       ...messages,
-      { role: 'user', content: 'Start the game and ask the first player a question.' }
+      {
+        role: 'user',
+        content: `It's ${players[playerIndex]?.name}'s turn. Ask them ONE short, direct question.`
+      }
     ];
 
-    const response = await sendChatRequest(newMessages);
+    const response = await sendChatRequest(newMessages, { toolChoice: 'required' });
     const templateConfig = JSON.parse(response.text);
 
     setCurrentTemplate(templateConfig);
     setMessages([...newMessages, { role: 'assistant', content: response.text }]);
+  };
+
+  const startGame = async () => {
+    setIsLoading(true);
+    await loadQuestion(currentPlayerIndex);
     setIsLoading(false);
   };
 
@@ -217,19 +217,19 @@ export default function GamePage() {
       ...messages,
       {
         role: 'user',
-        content: `${currentPlayer.name} responded: ${JSON.stringify(response)}`
+        content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`
       }
     ];
 
-    const aiResponse = await sendChatRequest(newMessages);
+    const aiResponse = await sendChatRequest(newMessages, { toolChoice: 'none' });
     setAiCommentary(aiResponse.text);
 
     // Next player
-    setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
+    const nextIndex = (currentPlayerIndex + 1) % players.length;
+    setCurrentPlayerIndex(nextIndex);
 
-    // Get next question
-    const nextTemplate = JSON.parse(aiResponse.text);
-    setCurrentTemplate(nextTemplate);
+    // Get next question separately (tool call required)
+    await loadQuestion(nextIndex);
 
     setMessages([...newMessages, { role: 'assistant', content: aiResponse.text }]);
     setIsLoading(false);
@@ -295,14 +295,14 @@ export default function GamePage() {
 
 2. **Navigate to game page:**
    ```
-   http://localhost:3000/game
+   http://localhost:3000/play
    ```
 
 3. **Click "Start Game"**
 
 4. **Answer the AI's question**
 
-5. **See commentary and next question**
+5. **See commentary, then load the next question**
 
 ## What's Happening Behind the Scenes
 
@@ -313,10 +313,12 @@ export default function GamePage() {
 5. **React renders** the appropriate template component
 6. **Player submits** their answer
 7. **Response stored** in game state
-8. **AI receives** player response
-9. **AI generates** witty commentary
-10. **AI calls** next template tool
-11. **Repeat** steps 5-10
+8. **AI receives** player response (commentary only, no tools)
+9. **AI generates** 10-word max commentary
+10. **Player taps** to continue to the next turn
+11. **App requests** the next question (tool calls required)
+12. **AI calls** next template tool
+13. **Repeat** steps 5-12
 
 ## Next Steps
 

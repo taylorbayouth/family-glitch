@@ -8,13 +8,13 @@ import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
 import { GameProgressBar } from '@/components/GameProgressBar';
-import { TriviaChallengeUI, PersonalityMatchUI } from '@/components/mini-games';
+import { TriviaChallengeUI, PersonalityMatchUI, MadLibsUI } from '@/components/mini-games';
 import { getEligibleTurnsForPlayer, selectTurnForTrivia } from '@/lib/mini-games';
 import type { ChatMessage } from '@/lib/ai/types';
 import type { Turn } from '@/lib/types/game-state';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
-type GamePhase = 'pass' | 'question' | 'loading' | 'trivia' | 'personality_match';
+type GamePhase = 'pass' | 'question' | 'loading' | 'trivia' | 'personality_match' | 'madlibs';
 
 /**
  * Main Game Play Page
@@ -28,7 +28,7 @@ type GamePhase = 'pass' | 'question' | 'loading' | 'trivia' | 'personality_match
  */
 export default function PlayPage() {
   const router = useRouter();
-  const { players } = usePlayerStore();
+  const { players, hasHydrated } = usePlayerStore();
   const {
     gameId,
     turns,
@@ -71,6 +71,11 @@ export default function PlayPage() {
 
   // Initialize game
   useEffect(() => {
+    // Wait for Zustand to hydrate from localStorage
+    if (!hasHydrated) {
+      return;
+    }
+
     if (players.length === 0) {
       router.push('/setup');
       return;
@@ -95,20 +100,23 @@ export default function PlayPage() {
     loadQuestion().then(() => {
       setPhase('pass');
     });
-  }, []);
+  }, [hasHydrated]);
 
   /**
    * Load a question from the AI
    * This happens during the "pass" phase to preload
    */
-  const loadQuestion = async () => {
+  const loadQuestion = async (playerIndex?: number) => {
     setIsLoadingQuestion(true);
     setError(null);
 
     try {
+      // Use provided index or fall back to current state
+      const targetPlayer = players[playerIndex ?? currentPlayerIndex];
+
       // Calculate eligible turns for trivia challenges
-      const eligibleTurns = currentPlayer
-        ? getEligibleTurnsForPlayer(turns, currentPlayer.id)
+      const eligibleTurns = targetPlayer
+        ? getEligibleTurnsForPlayer(turns, targetPlayer.id)
         : [];
 
       // Create a summary of eligible turns for the prompt
@@ -124,7 +132,7 @@ export default function PlayPage() {
       const systemPrompt = buildGameMasterPrompt(
         players,
         { gameId, turns, scores, status: 'playing' },
-        { currentPlayerId: currentPlayer?.id, triviaEligibleTurns }
+        { currentPlayerId: targetPlayer?.id, triviaEligibleTurns }
       );
 
       const newMessages: ChatMessage[] = [
@@ -132,7 +140,7 @@ export default function PlayPage() {
         ...messages.slice(1), // Keep conversation history, replace system prompt
         {
           role: 'user',
-          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them ONE short, direct question.
+          content: `It's ${targetPlayer?.name || 'the player'}'s turn. Ask them ONE short, direct question.
 
 CRITICAL RULES:
 1. NO player names in the question text
@@ -185,6 +193,13 @@ CRITICAL RULES:
         console.warn('Personality match requested but no valid subject player found');
       }
 
+      // Check if this is a Mad Libs challenge
+      if (templateConfig.templateType === 'madlibs_challenge') {
+        setCurrentTemplate(templateConfig);
+        setMessages([...newMessages, { role: 'assistant', content: response.text }]);
+        return; // Don't create a regular turn for Mad Libs
+      }
+
       // Sanitize prompt - remove player names if AI ignored instructions
       let sanitizedPrompt = templateConfig.prompt;
       players.forEach(player => {
@@ -196,8 +211,8 @@ CRITICAL RULES:
 
       // Create turn in game state and get the generated turnId
       const turnId = addTurn({
-        playerId: currentPlayer.id,
-        playerName: currentPlayer.name,
+        playerId: targetPlayer.id,
+        playerName: targetPlayer.name,
         templateType: templateConfig.templateType,
         prompt: templateConfig.prompt,
         templateParams: templateConfig.params,
@@ -223,6 +238,8 @@ CRITICAL RULES:
       setPhase('trivia');
     } else if (currentTemplate?.templateType === 'personality_match' && personalityMatchSubject) {
       setPhase('personality_match');
+    } else if (currentTemplate?.templateType === 'madlibs_challenge') {
+      setPhase('madlibs');
     } else {
       setPhase('question');
     }
@@ -246,6 +263,15 @@ CRITICAL RULES:
     setPhase('loading');
     setAiCommentary(result.commentary);
     setPersonalityMatchSubject(null);
+    setCurrentTemplate(null);
+  };
+
+  /**
+   * Handle Mad Libs challenge completion
+   */
+  const handleMadLibsComplete = (result: MiniGameResult) => {
+    setPhase('loading');
+    setAiCommentary(result.commentary);
     setCurrentTemplate(null);
   };
 
@@ -315,8 +341,8 @@ CRITICAL RULES:
     setAiCommentary('');
     setPhase('pass');
 
-    // Preload next question while showing pass screen
-    loadQuestion();
+    // Preload next question while showing pass screen, passing the nextIndex explicitly
+    loadQuestion(nextIndex);
   };
 
   // Error state
@@ -497,6 +523,26 @@ CRITICAL RULES:
         />
       );
     }
+  }
+
+  // Mad Libs challenge screen
+  if (phase === 'madlibs' && currentPlayer) {
+    return (
+      <MadLibsUI
+        targetPlayer={{
+          id: currentPlayer.id,
+          name: currentPlayer.name,
+          role: currentPlayer.role,
+        }}
+        allPlayers={players.map(p => ({ id: p.id, name: p.name, role: p.role }))}
+        onComplete={handleMadLibsComplete}
+        onSkip={() => {
+          // Skip Mad Libs and move to next player
+          setCurrentTemplate(null);
+          handleContinueToNext();
+        }}
+      />
+    );
   }
 
   return null;

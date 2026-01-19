@@ -11,8 +11,8 @@ A complete, production-ready game flow for Family Glitch with AI-powered questio
 - ✅ "Pass to Player" privacy screens between turns
 - ✅ Slide-to-unlock mechanism for revealing questions
 - ✅ Question screens with dynamic templates
-- ✅ AI commentary between turns
-- ✅ Automatic turn rotation
+- ✅ AI commentary between turns (max 10 words)
+- ✅ Turn rotation via "Pass to next player" button
 
 ### 2. Question Preloading (Performance)
 - ✅ Questions load **during** pass screen (zero wait time)
@@ -23,7 +23,7 @@ A complete, production-ready game flow for Family Glitch with AI-powered questio
 - ✅ Snarky, witty personality
 - ✅ Dynamic question generation (never repeats)
 - ✅ Uses all 6 input templates appropriately
-- ✅ Provides commentary after each response
+- ✅ Provides commentary after each response (max 10 words)
 - ✅ Aware of player context (names, roles, ages)
 - ✅ Builds on previous responses for continuity
 
@@ -201,7 +201,7 @@ Edit [lib/ai/game-master-prompt.ts](../lib/ai/game-master-prompt.ts):
 
 ### Adjust Timing
 Edit [app/play/page.tsx](../app/play/page.tsx):
-- Commentary display duration (line ~260: `setTimeout(..., 2000)`)
+- Commentary screen behavior (manual pass button text/placement)
 - Slide sensitivity
 - Loading timeouts
 

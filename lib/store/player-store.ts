@@ -28,11 +28,15 @@ interface PlayerState {
   // Player roster (persistent across games)
   players: Player[];
 
+  // Hydration flag
+  hasHydrated: boolean;
+
   // Actions
   addPlayer: (player: Omit<Player, 'id'>) => void;
   updatePlayer: (id: string, updates: Partial<Omit<Player, 'id'>>) => void;
   removePlayer: (id: string) => void;
   clearAllPlayers: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -40,6 +44,7 @@ export const usePlayerStore = create<PlayerState>()(
     (set) => ({
       // Initial state: 3 empty player slots
       players: [],
+      hasHydrated: false,
 
       // Actions
       addPlayer: (player) =>
@@ -63,10 +68,18 @@ export const usePlayerStore = create<PlayerState>()(
         set({
           players: [],
         }),
+
+      setHasHydrated: (state) =>
+        set({
+          hasHydrated: state,
+        }),
     }),
     {
       name: 'family-glitch-players', // Separate localStorage key
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

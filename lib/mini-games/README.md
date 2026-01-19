@@ -14,6 +14,8 @@ Mini-games are **different from input templates**:
 | Scoring | Points for participation | Performance-based (0-5) |
 | Eligibility | Always available | Act/context restrictions |
 
+Mini-games count as a completed turn and advance round/progress.
+
 ## Architecture
 
 ```
@@ -24,17 +26,23 @@ lib/mini-games/
 ├── trivia-challenge/
 │   ├── index.ts                # Core logic
 │   └── prompt.ts               # AI prompt for The Quizmaster
+├── personality-match/
+│   ├── index.ts                # Core logic
+│   └── prompt.ts               # AI prompt for The Analyst
 └── README.md                   # This file
 
 lib/store/
-└── facts-store.ts              # Learned facts database
+└── facts-store.ts              # Unused (turns array is source of truth)
 
 components/mini-games/
 ├── index.ts                    # Component exports
-└── TriviaChallengeUI.tsx       # Trivia challenge UI
+├── TriviaChallengeUI.tsx       # Trivia challenge UI
+└── PersonalityMatchUI.tsx      # Personality match UI
 ```
 
 ## Learned Facts
+
+**Note:** Current implementation uses the turns array directly. The Learned Facts store below is a planned/roadmap design.
 
 During Act I, the AI asks questions to collect information. This information is stored as "Learned Facts":
 
@@ -105,7 +113,7 @@ buildTriviaChallengePrompt({
 - Sharp and quick-witted
 - Playfully mocks low scores
 - Celebrates high scores with surprise
-- Keeps commentary to 1-2 sentences
+- Keeps commentary to 10 words max
 
 ### Scoring Guide
 
@@ -117,6 +125,29 @@ buildTriviaChallengePrompt({
 | 2 | In the ballpark, missing key elements |
 | 1 | Showed effort but way off |
 | 0 | Completely wrong or didn't try |
+
+## Personality Match
+
+The second mini-game: test how well players can describe each other with personality words.
+
+### Rules
+
+1. **Eligibility**: Only in Act II or Act III
+2. **Source Restriction**: Can't ask a player about their OWN personality
+3. **Scoring**: 0-5 points based on how well the words match
+
+### Flow
+
+1. Game Master triggers `trigger_personality_match`
+2. Player selects words for another player
+3. Analyst AI scores (0-5) with short commentary
+4. Store updates player score in real-time
+
+### Analyst Traits
+
+- Insightful and witty
+- Calls out obvious misses playfully
+- Keeps commentary to 10 words max
 
 ## Usage Example
 

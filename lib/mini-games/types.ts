@@ -19,7 +19,7 @@ import type { Turn } from '@/lib/types/game-state';
 // MINI-GAME TYPES (extensible)
 // ============================================================================
 
-export type MiniGameType = 'trivia_challenge' | 'personality_match';
+export type MiniGameType = 'trivia_challenge' | 'personality_match' | 'madlibs_challenge';
 
 export type MiniGameStatus =
   | 'intro'       // Showing challenge intro
@@ -142,8 +142,49 @@ export interface PersonalityMatchSession {
   startedAt: string;
 }
 
+// ============================================================================
+// MADLIBS CHALLENGE SPECIFIC
+// ============================================================================
+
+/**
+ * A blank in the Mad Libs sentence
+ */
+export interface MadLibsBlank {
+  /** Position in the sentence (0-indexed) */
+  index: number;
+  /** The letter the word must start with */
+  letter: string;
+  /** Player's filled word (set during play) */
+  filledWord?: string;
+}
+
+/**
+ * Mad Libs Challenge: AI provides a sentence with blanks, player fills with words
+ * starting with assigned letters. AI scores for creativity/humor.
+ */
+export interface MadLibsChallengeContext extends MiniGameContext {
+  /** The sentence template with ___ for blanks */
+  sentenceTemplate: string;
+  /** The blanks to fill */
+  blanks: MadLibsBlank[];
+}
+
+export interface MadLibsChallengeSession {
+  sessionId: string;
+  gameType: 'madlibs_challenge';
+  targetPlayerId: string;
+  targetPlayerName: string;
+  status: MiniGameStatus;
+  sentenceTemplate: string;
+  blanks: MadLibsBlank[];
+  filledSentence?: string;
+  score?: number;
+  scoreCommentary?: string;
+  startedAt: string;
+}
+
 // Union type for all mini-game sessions (extensible)
-export type MiniGameSession = TriviaChallengeSession | PersonalityMatchSession;
+export type MiniGameSession = TriviaChallengeSession | PersonalityMatchSession | MadLibsChallengeSession;
 
 // ============================================================================
 // ELIGIBILITY

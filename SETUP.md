@@ -18,7 +18,7 @@ A global navigation menu that appears for logged-in users with:
 **File:** `lib/store/player-store.ts`
 
 Separate store for player roster that persists across games:
-- Stores: name, role, age, avatar (1-20)
+- Stores: name, role, age, avatar (1-14)
 - Actions: addPlayer, updatePlayer, removePlayer, clearAllPlayers
 - localStorage key: `family-glitch-players`
 - **Never cleared** when starting a new game
@@ -40,7 +40,7 @@ Beautiful player configuration interface:
   - Name (required)
   - Role (13 options: Dad, Mom, Son, Daughter, etc.)
   - Age (required, 1-120)
-  - Avatar (select from 20 emoji options)
+  - Avatar (select from 14 image options)
 - Features:
   - Add/remove players dynamically
   - Form validation with error messages
@@ -106,12 +106,7 @@ All components use the Digital Noir color palette:
 
 ## Next Steps
 
-The setup page currently redirects to `/chat` after completion. You'll want to:
-1. Create the actual game start page
-2. Update line 157 in `app/setup/page.tsx`:
-   ```typescript
-   router.push('/game'); // Replace with your game route
-   ```
+The setup page redirects to `/play` after completion. If you change the gameplay route, update the redirect in `app/setup/page.tsx`.
 
 ## Testing
 
