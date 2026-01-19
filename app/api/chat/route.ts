@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { toolRegistry } from '@/lib/ai/tools';
 import { mergeConfig, validateApiKey } from '@/lib/ai/config';
-import type { ChatRequest, ChatResponse, ResponsesAPIInput } from '@/lib/ai/types';
+import type { ChatRequest, ChatResponse } from '@/lib/ai/types';
 
 export const runtime = 'nodejs'; // Required for tool execution + SDK
 
@@ -16,31 +16,38 @@ try {
 }
 
 /**
- * Convert chat messages to Responses API format
+ * Convert chat messages to OpenAI format
  */
-function toResponsesAPIFormat(messages: ChatRequest['messages']): ResponsesAPIInput[] {
+function toChatCompletionMessages(
+  messages: ChatRequest['messages']
+): OpenAI.Chat.ChatCompletionMessageParam[] {
   return messages.map(msg => {
     if (msg.role === 'tool') {
       return {
-        role: 'tool',
-        content: [
-          {
-            type: 'tool_result',
-            tool_call_id: msg.tool_call_id || '',
-            output: msg.content,
+        role: 'tool' as const,
+        tool_call_id: msg.tool_call_id || '',
+        content: msg.content,
+      };
+    }
+
+    if (msg.role === 'assistant' && msg.tool_calls) {
+      return {
+        role: 'assistant' as const,
+        content: msg.content,
+        tool_calls: msg.tool_calls.map(tc => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.name,
+            arguments: tc.arguments,
           },
-        ],
+        })),
       };
     }
 
     return {
       role: msg.role as 'user' | 'assistant' | 'system',
-      content: [
-        {
-          type: msg.role === 'assistant' ? 'output_text' : 'input_text',
-          text: msg.content,
-        },
-      ],
+      content: msg.content,
     };
   });
 }
@@ -71,12 +78,23 @@ export async function POST(req: NextRequest) {
     const config = mergeConfig(userConfig);
 
     // Get tool definitions
-    const tools = config.tools.length > 0
+    const toolDefs = config.tools.length > 0
       ? toolRegistry.getDefinitions(config.tools)
       : toolRegistry.getDefinitions();
 
-    // Convert messages to Responses API format
-    let input = toResponsesAPIFormat(messages);
+    // Convert to OpenAI tools format
+    const tools: OpenAI.Chat.ChatCompletionTool[] = toolDefs.map(def => ({
+      type: 'function' as const,
+      function: {
+        name: def.name,
+        description: def.description,
+        parameters: def.parameters,
+        strict: true,
+      },
+    }));
+
+    // Convert messages to OpenAI format
+    let chatMessages = toChatCompletionMessages(messages);
 
     // Tool execution loop
     let iterations = 0;
@@ -85,75 +103,62 @@ export async function POST(req: NextRequest) {
     while (iterations < MAX_ITERATIONS) {
       iterations++;
 
-      // Call OpenAI Responses API
-      const response = await openai.responses.create({
+      // Call OpenAI Chat Completions API
+      const response = await openai.chat.completions.create({
         model: config.model,
-        input,
+        messages: chatMessages,
         tools: tools.length > 0 ? tools : undefined,
-        // Optional: reasoning effort for GPT-5.2
-        ...(config.reasoningEffort && {
-          reasoning: { effort: config.reasoningEffort },
-        }),
+        temperature: config.temperature,
+        max_tokens: config.maxTokens,
       });
 
-      // Extract tool calls from response
-      const toolCalls = response.output?.filter(
-        (o: any) => o.type === 'tool_call'
-      ) ?? [];
+      const choice = response.choices[0];
+      const message = choice.message;
 
       // If no tool calls, return the final text
-      if (toolCalls.length === 0) {
-        const textParts = response.output
-          ?.filter((o: any) => o.type === 'message')
-          ?.flatMap((m: any) => m.content)
-          ?.filter((c: any) => c.type === 'output_text')
-          ?.map((c: any) => c.text) ?? [];
-
+      if (!message.tool_calls || message.tool_calls.length === 0) {
         const result: ChatResponse = {
-          text: textParts.join(''),
+          text: message.content || '',
           usage: response.usage,
         };
 
         return NextResponse.json(result);
       }
 
-      // Execute tool calls and add results to input
-      for (const call of toolCalls) {
+      // Add assistant message with tool calls to history
+      chatMessages.push({
+        role: 'assistant',
+        content: message.content || '',
+        tool_calls: message.tool_calls,
+      });
+
+      // Execute tool calls and add results
+      for (const toolCall of message.tool_calls) {
         try {
-          // Parse arguments
-          const args = call.arguments ? JSON.parse(call.arguments) : {};
+          const functionName = toolCall.function.name;
+          const args = JSON.parse(toolCall.function.arguments);
 
           // Execute tool
-          const result = await toolRegistry.execute(call.name, args);
+          const result = await toolRegistry.execute(functionName, args);
 
-          // Add tool result to input
-          input.push({
+          // Add tool result to messages
+          chatMessages.push({
             role: 'tool',
-            content: [
-              {
-                type: 'tool_result',
-                tool_call_id: call.id,
-                output: JSON.stringify(result),
-              },
-            ],
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(result),
           });
 
-          console.log(`Executed tool: ${call.name}`, { args, result });
+          console.log(`Executed tool: ${functionName}`, { args, result });
         } catch (error) {
-          console.error(`Tool execution failed: ${call.name}`, error);
+          console.error(`Tool execution failed: ${toolCall.function.name}`, error);
 
           // Send error as tool result
-          input.push({
+          chatMessages.push({
             role: 'tool',
-            content: [
-              {
-                type: 'tool_result',
-                tool_call_id: call.id,
-                output: JSON.stringify({
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                }),
-              },
-            ],
+            tool_call_id: toolCall.id,
+            content: JSON.stringify({
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }),
           });
         }
       }
