@@ -17,6 +17,9 @@ export const DEFAULT_CONFIG: Required<AIRequestConfig> = {
  */
 export const MODELS = {
   GPT_5_2: 'gpt-5.2',
+  GPT_5_2_INSTANT: 'gpt-5.2-instant',
+  GPT_5_2_THINKING: 'gpt-5.2-thinking',
+  GPT_5_2_PRO: 'gpt-5.2-pro',
   GPT_4_TURBO: 'gpt-4-turbo',
   GPT_4: 'gpt-4',
 } as const;

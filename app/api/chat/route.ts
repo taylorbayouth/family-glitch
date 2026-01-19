@@ -89,7 +89,6 @@ export async function POST(req: NextRequest) {
         name: def.name,
         description: def.description,
         parameters: def.parameters,
-        strict: true,
       },
     }));
 
@@ -109,7 +108,7 @@ export async function POST(req: NextRequest) {
         messages: chatMessages,
         tools: tools.length > 0 ? tools : undefined,
         temperature: config.temperature,
-        max_tokens: config.maxTokens,
+        max_completion_tokens: config.maxTokens,
       });
 
       const choice = response.choices[0];
