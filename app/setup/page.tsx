@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore, useHydration, type PlayerRole } from '@/lib/store';
 import { useRouter } from 'next/navigation';
@@ -28,30 +28,37 @@ export default function SetupPage() {
   const { players, addPlayer, updatePlayer, removePlayer } = usePlayerStore();
   const router = useRouter();
 
-  const [playerForms, setPlayerForms] = useState<PlayerFormData[]>(() => {
-    if (players.length > 0) {
-      return players.map((p, i) => ({
-        id: p.id,
-        name: p.name,
-        role: p.role,
-        age: p.age.toString(),
-        avatar: p.avatar,
-        isExpanded: i === 0,
-      }));
-    }
-    return Array.from({ length: 3 }, (_, i) => ({
-      id: crypto.randomUUID(),
-      name: '',
-      role: 'Friend' as PlayerRole,
-      age: '',
-      avatar: Math.floor(Math.random() * AVATAR_COUNT) + 1,
-      isExpanded: i === 0,
-    }));
-  });
-
+  const [playerForms, setPlayerForms] = useState<PlayerFormData[]>([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  if (!hasHydrated) {
+  // Sync form state with store after hydration
+  useEffect(() => {
+    if (hasHydrated && !hasInitialized) {
+      if (players.length > 0) {
+        setPlayerForms(players.map((p, i) => ({
+          id: p.id,
+          name: p.name,
+          role: p.role,
+          age: p.age.toString(),
+          avatar: p.avatar,
+          isExpanded: i === 0,
+        })));
+      } else {
+        setPlayerForms(Array.from({ length: 3 }, (_, i) => ({
+          id: crypto.randomUUID(),
+          name: '',
+          role: 'Friend' as PlayerRole,
+          age: '',
+          avatar: Math.floor(Math.random() * AVATAR_COUNT) + 1,
+          isExpanded: i === 0,
+        })));
+      }
+      setHasInitialized(true);
+    }
+  }, [hasHydrated, hasInitialized, players]);
+
+  if (!hasHydrated || !hasInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-void">
         <div className="text-frost font-mono text-sm animate-pulse">Loading...</div>

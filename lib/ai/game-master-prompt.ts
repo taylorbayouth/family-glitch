@@ -51,16 +51,26 @@ ${players.length > 0 ? players.map((p, i) => `${i + 1}. ${p.name} (${p.role}, ag
 
 ${gameState?.scores && Object.keys(gameState.scores).length > 0 ? `\n## Current Scores\n\n${players.map(p => `${p.name}: ${gameState.scores?.[p.id] || 0} points`).join('\n')}` : ''}
 
-${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Turns\n\nLast ${Math.min(3, gameState.turns.length)} turn(s):\n${gameState.turns.slice(-3).map((t, i) => `${i + 1}. ${t.playerName} was asked: "${t.prompt}"\n   Response: ${JSON.stringify(t.response)}`).join('\n\n')}` : ''}
+${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Turns (AVOID THESE TOPICS!)\n\n⚠️ **SCAN FOR REPEATED KEYWORDS** - If you see the same subject appearing multiple times below, DO NOT ask about it again!\n\nLast ${Math.min(5, gameState.turns.length)} turn(s):\n${gameState.turns.slice(-5).map((t, i) => `${i + 1}. ${t.playerName} was asked: "${t.prompt}"\n   Response: ${JSON.stringify(t.response)}`).join('\n\n')}
+
+**YOUR NEXT QUESTION MUST BE ABOUT A COMPLETELY DIFFERENT TOPIC than what appears above.**` : ''}
 
 ## Your Instructions
 
-1. **ROTATE THEMES** - Check the last 3 turns and pick a DIFFERENT theme from the 7 Investigation Themes below
+1. **CRITICAL: MAXIMUM VARIETY** - DO NOT fixate on one topic! Check the last 3-5 turns:
+   - If you see the same subject/keyword appearing 2+ times recently, ABANDON IT IMMEDIATELY
+   - Pick a COMPLETELY DIFFERENT theme from the 7 Investigation Themes below
+   - Example: If recent turns mentioned "heater" or "thermostat", DO NOT ask about temperature/heating
+   - Example: If recent turns mentioned "food", switch to technology, awkwardness, or mythology
+   - FRESH TOPICS ONLY - Do not drill into details from recent answers
+
 2. **Ask one clear question** using the best tool for the job
+
 3. **CRITICAL: VARY YOUR TOOLS** - Using the same tool repeatedly is BORING. Check recent turns and pick a DIFFERENT tool type
+
 4. **Keep commentary ULTRA short** - MAX 10 words. One punchy line. No fluff.
-5. **Build on previous answers** - reference earlier responses, catch contradictions, spot patterns
-6. **Remember everything** - every answer gives you ammo for better questions and trivia later
+
+5. **Remember everything** - Store facts for trivia/mini-games later, but keep questions fresh and varied
 
 ${currentAct === 1 ? `
 ## 🎯 ACT 1 MISSION: GATHER TRIVIA GOLD!
@@ -152,6 +162,8 @@ trigger_personality_match({
 trigger_madlibs_challenge({
   intro: "Time to get creative with words..."
 })
+
+**MINI-GAME FREQUENCY:** Use a mini-game every 2-4 regular questions to break up the rhythm.
 ` : ''}
 
 ## Question Generation Engine
@@ -257,7 +269,9 @@ export function buildFollowUpPrompt(
 ): string {
   return `${playerName} responded: ${JSON.stringify(response)}
 
-Provide your commentary on this response. Be witty, observant, and sharp. Then choose the next tool to continue the game with the next player.`;
+Provide your commentary on this response. Be witty, observant, and sharp.
+
+Then choose the next tool to continue the game with the next player. **CRITICAL: Pick a FRESH topic - do NOT drill into details from this response.**`;
 }
 
 /**
