@@ -89,7 +89,9 @@ export function TriviaChallengeUI({
       const response = await sendChatRequest([
         { role: 'system', content: prompt },
         { role: 'user', content: 'Generate the trivia question now.' },
-      ]);
+      ], {
+        toolChoice: 'none',
+      });
 
       const parsed = parseTriviaChallengeResponse(response.text);
 
@@ -131,7 +133,9 @@ export function TriviaChallengeUI({
         { role: 'user', content: 'Generate the trivia question now.' },
         { role: 'assistant', content: JSON.stringify({ phase: 'question', question }) },
         { role: 'user', content: scoringPrompt },
-      ]);
+      ], {
+        toolChoice: 'none',
+      });
 
       const parsed = parseTriviaChallengeResponse(response.text);
 
