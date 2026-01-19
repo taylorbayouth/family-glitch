@@ -173,6 +173,7 @@ export async function POST(req: NextRequest) {
         'ask_rating',
         'ask_player_vote',
         'trigger_trivia_challenge',
+        'trigger_personality_match',
       ];
 
       for (const toolCall of message.tool_calls) {

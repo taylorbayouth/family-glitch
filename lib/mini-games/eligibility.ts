@@ -87,6 +87,46 @@ function checkTriviaChallengeEligibility(context: EligibilityContext): Eligibili
 }
 
 // ============================================================================
+// PERSONALITY MATCH ELIGIBILITY
+// ============================================================================
+
+function checkPersonalityMatchEligibility(context: EligibilityContext): EligibilityResult {
+  const { currentAct, currentPlayerId, turns } = context;
+
+  // Rule 1: Must be in Act 2 or 3
+  if (currentAct < 2) {
+    return {
+      eligible: false,
+      reason: 'Personality match unlocks in Act II',
+    };
+  }
+
+  // Rule 2: Must have completed turns from OTHER players
+  const eligibleTurns = getEligibleTurnsForPlayer(turns, currentPlayerId);
+
+  if (eligibleTurns.length === 0) {
+    return {
+      eligible: false,
+      reason: 'Need answers from other players first',
+    };
+  }
+
+  // Rule 3: Should have at least 3 eligible turns for meaningful scoring
+  if (eligibleTurns.length < 3) {
+    return {
+      eligible: false,
+      reason: 'Building knowledge... need more answers first',
+      eligibleTurns,
+    };
+  }
+
+  return {
+    eligible: true,
+    eligibleTurns,
+  };
+}
+
+// ============================================================================
 // MINI-GAME REGISTRY
 // ============================================================================
 
@@ -97,6 +137,13 @@ export const MINI_GAME_REGISTRY: Record<MiniGameType, MiniGameDefinition> = {
     description: 'Test how well you know your family based on their previous answers',
     minAct: 2,
     checkEligibility: checkTriviaChallengeEligibility,
+  },
+  personality_match: {
+    type: 'personality_match',
+    name: 'Personality Match',
+    description: 'Select all words that describe another player based on their responses',
+    minAct: 2,
+    checkEligibility: checkPersonalityMatchEligibility,
   },
 };
 

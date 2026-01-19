@@ -478,3 +478,52 @@ registerTool<{
     };
   }
 );
+
+/**
+ * Tool: Trigger a personality match challenge
+ * Uses: personality_match mini-game
+ *
+ * This tool signals that the AI wants to start a personality match game.
+ * The current player must select ALL words that describe another player.
+ * Scoring is based on previous group responses about that player.
+ */
+registerTool<{
+  subjectPlayerId: string;
+  subjectPlayerName: string;
+  intro: string;
+}>(
+  {
+    type: 'function',
+    name: 'trigger_personality_match',
+    description: 'Start a PERSONALITY MATCH mini-game! The current player selects ALL personality words that describe another player. ONLY available in Act 2 or later. Great for testing how well players perceive each other. The Analyst AI will score based on previous responses.',
+    parameters: {
+      type: 'object',
+      properties: {
+        subjectPlayerId: {
+          type: 'string',
+          description: 'The ID of the player whose personality will be matched (NOT the current player)',
+        },
+        subjectPlayerName: {
+          type: 'string',
+          description: 'The name of the player whose personality will be matched',
+        },
+        intro: {
+          type: 'string',
+          description: 'A short intro for the challenge (e.g., "Time to see how well you know your mom...")',
+        },
+      },
+      required: ['subjectPlayerId', 'subjectPlayerName', 'intro'],
+      additionalProperties: false,
+    },
+  },
+  async (args) => {
+    return {
+      templateType: 'personality_match',
+      params: {
+        subjectPlayerId: args.subjectPlayerId,
+        subjectPlayerName: args.subjectPlayerName,
+        intro: args.intro,
+      },
+    };
+  }
+);

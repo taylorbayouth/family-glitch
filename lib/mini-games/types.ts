@@ -6,15 +6,20 @@
  * - Have their own dedicated AI prompt/personality
  * - Support multi-turn conversations
  * - Provide real-time scoring with commentary
+ *
+ * ARCHITECTURE:
+ * - Each mini-game is a self-contained module
+ * - The apparatus (play page) handles common logic: phase transitions, scoring, handoffs
+ * - Mini-games provide: prompt builders, UI components, and config
  */
 
 import type { Turn } from '@/lib/types/game-state';
 
 // ============================================================================
-// MINI-GAME SESSIONS
+// MINI-GAME TYPES (extensible)
 // ============================================================================
 
-export type MiniGameType = 'trivia_challenge'; // Extensible for future games
+export type MiniGameType = 'trivia_challenge' | 'personality_match';
 
 export type MiniGameStatus =
   | 'intro'       // Showing challenge intro
@@ -22,46 +27,123 @@ export type MiniGameStatus =
   | 'scoring'     // AI is evaluating
   | 'complete';   // Done, showing results
 
+// ============================================================================
+// BASE MINI-GAME INTERFACES
+// ============================================================================
+
 /**
- * Trivia Challenge session - tracks the multi-turn conversation
+ * Base context passed to all mini-games
  */
-export interface TriviaChallengeSession {
-  /** Unique session identifier */
-  sessionId: string;
-
-  /** Type of mini-game */
-  gameType: 'trivia_challenge';
-
+export interface MiniGameContext {
   /** Player being challenged */
   targetPlayerId: string;
   targetPlayerName: string;
 
+  /** All players in the game */
+  allPlayers: Array<{ id: string; name: string; role?: string }>;
+
+  /** Current scores */
+  scores: Record<string, number>;
+
+  /** All completed turns (for AI to reference) */
+  completedTurns: Turn[];
+}
+
+/**
+ * Base result returned by all mini-games
+ */
+export interface MiniGameResult {
+  /** Score awarded (0-5 scale) */
+  score: number;
+
+  /** Max possible score */
+  maxScore: number;
+
+  /** AI's commentary on the result */
+  commentary: string;
+
+  /** Optional: the correct answer for reveal */
+  correctAnswer?: string;
+
+  /** Optional: bonus info or fun fact */
+  bonusInfo?: string;
+}
+
+/**
+ * Props that all mini-game UI components receive from the apparatus
+ */
+export interface BaseMiniGameUIProps {
+  /** Context about the current challenge */
+  context: MiniGameContext;
+
+  /** Called when the mini-game completes */
+  onComplete: (result: MiniGameResult) => void;
+
+  /** Called if user wants to skip */
+  onSkip?: () => void;
+}
+
+// ============================================================================
+// TRIVIA CHALLENGE SPECIFIC
+// ============================================================================
+
+export interface TriviaChallengeContext extends MiniGameContext {
   /** The turn being used as the source (from another player) */
+  sourceTurn: Turn;
+  sourcePlayerId: string;
+  sourcePlayerName: string;
+}
+
+export interface TriviaChallengeSession {
+  sessionId: string;
+  gameType: 'trivia_challenge';
+  targetPlayerId: string;
+  targetPlayerName: string;
   sourceTurnId: string;
   sourcePlayerId: string;
   sourcePlayerName: string;
-
-  /** Current status */
   status: MiniGameStatus;
-
-  /** The question being asked */
   challengeQuestion: string;
-
-  /** The player's answer */
   playerAnswer?: string;
-
-  /** Score awarded (0-5) */
   score?: number;
-
-  /** AI's scoring commentary */
   scoreCommentary?: string;
+  startedAt: string;
+}
 
-  /** When this session started */
+// ============================================================================
+// PERSONALITY MATCH SPECIFIC
+// ============================================================================
+
+/**
+ * Personality Match: Player selects words that describe a target player
+ * AI scores based on how well selections match previous group responses
+ */
+export interface PersonalityMatchContext extends MiniGameContext {
+  /** Player whose personality is being matched */
+  subjectPlayerId: string;
+  subjectPlayerName: string;
+
+  /** The words to choose from */
+  wordOptions: string[];
+}
+
+export interface PersonalityMatchSession {
+  sessionId: string;
+  gameType: 'personality_match';
+  targetPlayerId: string;        // Who is answering
+  targetPlayerName: string;
+  subjectPlayerId: string;       // Who the words describe
+  subjectPlayerName: string;
+  status: MiniGameStatus;
+  wordOptions: string[];
+  selectedWords?: string[];
+  score?: number;
+  scoreCommentary?: string;
   startedAt: string;
 }
 
 // Union type for all mini-game sessions (extensible)
-export type MiniGameSession = TriviaChallengeSession;
+export type MiniGameSession = TriviaChallengeSession | PersonalityMatchSession;
 
 // ============================================================================
 // ELIGIBILITY
@@ -77,7 +159,8 @@ export interface EligibilityContext {
 export interface EligibilityResult {
   eligible: boolean;
   reason?: string;
-  eligibleTurns?: Turn[]; // Turns that can be used for trivia
+  eligibleTurns?: Turn[]; // Turns that can be used
+  eligiblePlayers?: string[]; // Players that can be subjects
 }
 
 // ============================================================================
@@ -90,17 +173,4 @@ export interface MiniGameDefinition {
   description: string;
   minAct: 1 | 2 | 3;
   checkEligibility: (context: EligibilityContext) => EligibilityResult;
-}
-
-// ============================================================================
-// RESULT
-// ============================================================================
-
-export interface MiniGameResult {
-  sessionId: string;
-  gameType: MiniGameType;
-  playerId: string;
-  score: number;
-  maxScore: number;
-  commentary: string;
 }

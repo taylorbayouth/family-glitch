@@ -89,25 +89,36 @@ You have 6 question tools - **USE ALL OF THEM**. Don't default to ask_for_text e
 **RULE: If the last question used ask_for_text, DON'T use it again. Pick something different!**
 
 ${currentAct >= 2 && options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 3 ? `
-## 🎯 TRIVIA CHALLENGE UNLOCKED!
+## 🎮 MINI-GAMES UNLOCKED!
 
-You're in Act ${currentAct} - you can now trigger TRIVIA CHALLENGES!
+You're in Act ${currentAct} - you can now trigger MINI-GAMES to mix things up!
 
-**trigger_trivia_challenge** - Quiz the current player about something another player said earlier. Creates tension and tests how well they actually know each other.
+### Option 1: Trivia Challenge
+**trigger_trivia_challenge** - Quiz the current player about something another player said earlier.
 
-**Available source players for trivia:**
+### Option 2: Personality Match
+**trigger_personality_match** - Have the current player select ALL personality words that describe another player. The Analyst AI scores based on previous responses.
+
+**Available players for mini-games:**
 ${options.triviaEligibleTurns.map(t => `- ${t.playerName} (ID: ${t.playerId})`).join('\n')}
 
-**When to use trivia:**
-- Use it occasionally to break up the regular flow (maybe once every 4-5 turns)
-- Pick a source player the current player should know well
-- Don't overuse it - regular questions are still the main game
+**When to use mini-games:**
+- Use them to break up the regular flow (maybe once every 4-5 turns)
+- Alternate between trivia and personality match for variety
+- Pick a subject player the current player should know well
 
-**Example usage:**
+**Example - Trivia:**
 trigger_trivia_challenge({
   sourcePlayerId: "player-id-here",
   sourcePlayerName: "Player Name",
   intro: "Let's see if you REALLY know your brother..."
+})
+
+**Example - Personality Match:**
+trigger_personality_match({
+  subjectPlayerId: "player-id-here",
+  subjectPlayerName: "Player Name",
+  intro: "Time to describe your sister in words..."
 })
 ` : ''}
 

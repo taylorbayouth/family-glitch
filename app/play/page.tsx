@@ -8,12 +8,13 @@ import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
 import { GameProgressBar } from '@/components/GameProgressBar';
-import { TriviaChallengeUI } from '@/components/mini-games/TriviaChallengeUI';
+import { TriviaChallengeUI, PersonalityMatchUI } from '@/components/mini-games';
 import { getEligibleTurnsForPlayer, selectTurnForTrivia } from '@/lib/mini-games';
 import type { ChatMessage } from '@/lib/ai/types';
 import type { Turn } from '@/lib/types/game-state';
+import type { MiniGameResult } from '@/lib/mini-games/types';
 
-type GamePhase = 'pass' | 'question' | 'loading' | 'trivia';
+type GamePhase = 'pass' | 'question' | 'loading' | 'trivia' | 'personality_match';
 
 /**
  * Main Game Play Page
@@ -59,6 +60,12 @@ export default function PlayPage() {
 
   // Trivia challenge state
   const [triviaSourceTurn, setTriviaSourceTurn] = useState<Turn | null>(null);
+
+  // Personality match state
+  const [personalityMatchSubject, setPersonalityMatchSubject] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const currentPlayer = players[currentPlayerIndex];
 
@@ -160,6 +167,24 @@ CRITICAL RULES:
         console.warn('Trivia challenge requested but no valid source turn found');
       }
 
+      // Check if this is a personality match
+      if (templateConfig.templateType === 'personality_match') {
+        const subjectPlayerId = templateConfig.params?.subjectPlayerId;
+        const subjectPlayerName = templateConfig.params?.subjectPlayerName;
+
+        if (subjectPlayerId && subjectPlayerName) {
+          setPersonalityMatchSubject({
+            id: subjectPlayerId,
+            name: subjectPlayerName,
+          });
+          setCurrentTemplate(templateConfig);
+          setMessages([...newMessages, { role: 'assistant', content: response.text }]);
+          return; // Don't create a regular turn for personality match
+        }
+        // If no valid subject found, fall through to regular question
+        console.warn('Personality match requested but no valid subject player found');
+      }
+
       // Sanitize prompt - remove player names if AI ignored instructions
       let sanitizedPrompt = templateConfig.prompt;
       players.forEach(player => {
@@ -196,6 +221,8 @@ CRITICAL RULES:
     // Check if this is a trivia challenge
     if (currentTemplate?.templateType === 'trivia_challenge' && triviaSourceTurn) {
       setPhase('trivia');
+    } else if (currentTemplate?.templateType === 'personality_match' && personalityMatchSubject) {
+      setPhase('personality_match');
     } else {
       setPhase('question');
     }
@@ -209,6 +236,16 @@ CRITICAL RULES:
     setPhase('loading');
     setAiCommentary(result.commentary);
     setTriviaSourceTurn(null);
+    setCurrentTemplate(null);
+  };
+
+  /**
+   * Handle personality match completion
+   */
+  const handlePersonalityMatchComplete = (result: MiniGameResult) => {
+    setPhase('loading');
+    setAiCommentary(result.commentary);
+    setPersonalityMatchSubject(null);
     setCurrentTemplate(null);
   };
 
@@ -437,6 +474,29 @@ CRITICAL RULES:
         }}
       />
     );
+  }
+
+  // Personality match screen
+  if (phase === 'personality_match' && personalityMatchSubject && currentPlayer) {
+    // Find the subject player from players array
+    const subjectPlayer = players.find(p => p.id === personalityMatchSubject.id);
+
+    if (subjectPlayer) {
+      return (
+        <PersonalityMatchUI
+          targetPlayer={currentPlayer}
+          subjectPlayer={subjectPlayer}
+          allPlayers={players}
+          onComplete={handlePersonalityMatchComplete}
+          onSkip={() => {
+            // Skip personality match and move to next player
+            setPersonalityMatchSubject(null);
+            setCurrentTemplate(null);
+            handleContinueToNext();
+          }}
+        />
+      );
+    }
   }
 
   return null;
