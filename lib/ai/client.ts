@@ -10,23 +10,33 @@ export async function sendChatRequest(
   messages: ChatMessage[],
   config?: Partial<AIRequestConfig>
 ): Promise<ChatResponse> {
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messages,
-      config,
-    } as ChatRequest),
-  });
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        config,
+      } as ChatRequest),
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        error: `Server error: ${response.status} ${response.statusText}`
+      }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    // Handle network errors
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to server. Check your internet connection.');
+    }
+    throw err;
   }
-
-  return response.json();
 }
 
 /**
