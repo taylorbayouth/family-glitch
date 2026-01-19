@@ -96,14 +96,13 @@ export default function PlayPage() {
         ...messages,
         {
           role: 'user',
-          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them ONE short, direct question using a template tool.
+          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them ONE short, direct question.
 
 CRITICAL RULES:
 1. NO player names in the question text
-2. ONE question only - no multi-part questions with "and" or multiple asks
+2. ONE question only - no multi-part questions
 3. Keep it under 20 words
-4. Example of WRONG: "What do you do, how do you feel, and what happens next?"
-5. Example of RIGHT: "What's your tell when you're lying?"`,
+4. VARY YOUR TOOLS - Don't use ask_for_text every time! Mix in ask_for_list, ask_binary_choice, ask_rating, ask_word_selection, ask_player_vote`,
         },
       ];
 
