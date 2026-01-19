@@ -20,8 +20,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 import type { LLMRequest, LLMResponse } from '@/types/game';
 import { LLM } from '@/lib/constants';
+
+// ============================================================================
+// OPENAI CLIENT INITIALIZATION
+// ============================================================================
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // ============================================================================
 // REQUEST HANDLER
@@ -65,43 +74,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call OpenAI GPT-5.2 with Chat Completions API
-    // GPT-5.2 works with the standard Chat Completions endpoint
-    const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: LLM.MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: LLM.TEMPERATURE,
-        max_tokens: LLM.MAX_RESPONSE_TOKENS,
-        top_p: LLM.TOP_P,
-        frequency_penalty: LLM.FREQUENCY_PENALTY,
-        presence_penalty: LLM.PRESENCE_PENALTY,
-        response_format: { type: 'json_object' },
-      }),
+    // Call OpenAI GPT-5.2 with responses API
+    // GPT-5.2 uses responses.create() with input parameter
+    const completion = await (client as any).responses.create({
+      model: LLM.MODEL,
+      input: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
     });
 
-    if (!apiResponse.ok) {
-      const errorData = await apiResponse.json().catch(() => ({}));
-      console.error('OpenAI API Error:', {
-        status: apiResponse.status,
-        statusText: apiResponse.statusText,
-        error: errorData,
-      });
-      throw new Error(`OpenAI API error: ${apiResponse.status} ${apiResponse.statusText}`);
-    }
-
-    const completion = await apiResponse.json();
-
-    // Parse JSON response from message content
-    const content = completion.choices?.[0]?.message?.content;
+    // Parse JSON response from output_text
+    const content = completion.output_text;
     if (!content) {
       throw new Error('No content in response');
     }

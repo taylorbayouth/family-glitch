@@ -183,8 +183,8 @@ fi
 
 ### Current Configuration
 - Model: `gpt-5.2` (GPT-5.2 Thinking)
-- API: Standard Chat Completions API (`/v1/chat/completions`)
-- Response Format: `{ type: 'json_object' }` for reliable JSON parsing
+- API: OpenAI SDK `responses.create()` method with `input` parameter
+- Response Format: JSON enforced via system prompt, parsed from `output_text`
 - Retries: 3 attempts with exponential backoff
 - Pricing: $1.75/1M input tokens, $14/1M output tokens (90% discount on cached inputs)
 
