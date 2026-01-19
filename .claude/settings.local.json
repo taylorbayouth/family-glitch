@@ -12,7 +12,8 @@
       "Bash(openssl rand:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(npx tsc:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(git tag -a v1.0.0-stable -m \"$\\(cat <<''EOF''\nSTABLE RELEASE v1.0.0 - Core Game Flow Complete\n\n✅ ALL SYSTEMS WORKING:\n- Google OAuth authentication\n- Player setup \\(3-7 players\\)\n- Game initialization with AI Game Master\n- Question generation \\(6 template tools\\)\n- Player turn rotation\n- Answer submission\n- AI commentary\n- Manual progression\n- State persistence\n\n🔧 CRITICAL FIXES:\n- Circular dependency resolved\n- AI tool calling enforced\n- Player name sanitization\n- State management timing\n- Submit button always visible\n- Single-question format enforced\n\n🎮 GAME FLOW VERIFIED:\nSign in → Setup → Pass → Unlock → Answer → Commentary → Pass to Next\n\nUSE THIS TAG TO ROLL BACK:\ngit checkout v1.0.0-stable\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

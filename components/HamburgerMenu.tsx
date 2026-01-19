@@ -118,7 +118,10 @@ export function HamburgerMenu() {
               {/* Version */}
               <div className="mt-auto pt-6 border-t border-steel-800">
                 <p className="font-mono text-xs text-steel-600 text-center">
-                  v1.0.0 | DIGITAL NOIR
+                  v1.0.0-stable
+                </p>
+                <p className="font-mono text-xs text-steel-700 text-center mt-1">
+                  DIGITAL NOIR
                 </p>
               </div>
             </motion.div>
