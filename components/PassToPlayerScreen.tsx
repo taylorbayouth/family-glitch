@@ -23,31 +23,8 @@ export function PassToPlayerScreen({
   isLoadingQuestion,
   turnNumber,
 }: PassToPlayerScreenProps) {
-  // Avatar emojis
-  const AVATARS = [
-    '👨',
-    '👩',
-    '👦',
-    '👧',
-    '🧔',
-    '👴',
-    '👵',
-    '👱‍♂️',
-    '👱‍♀️',
-    '🧑',
-    '👨‍🦰',
-    '👩‍🦰',
-    '👨‍🦱',
-    '👩‍🦱',
-    '👨‍🦲',
-    '👩‍🦲',
-    '👨‍🦳',
-    '👩‍🦳',
-    '🧒',
-    '👶',
-  ];
-
-  const avatar = AVATARS[player.avatar - 1] || '👤';
+  // Get avatar image path
+  const getAvatarPath = (index: number) => `/avatars/${index}.png`;
 
   return (
     <div className="min-h-screen bg-void flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -70,31 +47,28 @@ export function PassToPlayerScreen({
           </motion.div>
         )}
 
-        {/* Player avatar */}
+        {/* Player avatar and name */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="flex justify-center"
+          className="flex flex-col items-center space-y-4"
         >
-          <div className="w-32 h-32 rounded-full bg-void-light border-4 border-glitch flex items-center justify-center text-7xl shadow-glow">
-            {avatar}
+          <div className="w-36 h-36 rounded-full bg-void-light border-4 border-glitch overflow-hidden shadow-glow">
+            <img
+              src={getAvatarPath(player.avatar)}
+              alt={`${player.name}'s avatar`}
+              className="w-full h-full object-cover"
+            />
           </div>
-        </motion.div>
-
-        {/* Player name */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center space-y-2"
-        >
-          <h1 className="text-4xl font-black text-frost">
-            {player.name}
-          </h1>
-          <p className="text-steel-400 font-mono text-sm">
-            {player.role} · Age {player.age}
-          </p>
+          <div className="text-center space-y-1">
+            <h1 className="text-4xl font-black text-frost">
+              {player.name}
+            </h1>
+            <p className="text-steel-400 font-mono text-sm">
+              {player.role} · Age {player.age}
+            </p>
+          </div>
         </motion.div>
 
         {/* Instructions */}

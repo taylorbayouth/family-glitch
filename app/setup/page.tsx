@@ -5,10 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore, useHydration, type PlayerRole } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 
-const AVATARS = [
-  '👨', '👩', '👦', '👧', '🧔', '👴', '👵', '👱‍♂️', '👱‍♀️', '🧑',
-  '👨‍🦰', '👩‍🦰', '👨‍🦱', '👩‍🦱', '👨‍🦲', '👩‍🦲', '👨‍🦳', '👩‍🦳', '🧒', '👶'
-];
+// Avatar image paths (1.png through 14.png in public/avatars/)
+const AVATAR_COUNT = 14;
+const getAvatarPath = (index: number) => `/avatars/${index}.png`;
 
 const ROLES: PlayerRole[] = [
   'Dad', 'Mom', 'Son', 'Daughter', 'Brother', 'Sister',
@@ -45,7 +44,7 @@ export default function SetupPage() {
       name: '',
       role: 'Friend' as PlayerRole,
       age: '',
-      avatar: Math.floor(Math.random() * 20) + 1,
+      avatar: Math.floor(Math.random() * AVATAR_COUNT) + 1,
       isExpanded: i === 0,
     }));
   });
@@ -76,7 +75,7 @@ export default function SetupPage() {
           name: '',
           role: 'Friend',
           age: '',
-          avatar: Math.floor(Math.random() * 20) + 1,
+          avatar: Math.floor(Math.random() * AVATAR_COUNT) + 1,
           isExpanded: true,
         },
       ]);
@@ -194,8 +193,12 @@ export default function SetupPage() {
                     onClick={() => toggleExpanded(form.id)}
                     className="w-full glass rounded-xl p-4 flex items-center gap-4 text-left hover:border-glitch/50 transition-colors"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-void-light border border-steel-800 flex items-center justify-center text-2xl">
-                      {AVATARS[form.avatar - 1] || '👤'}
+                    <div className="w-14 h-14 rounded-full bg-void-light border-2 border-steel-700 overflow-hidden flex-shrink-0">
+                      <img
+                        src={getAvatarPath(form.avatar)}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -256,18 +259,22 @@ export default function SetupPage() {
                       <label className="block text-xs text-steel-500 uppercase tracking-wider mb-2 font-mono">
                         Avatar
                       </label>
-                      <div className="flex flex-wrap gap-2">
-                        {AVATARS.slice(0, 10).map((avatar, i) => (
+                      <div className="grid grid-cols-7 gap-2">
+                        {Array.from({ length: AVATAR_COUNT }, (_, i) => (
                           <button
-                            key={i}
+                            key={i + 1}
                             onClick={() => handleUpdateForm(form.id, 'avatar', i + 1)}
-                            className={`w-11 h-11 rounded-lg flex items-center justify-center text-xl transition-all ${
+                            className={`aspect-square rounded-full overflow-hidden transition-all ${
                               form.avatar === i + 1
-                                ? 'bg-glitch/30 border-2 border-glitch scale-110'
-                                : 'bg-void-light border border-steel-800 hover:border-steel-600'
+                                ? 'ring-2 ring-glitch ring-offset-2 ring-offset-void scale-110'
+                                : 'border-2 border-steel-700 hover:border-steel-500'
                             }`}
                           >
-                            {avatar}
+                            <img
+                              src={getAvatarPath(i + 1)}
+                              alt={`Avatar ${i + 1}`}
+                              className="w-full h-full object-cover"
+                            />
                           </button>
                         ))}
                       </div>

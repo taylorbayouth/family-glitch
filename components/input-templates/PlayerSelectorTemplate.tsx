@@ -29,29 +29,8 @@ export function PlayerSelectorTemplate({
   // Filter out current player
   const selectablePlayers = players.filter((p) => p.id !== currentPlayerId);
 
-  // Avatar emojis mapping
-  const AVATARS = [
-    '👨',
-    '👩',
-    '👦',
-    '👧',
-    '🧔',
-    '👴',
-    '👵',
-    '👱‍♂️',
-    '👱‍♀️',
-    '🧑',
-    '👨‍🦰',
-    '👩‍🦰',
-    '👨‍🦱',
-    '👩‍🦱',
-    '👨‍🦲',
-    '👩‍🦲',
-    '👨‍🦳',
-    '👩‍🦳',
-    '🧒',
-    '👶',
-  ];
+  // Get avatar image path
+  const getAvatarPath = (index: number) => `/avatars/${index}.png`;
 
   const isValid = allowMultiple
     ? selectedPlayerIds.length >= 1 && selectedPlayerIds.length <= maxSelections
@@ -183,13 +162,17 @@ export function PlayerSelectorTemplate({
 
                 {/* Avatar */}
                 <div
-                  className={`w-20 h-20 mx-auto rounded-full border-2 flex items-center justify-center text-4xl mb-3 ${
+                  className={`w-20 h-20 mx-auto rounded-full border-2 overflow-hidden mb-3 ${
                     isSelected
                       ? 'border-void bg-void/20'
                       : 'border-steel-800 bg-void-light'
                   }`}
                 >
-                  {AVATARS[player.avatar - 1] || '👤'}
+                  <img
+                    src={getAvatarPath(player.avatar)}
+                    alt={`${player.name}'s avatar`}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
 
                 {/* Player Name */}
