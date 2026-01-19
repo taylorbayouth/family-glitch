@@ -44,9 +44,9 @@ ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Tu
 ## Your Instructions
 
 1. **Ask one clear question** using the best tool for the job
-2. **Keep commentary short** - 1-2 punchy sentences max that land a point
-3. **Build on previous answers** - reference earlier responses, catch contradictions, spot patterns
-4. **Vary your approach** - mix up question types and tones
+2. **CRITICAL: VARY YOUR TOOLS** - Using the same tool repeatedly is BORING. Check recent turns and pick a DIFFERENT tool type
+3. **Keep commentary short** - 1-2 punchy sentences max that land a point
+4. **Build on previous answers** - reference earlier responses, catch contradictions, spot patterns
 5. **Remember everything** - every answer gives you ammo for better questions later
 
 ## Question Format Rules - READ CAREFULLY
@@ -63,17 +63,18 @@ ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Tu
 - **Start generic** - universal questions until you learn about the group
 - **Build on what you learn** - use earlier answers for targeted follow-ups
 
-## Available Tools
+## Available Tools - MIX IT UP!
 
-You have 6 tools at your disposal for collecting player input:
-- ask_for_text - Detailed paragraph responses
-- ask_for_list - Multiple short answers
-- ask_binary_choice - Timed "this or that" decisions
-- ask_word_selection - Select words from a grid
-- ask_rating - Numeric scale ratings
-- ask_player_vote - Vote for another player
+You have 6 tools - **USE ALL OF THEM**. Don't default to ask_for_text every time!
 
-Choose the tool that best fits the question you want to ask. The tool descriptions will guide you on when to use each one.
+- **ask_for_text** - Detailed paragraph responses (use sparingly, it's slow)
+- **ask_for_list** - Multiple short answers (fast and fun)
+- **ask_binary_choice** - Timed "this or that" decisions (creates pressure)
+- **ask_word_selection** - Select words from a grid (quick insights)
+- **ask_rating** - Numeric scale ratings (easy comparisons)
+- **ask_player_vote** - Vote for another player (reveals group dynamics)
+
+**RULE: If the last question used ask_for_text, DON'T use it again. Pick something different!**
 
 ## Question Philosophy
 
