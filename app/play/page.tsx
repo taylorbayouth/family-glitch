@@ -8,13 +8,26 @@ import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
 import { GameProgressBar } from '@/components/GameProgressBar';
-import { TriviaChallengeUI, PersonalityMatchUI, MadLibsUI } from '@/components/mini-games';
-import { getEligibleTurnsForPlayer, selectTurnForTrivia } from '@/lib/mini-games';
+import { Leaderboard } from '@/components/Leaderboard';
+import { EndGameResults } from '@/components/EndGameResults';
+// Import registry - this also triggers all mini-game registrations
+import {
+  getMiniGame,
+  isMiniGame,
+  getEligibleTurnsForPlayer,
+  type MiniGameConfig,
+} from '@/lib/mini-games';
 import type { ChatMessage } from '@/lib/ai/types';
-import type { Turn } from '@/lib/types/game-state';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
-type GamePhase = 'pass' | 'question' | 'loading' | 'trivia' | 'personality_match' | 'madlibs';
+// Core game phases - mini-games are handled dynamically via 'minigame' phase
+type GamePhase = 'pass' | 'question' | 'loading' | 'minigame' | 'endgame';
+
+// Active mini-game state
+interface ActiveMiniGame {
+  type: string;
+  config: MiniGameConfig;
+}
 
 /**
  * Main Game Play Page
@@ -22,9 +35,12 @@ type GamePhase = 'pass' | 'question' | 'loading' | 'trivia' | 'personality_match
  * Flow:
  * 1. Show "Pass to Player" screen (preload question during this)
  * 2. Player slides to unlock
- * 3. Show question with template
+ * 3. Show question with template (or mini-game if triggered)
  * 4. Player submits answer
  * 5. Back to "Pass to next Player"
+ *
+ * Mini-games are handled dynamically via the registry system.
+ * Adding a new mini-game requires NO changes to this file!
  */
 export default function PlayPage() {
   const router = useRouter();
@@ -58,14 +74,8 @@ export default function PlayPage() {
   const [currentTurnId, setCurrentTurnId] = useState<string>('');
   const [turnStartTime, setTurnStartTime] = useState<number>(0);
 
-  // Trivia challenge state
-  const [triviaSourceTurn, setTriviaSourceTurn] = useState<Turn | null>(null);
-
-  // Personality match state
-  const [personalityMatchSubject, setPersonalityMatchSubject] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  // Mini-game state (unified for ALL mini-games via registry)
+  const [activeMiniGame, setActiveMiniGame] = useState<ActiveMiniGame | null>(null);
 
   const currentPlayer = players[currentPlayerIndex];
 
@@ -157,50 +167,39 @@ CRITICAL RULES:
       // Parse tool call result (template configuration)
       const templateConfig = JSON.parse(response.text);
 
-      // Check if this is a trivia challenge
-      if (templateConfig.templateType === 'trivia_challenge') {
-        // Find the source turn for the trivia challenge
-        const sourcePlayerId = templateConfig.params?.sourcePlayerId;
-        const selectedTurn = sourcePlayerId
-          ? eligibleTurns.find(t => t.playerId === sourcePlayerId)
-          : selectTurnForTrivia(eligibleTurns);
+      // Check if this is a mini-game (using the registry)
+      if (isMiniGame(templateConfig.templateType)) {
+        const miniGameDef = getMiniGame(templateConfig.templateType);
 
-        if (selectedTurn) {
-          setTriviaSourceTurn(selectedTurn);
-          setCurrentTemplate(templateConfig);
-          setMessages([...newMessages, { role: 'assistant', content: response.text }]);
-          return; // Don't create a regular turn for trivia
-        }
-        // If no valid turn found, fall through to regular question
-        console.warn('Trivia challenge requested but no valid source turn found');
-      }
-
-      // Check if this is a personality match
-      if (templateConfig.templateType === 'personality_match') {
-        const subjectPlayerId = templateConfig.params?.subjectPlayerId;
-        const subjectPlayerName = templateConfig.params?.subjectPlayerName;
-
-        if (subjectPlayerId && subjectPlayerName) {
-          setPersonalityMatchSubject({
-            id: subjectPlayerId,
-            name: subjectPlayerName,
+        if (miniGameDef) {
+          // Extract config using the mini-game's own extraction logic
+          const config = miniGameDef.extractConfig(templateConfig, {
+            players: players.map(p => ({
+              id: p.id,
+              name: p.name,
+              role: p.role,
+              avatar: p.avatar,
+            })),
+            turns,
+            currentPlayerId: targetPlayer.id,
           });
-          setCurrentTemplate(templateConfig);
-          setMessages([...newMessages, { role: 'assistant', content: response.text }]);
-          return; // Don't create a regular turn for personality match
+
+          if (config) {
+            // Valid mini-game config - set it up
+            setActiveMiniGame({
+              type: templateConfig.templateType,
+              config,
+            });
+            setCurrentTemplate(templateConfig);
+            setMessages([...newMessages, { role: 'assistant', content: response.text }]);
+            return; // Don't create a regular turn for mini-games
+          }
         }
-        // If no valid subject found, fall through to regular question
-        console.warn('Personality match requested but no valid subject player found');
+        // If config extraction failed, fall through to regular question
+        console.warn(`Mini-game "${templateConfig.templateType}" config extraction failed`);
       }
 
-      // Check if this is a Mad Libs challenge
-      if (templateConfig.templateType === 'madlibs_challenge') {
-        setCurrentTemplate(templateConfig);
-        setMessages([...newMessages, { role: 'assistant', content: response.text }]);
-        return; // Don't create a regular turn for Mad Libs
-      }
-
-      // Sanitize prompt - remove player names if AI ignored instructions
+      // Regular question - sanitize prompt
       let sanitizedPrompt = templateConfig.prompt;
       players.forEach(player => {
         // Remove "PlayerName:" or "PlayerName (Role):" patterns at the start
@@ -233,13 +232,8 @@ CRITICAL RULES:
    * Handle player unlocking the question
    */
   const handleUnlock = () => {
-    // Check if this is a trivia challenge
-    if (currentTemplate?.templateType === 'trivia_challenge' && triviaSourceTurn) {
-      setPhase('trivia');
-    } else if (currentTemplate?.templateType === 'personality_match' && personalityMatchSubject) {
-      setPhase('personality_match');
-    } else if (currentTemplate?.templateType === 'madlibs_challenge') {
-      setPhase('madlibs');
+    if (activeMiniGame) {
+      setPhase('minigame');
     } else {
       setPhase('question');
     }
@@ -247,32 +241,22 @@ CRITICAL RULES:
   };
 
   /**
-   * Handle trivia challenge completion
+   * Handle mini-game completion (generic for ALL mini-games)
    */
-  const handleTriviaComplete = (result: { score: number; commentary: string }) => {
+  const handleMiniGameComplete = (result: MiniGameResult | { score: number; commentary: string }) => {
     setPhase('loading');
     setAiCommentary(result.commentary);
-    setTriviaSourceTurn(null);
+    setActiveMiniGame(null);
     setCurrentTemplate(null);
   };
 
   /**
-   * Handle personality match completion
+   * Handle skipping a mini-game
    */
-  const handlePersonalityMatchComplete = (result: MiniGameResult) => {
-    setPhase('loading');
-    setAiCommentary(result.commentary);
-    setPersonalityMatchSubject(null);
+  const handleMiniGameSkip = () => {
+    setActiveMiniGame(null);
     setCurrentTemplate(null);
-  };
-
-  /**
-   * Handle Mad Libs challenge completion
-   */
-  const handleMadLibsComplete = (result: MiniGameResult) => {
-    setPhase('loading');
-    setAiCommentary(result.commentary);
-    setCurrentTemplate(null);
+    handleContinueToNext();
   };
 
   /**
@@ -326,9 +310,7 @@ CRITICAL RULES:
   const handleContinueToNext = () => {
     // Check if game is complete
     if (isGameComplete()) {
-      // TODO: Show end game screen with final scores
-      // For now, just show a message
-      setAiCommentary('🎉 Game Complete! Thanks for playing!');
+      setPhase('endgame');
       return;
     }
 
@@ -393,20 +375,27 @@ CRITICAL RULES:
     const nextPlayer = players[nextPlayerIndex];
 
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-6">
-        <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
-          <div className="text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
-              <span className="text-3xl">🤖</span>
-            </div>
-            <p className="text-frost text-lg leading-relaxed">{aiCommentary}</p>
-            <div className="pt-4">
-              <button
-                onClick={handleContinueToNext}
-                className="bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105"
-              >
-                Pass to {nextPlayer.name}
-              </button>
+      <div className="min-h-screen bg-void p-6">
+        {/* Leaderboard at top */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <Leaderboard currentPlayerId={currentPlayer.id} />
+        </div>
+
+        <div className="flex items-center justify-center">
+          <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
+                <span className="text-3xl">🤖</span>
+              </div>
+              <p className="text-frost text-lg leading-relaxed">{aiCommentary}</p>
+              <div className="pt-4">
+                <button
+                  onClick={handleContinueToNext}
+                  className="bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  Pass to {nextPlayer.name}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -426,7 +415,7 @@ CRITICAL RULES:
     );
   }
 
-  // Question screen
+  // Question screen (regular templates)
   if (phase === 'question' && currentTemplate) {
     return (
       <div className="min-h-screen bg-void relative">
@@ -436,6 +425,11 @@ CRITICAL RULES:
 
         {/* Header */}
         <div className="relative z-10 p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm space-y-4">
+          {/* Leaderboard */}
+          <div className="max-w-7xl mx-auto">
+            <Leaderboard currentPlayerId={currentPlayer.id} />
+          </div>
+
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div>
               <p className="font-mono text-xs text-steel-500 uppercase tracking-wider">
@@ -445,7 +439,7 @@ CRITICAL RULES:
             </div>
             <div className="text-right">
               <p className="font-mono text-xs text-steel-500 uppercase tracking-wider">
-                Score
+                Your Score
               </p>
               <p className="text-2xl font-black text-glitch">
                 {scores[currentPlayer.id] || 0}
@@ -480,66 +474,42 @@ CRITICAL RULES:
     );
   }
 
-  // Trivia challenge screen
-  if (phase === 'trivia' && triviaSourceTurn && currentPlayer) {
-    return (
-      <TriviaChallengeUI
-        targetPlayer={{
-          id: currentPlayer.id,
-          name: currentPlayer.name,
-          role: currentPlayer.role,
-        }}
-        sourceTurn={triviaSourceTurn}
-        allPlayers={players.map(p => ({ id: p.id, name: p.name, role: p.role }))}
-        onComplete={handleTriviaComplete}
-        onSkip={() => {
-          // Skip trivia and move to next player
-          setTriviaSourceTurn(null);
-          setCurrentTemplate(null);
-          handleContinueToNext();
-        }}
-      />
-    );
-  }
+  // Mini-game screen (dynamic via registry)
+  if (phase === 'minigame' && activeMiniGame && currentPlayer) {
+    const miniGameDef = getMiniGame(activeMiniGame.type);
 
-  // Personality match screen
-  if (phase === 'personality_match' && personalityMatchSubject && currentPlayer) {
-    // Find the subject player from players array
-    const subjectPlayer = players.find(p => p.id === personalityMatchSubject.id);
+    if (miniGameDef) {
+      const MiniGameComponent = miniGameDef.component;
 
-    if (subjectPlayer) {
       return (
-        <PersonalityMatchUI
-          targetPlayer={currentPlayer}
-          subjectPlayer={subjectPlayer}
-          allPlayers={players}
-          onComplete={handlePersonalityMatchComplete}
-          onSkip={() => {
-            // Skip personality match and move to next player
-            setPersonalityMatchSubject(null);
-            setCurrentTemplate(null);
-            handleContinueToNext();
+        <MiniGameComponent
+          targetPlayer={{
+            id: currentPlayer.id,
+            name: currentPlayer.name,
+            role: currentPlayer.role,
+            avatar: currentPlayer.avatar,
           }}
+          allPlayers={players.map(p => ({
+            id: p.id,
+            name: p.name,
+            role: p.role,
+            avatar: p.avatar,
+          }))}
+          onComplete={handleMiniGameComplete}
+          onSkip={handleMiniGameSkip}
+          {...activeMiniGame.config}
         />
       );
     }
   }
 
-  // Mad Libs challenge screen
-  if (phase === 'madlibs' && currentPlayer) {
+  // End game results screen
+  if (phase === 'endgame') {
     return (
-      <MadLibsUI
-        targetPlayer={{
-          id: currentPlayer.id,
-          name: currentPlayer.name,
-          role: currentPlayer.role,
-        }}
-        allPlayers={players.map(p => ({ id: p.id, name: p.name, role: p.role }))}
-        onComplete={handleMadLibsComplete}
-        onSkip={() => {
-          // Skip Mad Libs and move to next player
-          setCurrentTemplate(null);
-          handleContinueToNext();
+      <EndGameResults
+        onPlayAgain={() => {
+          // Reset game state and go to setup
+          router.push('/setup');
         }}
       />
     );

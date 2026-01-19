@@ -2,31 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
-  selectWordsForGrid,
-  getTurnsAboutPlayer,
-  buildPersonalityMatchPrompt,
-  parsePersonalityMatchResponse,
+  buildCrypticGeneratorPrompt,
+  buildCrypticScorerPrompt,
+  parseCrypticGeneratorResponse,
+  parseCrypticScoreResponse,
   toMiniGameResult,
-} from '@/lib/mini-games/personality-match';
+} from '@/lib/mini-games/cryptic-connection';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
 interface Player {
   id: string;
   name: string;
   role?: string;
-  avatar?: number;
 }
 
-interface PersonalityMatchUIProps {
+interface CrypticConnectionUIProps {
   /** Player answering the challenge */
   targetPlayer: Player;
-
-  /** Player whose personality is being matched */
-  subjectPlayer: Player;
 
   /** All players (for context) */
   allPlayers: Player[];
@@ -38,38 +33,93 @@ interface PersonalityMatchUIProps {
   onSkip?: () => void;
 }
 
-type MatchPhase = 'intro' | 'selecting' | 'scoring' | 'result';
+type CrypticPhase = 'loading' | 'intro' | 'playing' | 'scoring' | 'result';
 
 /**
- * Personality Match UI Component
+ * Cryptic Connection UI Component
  *
  * Flow:
- * 1. Intro - Show the challenge
- * 2. Selecting - Player picks ALL words that match
- * 3. Scoring - AI evaluates based on previous turns
- * 4. Result - Show score with commentary
+ * 1. Loading - AI generates cryptic clue + 25 words
+ * 2. Intro - Show the cryptic challenge
+ * 3. Playing - Player selects words from 5x5 grid
+ * 4. Scoring - AI evaluates with fuzzy logic
+ * 5. Result - Show score with revealed answer
  */
-export function PersonalityMatchUI({
+export function CrypticConnectionUI({
   targetPlayer,
-  subjectPlayer,
   allPlayers,
   onComplete,
   onSkip,
-}: PersonalityMatchUIProps) {
-  const [phase, setPhase] = useState<MatchPhase>('intro');
+}: CrypticConnectionUIProps) {
+  const [phase, setPhase] = useState<CrypticPhase>('loading');
+  const [clue, setClue] = useState('');
+  const [hint, setHint] = useState<string | undefined>();
   const [words, setWords] = useState<string[]>([]);
+  const [correctWords, setCorrectWords] = useState<string[]>([]);
+  const [explanation, setExplanation] = useState('');
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
+  const [scoreDetails, setScoreDetails] = useState<{
+    exactMatches: string[];
+    creativeMatches: string[];
+    misses: string[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const turns = useGameStore((state) => state.turns);
   const scores = useGameStore((state) => state.scores);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
 
-  // Generate word grid on mount
+  // Generate puzzle on mount
   useEffect(() => {
-    setWords(selectWordsForGrid(16)); // 4x4 grid
+    generatePuzzle();
   }, []);
+
+  const generatePuzzle = async () => {
+    setPhase('loading');
+    setError(null);
+
+    try {
+      const prompt = buildCrypticGeneratorPrompt({
+        targetPlayerName: targetPlayer.name,
+        allPlayers,
+        scores,
+      });
+
+      const response = await sendChatRequest([
+        { role: 'system', content: prompt },
+        { role: 'user', content: 'Generate a cryptic puzzle now.' },
+      ], {
+        toolChoice: 'none',
+      });
+
+      const parsed = parseCrypticGeneratorResponse(response.text);
+
+      if (!parsed) {
+        throw new Error('Invalid puzzle response from AI');
+      }
+
+      setClue(parsed.clue);
+      setHint(parsed.hint);
+      setWords(parsed.words);
+      setCorrectWords(parsed.correctWords);
+      setExplanation(parsed.explanation);
+      setPhase('intro');
+    } catch (err) {
+      console.error('Failed to generate puzzle:', err);
+      // Fallback puzzle
+      setClue('Things that disappear');
+      setWords([
+        'shadow', 'memory', 'smoke', 'trust', 'youth',
+        'bread', 'chair', 'echo', 'dream', 'hope',
+        'brick', 'cloud', 'stone', 'mist', 'faith',
+        'table', 'time', 'fog', 'love', 'light',
+        'door', 'snow', 'car', 'book', 'soap',
+      ]);
+      setCorrectWords(['shadow', 'memory', 'smoke', 'echo', 'dream', 'mist', 'fog', 'snow']);
+      setExplanation('Things that fade, vanish, or are temporary');
+      setPhase('intro');
+    }
+  };
 
   const handleWordClick = (word: string) => {
     if (selectedWords.includes(word)) {
@@ -86,32 +136,26 @@ export function PersonalityMatchUI({
     setError(null);
 
     try {
-      // Get relevant turns about the subject player
-      const relevantTurns = getTurnsAboutPlayer(
-        turns.filter((t) => t.status === 'completed'),
-        subjectPlayer.id,
-        subjectPlayer.name
-      );
-
-      const prompt = buildPersonalityMatchPrompt({
-        subjectPlayerName: subjectPlayer.name,
+      const prompt = buildCrypticScorerPrompt({
+        targetPlayerName: targetPlayer.name,
+        clue,
         selectedWords,
-        relevantTurns,
-        allPlayers,
-        scores,
+        correctWords,
+        allWords: words,
+        explanation,
       });
 
       const response = await sendChatRequest([
         { role: 'system', content: prompt },
-        { role: 'user', content: 'Score these personality word selections now.' },
+        { role: 'user', content: 'Score this puzzle attempt now.' },
       ], {
-        toolChoice: 'none', // Just need text response
+        toolChoice: 'none',
       });
 
-      const parsed = parsePersonalityMatchResponse(response.text);
+      const parsed = parseCrypticScoreResponse(response.text);
 
       if (!parsed) {
-        throw new Error('Invalid response from AI');
+        throw new Error('Invalid score response from AI');
       }
 
       // Update score
@@ -119,17 +163,30 @@ export function PersonalityMatchUI({
 
       const gameResult = toMiniGameResult(parsed);
       setResult(gameResult);
+      setScoreDetails({
+        exactMatches: parsed.exactMatches,
+        creativeMatches: parsed.creativeMatches,
+        misses: parsed.misses,
+      });
       setPhase('result');
     } catch (err) {
-      console.error('Failed to score personality match:', err);
+      console.error('Failed to score puzzle:', err);
       // Fallback scoring
+      const exactMatches = selectedWords.filter((w) => correctWords.includes(w));
+      const fallbackScore = Math.min(5, Math.round((exactMatches.length / correctWords.length) * 5));
       const fallbackResult: MiniGameResult = {
-        score: 2,
+        score: fallbackScore,
         maxScore: 5,
-        commentary: 'Technical difficulties! Points for trying.',
+        commentary: 'The Riddler ponders in silence...',
+        correctAnswer: explanation,
       };
-      updatePlayerScore(targetPlayer.id, 2);
+      updatePlayerScore(targetPlayer.id, fallbackScore);
       setResult(fallbackResult);
+      setScoreDetails({
+        exactMatches,
+        creativeMatches: [],
+        misses: selectedWords.filter((w) => !correctWords.includes(w)),
+      });
       setPhase('result');
     }
   };
@@ -140,16 +197,16 @@ export function PersonalityMatchUI({
     }
   };
 
-  // Score color based on value
+  // Score color based on value (purple/mystery theme)
   const getScoreColor = (score: number) => {
-    if (score >= 4) return 'text-mint';
-    if (score >= 2) return 'text-glitch';
+    if (score >= 4) return 'text-violet-400';
+    if (score >= 2) return 'text-violet-500';
     return 'text-alert';
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 4) return 'bg-mint/20 border-mint/50';
-    if (score >= 2) return 'bg-glitch/20 border-glitch/50';
+    if (score >= 4) return 'bg-violet-400/20 border-violet-400/50';
+    if (score >= 2) return 'bg-violet-500/20 border-violet-500/50';
     return 'bg-alert/20 border-alert/50';
   };
 
@@ -159,14 +216,13 @@ export function PersonalityMatchUI({
       <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-xs text-mint uppercase tracking-wider">
-              Personality Match
+            <p className="font-mono text-xs text-violet-400 uppercase tracking-wider">
+              Cryptic Connection
             </p>
             <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
           </div>
           <div className="text-right">
-            <p className="font-mono text-xs text-steel-500">Matching</p>
-            <p className="text-frost font-bold">{subjectPlayer.name}</p>
+            <p className="font-mono text-xs text-steel-500">Find the pattern</p>
           </div>
         </div>
       </div>
@@ -174,6 +230,28 @@ export function PersonalityMatchUI({
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
+          {/* Loading Phase */}
+          {phase === 'loading' && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center space-y-4"
+            >
+              <div className="flex justify-center space-x-2">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="w-4 h-4 rounded-full bg-violet-400 animate-pulse"
+                    style={{ animationDelay: `${i * 200}ms` }}
+                  />
+                ))}
+              </div>
+              <p className="text-frost font-mono">The Riddler weaves a mystery...</p>
+            </motion.div>
+          )}
+
           {/* Intro Phase - Dramatic Full Screen */}
           {phase === 'intro' && (
             <motion.div
@@ -181,17 +259,17 @@ export function PersonalityMatchUI({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gradient-to-br from-mint/20 via-void to-mint/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden"
+              className="fixed inset-0 bg-gradient-to-br from-violet-500/20 via-void to-violet-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden"
             >
               {/* Animated background elements */}
               <div className="absolute inset-0 overflow-hidden">
                 <motion.div
-                  className="absolute top-1/3 left-1/3 w-64 h-64 bg-mint/20 rounded-full blur-3xl"
+                  className="absolute top-1/3 left-1/4 w-64 h-64 bg-violet-500/20 rounded-full blur-3xl"
                   animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
                 <motion.div
-                  className="absolute bottom-1/3 right-1/3 w-48 h-48 bg-mint/30 rounded-full blur-3xl"
+                  className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-violet-600/30 rounded-full blur-3xl"
                   animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
                   transition={{ duration: 2.5, repeat: Infinity }}
                 />
@@ -208,37 +286,21 @@ export function PersonalityMatchUI({
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 rounded-full bg-mint/30 border border-mint"
+                  className="inline-block px-4 py-2 rounded-full bg-violet-500/30 border border-violet-400"
                 >
-                  <span className="font-mono text-sm text-mint uppercase tracking-widest">
+                  <span className="font-mono text-sm text-violet-400 uppercase tracking-widest">
                     Mini-Game
                   </span>
                 </motion.div>
 
-                {/* Subject Player Avatar */}
+                {/* Game icon */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', delay: 0.3 }}
-                  className="relative"
+                  className="text-7xl"
                 >
-                  <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-mint shadow-[0_0_30px_rgba(0,255,170,0.4)] mx-auto">
-                    <Image
-                      src={`/avatars/${subjectPlayer.avatar || 1}.png`}
-                      alt={subjectPlayer.name}
-                      width={112}
-                      height={112}
-                      className="object-cover"
-                    />
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="mt-3"
-                  >
-                    <p className="text-mint font-bold text-xl">{subjectPlayer.name}</p>
-                  </motion.div>
+                  🔮
                 </motion.div>
 
                 {/* Title */}
@@ -246,31 +308,42 @@ export function PersonalityMatchUI({
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="text-3xl md:text-4xl font-black text-frost"
+                  className="text-4xl md:text-5xl font-black text-frost"
                 >
-                  Personality Match
+                  Cryptic Connection
                 </motion.h1>
 
-                {/* Description */}
+                {/* The Clue */}
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="glass rounded-xl p-5 border border-mint/30 space-y-3"
+                  className="glass rounded-xl p-6 border border-violet-400/30 space-y-3"
                 >
-                  <p className="text-steel-300 text-lg">
-                    How well do you know <span className="text-mint font-bold">{subjectPlayer.name}</span>?
+                  <p className="font-mono text-xs text-violet-400 uppercase">The Riddle</p>
+                  <p className="text-frost text-2xl font-bold italic">
+                    "{clue}"
                   </p>
-                  <p className="text-steel-500 text-sm">
-                    Select ALL the words that match their personality. No limit - pick as many as you think fit!
-                  </p>
+                  {hint && (
+                    <p className="text-steel-500 text-sm">Hint: {hint}</p>
+                  )}
                 </motion.div>
+
+                {/* Instructions */}
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-steel-400"
+                >
+                  Select all words that secretly connect to this clue
+                </motion.p>
 
                 {/* Place phone reminder */}
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.55 }}
+                  transition={{ delay: 0.65 }}
                   className="flex items-center justify-center gap-2 text-steel-500"
                 >
                   <span className="text-lg">📱</span>
@@ -281,18 +354,18 @@ export function PersonalityMatchUI({
                 <motion.button
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  onClick={() => setPhase('selecting')}
-                  className="w-full bg-mint hover:bg-mint/90 text-void font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(0,255,170,0.3)] hover:shadow-[0_0_30px_rgba(0,255,170,0.5)]"
+                  transition={{ delay: 0.7 }}
+                  onClick={() => setPhase('playing')}
+                  className="w-full bg-violet-500 hover:bg-violet-400 text-frost font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]"
                 >
-                  Let's Go!
+                  Solve the Riddle
                 </motion.button>
 
                 {onSkip && (
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
+                    transition={{ delay: 0.9 }}
                     onClick={onSkip}
                     className="text-steel-500 hover:text-frost text-sm py-2"
                   >
@@ -303,59 +376,52 @@ export function PersonalityMatchUI({
             </motion.div>
           )}
 
-          {/* Selecting Phase */}
-          {phase === 'selecting' && (
+          {/* Playing Phase - 5x5 Grid */}
+          {phase === 'playing' && (
             <motion.div
-              key="selecting"
+              key="playing"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-2xl space-y-6"
             >
-              {/* Question with Subject Avatar */}
-              <div className="text-center space-y-3">
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-mint/50">
-                    <Image
-                      src={`/avatars/${subjectPlayer.avatar || 1}.png`}
-                      alt={subjectPlayer.name}
-                      width={48}
-                      height={48}
-                      className="object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-frost">
-                    Which words describe {subjectPlayer.name}?
-                  </h3>
-                </div>
-                <p className="text-mint font-mono text-sm">
-                  {selectedWords.length} selected
+              {/* Clue reminder */}
+              <div className="glass rounded-xl p-4 border border-violet-400/30 text-center">
+                <p className="font-mono text-xs text-violet-400 uppercase mb-1">Find words that connect to...</p>
+                <p className="text-frost text-xl font-bold italic">"{clue}"</p>
+              </div>
+
+              {/* Selection count */}
+              <div className="text-center">
+                <p className="text-steel-400 text-sm">
+                  {selectedWords.length} words selected
                 </p>
               </div>
 
-              {/* Word Grid - 4x4 */}
-              <div className="grid grid-cols-4 gap-2 md:gap-3">
+              {/* 5x5 Word Grid */}
+              <div className="grid grid-cols-5 gap-2">
                 {words.map((word, index) => {
                   const isSelected = selectedWords.includes(word);
                   return (
                     <motion.button
-                      key={word}
+                      key={index}
                       onClick={() => handleWordClick(word)}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.03 }}
+                      transition={{ delay: index * 0.02 }}
                       whileTap={{ scale: 0.95 }}
                       className={`
-                        aspect-square rounded-xl font-bold text-xs md:text-sm
-                        transition-all duration-200 relative overflow-hidden p-2
-                        flex items-center justify-center text-center
+                        aspect-square rounded-lg font-medium text-xs md:text-sm p-1
+                        transition-all duration-200 relative overflow-hidden
                         ${
                           isSelected
-                            ? 'bg-mint border-2 border-mint text-void shadow-glow'
-                            : 'bg-void-light border-2 border-steel-800 text-frost hover:border-mint/50'
+                            ? 'bg-violet-500 border-2 border-violet-400 text-frost shadow-[0_0_10px_rgba(139,92,246,0.4)]'
+                            : 'bg-void-light border-2 border-steel-800 text-frost hover:border-violet-400/50'
                         }
                       `}
                     >
+                      <span className="relative z-10 break-words leading-tight">{word}</span>
+
                       {/* Selection indicator */}
                       {isSelected && (
                         <motion.div
@@ -364,7 +430,7 @@ export function PersonalityMatchUI({
                           className="absolute top-1 right-1 w-4 h-4 rounded-full bg-void flex items-center justify-center"
                         >
                           <svg
-                            className="w-2.5 h-2.5 text-mint"
+                            className="w-2.5 h-2.5 text-violet-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -378,7 +444,6 @@ export function PersonalityMatchUI({
                           </svg>
                         </motion.div>
                       )}
-                      <span className="relative z-10">{word}</span>
                     </motion.button>
                   );
                 })}
@@ -390,11 +455,9 @@ export function PersonalityMatchUI({
                 animate={{ opacity: selectedWords.length > 0 ? 1 : 0.5 }}
                 onClick={handleSubmit}
                 disabled={selectedWords.length === 0}
-                className="w-full bg-mint hover:bg-mint/90 disabled:bg-steel-800 disabled:cursor-not-allowed text-void font-bold py-4 px-6 rounded-xl transition-all"
+                className="w-full bg-violet-500 hover:bg-violet-400 disabled:bg-steel-800 disabled:cursor-not-allowed text-frost font-bold py-4 px-6 rounded-xl transition-all"
               >
-                {selectedWords.length === 0
-                  ? 'Select at least one word'
-                  : `Submit ${selectedWords.length} word${selectedWords.length > 1 ? 's' : ''}`}
+                {selectedWords.length > 0 ? `Submit ${selectedWords.length} words` : 'Select at least 1 word'}
               </motion.button>
             </motion.div>
           )}
@@ -412,12 +475,12 @@ export function PersonalityMatchUI({
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-4 h-4 rounded-full bg-mint animate-pulse"
+                    className="w-4 h-4 rounded-full bg-violet-400 animate-pulse"
                     style={{ animationDelay: `${i * 200}ms` }}
                   />
                 ))}
               </div>
-              <p className="text-frost font-mono">The Analyst is judging...</p>
+              <p className="text-frost font-mono">The Riddler contemplates...</p>
             </motion.div>
           )}
 
@@ -447,68 +510,57 @@ export function PersonalityMatchUI({
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.3 }}
                 className="glass rounded-xl p-6 border border-steel-800"
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">🔍</span>
+                  <span className="text-2xl">🔮</span>
                   <p className="text-frost text-lg">{result.commentary}</p>
                 </div>
               </motion.div>
 
-              {/* Selected Words Summary with Avatar */}
+              {/* Match breakdown */}
+              {scoreDetails && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="glass rounded-xl p-4 border border-steel-800 space-y-3"
+                >
+                  {scoreDetails.exactMatches.length > 0 && (
+                    <div>
+                      <p className="font-mono text-xs text-green-400 uppercase mb-1">Exact Matches</p>
+                      <p className="text-frost text-sm">{scoreDetails.exactMatches.join(', ')}</p>
+                    </div>
+                  )}
+                  {scoreDetails.creativeMatches.length > 0 && (
+                    <div>
+                      <p className="font-mono text-xs text-violet-400 uppercase mb-1">Creative Credit</p>
+                      <p className="text-frost text-sm">{scoreDetails.creativeMatches.join(', ')}</p>
+                    </div>
+                  )}
+                  {scoreDetails.misses.length > 0 && (
+                    <div>
+                      <p className="font-mono text-xs text-steel-500 uppercase mb-1">Misses</p>
+                      <p className="text-steel-400 text-sm">{scoreDetails.misses.join(', ')}</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Revealed Answer */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="glass rounded-xl p-5 border border-steel-800"
+                className="glass rounded-xl p-6 border border-violet-400/30"
               >
-                <div className="flex items-start gap-4">
-                  {/* Subject Avatar */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-mint/50">
-                      <Image
-                        src={`/avatars/${subjectPlayer.avatar || 1}.png`}
-                        alt={subjectPlayer.name}
-                        width={56}
-                        height={56}
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                  {/* Words */}
-                  <div className="flex-1">
-                    <p className="font-mono text-xs text-steel-500 uppercase mb-2">
-                      Your picks for {subjectPlayer.name}:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedWords.map((word) => (
-                        <span
-                          key={word}
-                          className="px-2 py-1 rounded-lg bg-mint/20 text-mint text-sm font-mono"
-                        >
-                          {word}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <p className="font-mono text-xs text-violet-400 uppercase mb-2">The Connection Revealed</p>
+                <p className="text-frost text-lg">{result.correctAnswer}</p>
+                <p className="text-steel-400 text-sm mt-2">
+                  Correct words: {correctWords.join(', ')}
+                </p>
               </motion.div>
-
-              {/* Best/Worst Pick */}
-              {result.correctAnswer && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="glass rounded-xl p-4 border border-steel-800"
-                >
-                  <p className="text-frost text-sm">{result.correctAnswer}</p>
-                  {result.bonusInfo && (
-                    <p className="text-sm text-mint mt-2">{result.bonusInfo}</p>
-                  )}
-                </motion.div>
-              )}
 
               {/* Continue Button */}
               <motion.button
@@ -516,7 +568,7 @@ export function PersonalityMatchUI({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
                 onClick={handleComplete}
-                className="w-full bg-mint hover:bg-mint/90 text-void font-bold py-4 px-6 rounded-xl transition-all"
+                className="w-full bg-violet-500 hover:bg-violet-400 text-frost font-bold py-4 px-6 rounded-xl transition-all"
               >
                 Continue
               </motion.button>

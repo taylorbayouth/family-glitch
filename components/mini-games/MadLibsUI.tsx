@@ -280,57 +280,139 @@ export function MadLibsUI({
             </motion.div>
           )}
 
-          {/* Intro Phase */}
+          {/* Intro Phase - Dramatic Full Screen */}
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="w-full max-w-lg space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-gradient-to-br from-amber-400/20 via-void to-amber-500/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden"
             >
-              <div className="glass rounded-xl p-6 border border-amber-400/30 space-y-4 text-center">
-                <span className="text-5xl">📝</span>
-                <h3 className="text-2xl font-bold text-frost">
-                  Fill in the Blanks!
-                </h3>
-                <p className="text-steel-400">
-                  Complete the sentence with words starting with the given letters.
-                  <br />
-                  <span className="text-sm text-amber-400">Be creative - you're scored on humor!</span>
-                </p>
-                {hint && (
-                  <p className="text-sm text-steel-500 italic">Theme: {hint}</p>
-                )}
+              {/* Animated background elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <motion.div
+                  className="absolute top-1/3 left-1/4 w-64 h-64 bg-amber-400/20 rounded-full blur-3xl"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+                <motion.div
+                  className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-amber-500/30 rounded-full blur-3xl"
+                  animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                />
               </div>
 
-              {/* Show letters */}
-              <div className="flex justify-center gap-4">
-                {blanks.map((blank, i) => (
-                  <div
-                    key={i}
-                    className="w-12 h-12 rounded-xl bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center"
-                  >
-                    <span className="text-2xl font-black text-amber-400">{blank.letter}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setPhase('filling')}
-                className="w-full bg-amber-400 hover:bg-amber-300 text-void font-bold py-4 px-6 rounded-xl transition-all"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                className="relative z-10 text-center space-y-6 max-w-lg"
               >
-                Let's Go!
-              </button>
-
-              {onSkip && (
-                <button
-                  onClick={onSkip}
-                  className="w-full text-steel-500 hover:text-frost text-sm py-2"
+                {/* Mini-game badge */}
+                <motion.div
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="inline-block px-4 py-2 rounded-full bg-amber-400/30 border border-amber-400"
                 >
-                  Skip this challenge
-                </button>
-              )}
+                  <span className="font-mono text-sm text-amber-400 uppercase tracking-widest">
+                    Mini-Game
+                  </span>
+                </motion.div>
+
+                {/* Game icon */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.3 }}
+                  className="text-7xl"
+                >
+                  📝
+                </motion.div>
+
+                {/* Title */}
+                <motion.h1
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-4xl md:text-5xl font-black text-frost"
+                >
+                  Mad Libs Challenge
+                </motion.h1>
+
+                {/* Description */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="glass rounded-xl p-6 border border-amber-400/30 space-y-3"
+                >
+                  <p className="text-steel-300 text-lg">
+                    Fill in the blanks with words starting with specific letters!
+                  </p>
+                  <p className="text-amber-400 text-sm font-medium">
+                    Be creative - you're scored on humor!
+                  </p>
+                  {hint && (
+                    <p className="text-steel-500 text-sm italic">Theme: {hint}</p>
+                  )}
+                </motion.div>
+
+                {/* Show letters */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.55 }}
+                  className="flex justify-center gap-3"
+                >
+                  {blanks.map((blank, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', delay: 0.6 + i * 0.1 }}
+                      className="w-14 h-14 rounded-xl bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.3)]"
+                    >
+                      <span className="text-2xl font-black text-amber-400">{blank.letter}</span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Place phone reminder */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.65 }}
+                  className="flex items-center justify-center gap-2 text-steel-500"
+                >
+                  <span className="text-lg">📱</span>
+                  <p className="text-sm">Place phone on table so everyone can see!</p>
+                </motion.div>
+
+                {/* Start button */}
+                <motion.button
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                  onClick={() => setPhase('filling')}
+                  className="w-full bg-amber-400 hover:bg-amber-300 text-void font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+                >
+                  Let's Go!
+                </motion.button>
+
+                {onSkip && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9 }}
+                    onClick={onSkip}
+                    className="text-steel-500 hover:text-frost text-sm py-2"
+                  >
+                    Skip this challenge
+                  </motion.button>
+                )}
+              </motion.div>
             </motion.div>
           )}
 

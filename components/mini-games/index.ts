@@ -11,3 +11,4 @@
 export { TriviaChallengeUI } from './TriviaChallengeUI';
 export { PersonalityMatchUI } from './PersonalityMatchUI';
 export { MadLibsUI } from './MadLibsUI';
+export { CrypticConnectionUI } from './CrypticConnectionUI';

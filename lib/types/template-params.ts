@@ -83,8 +83,8 @@ export interface WordGridParams extends BaseTemplateParams {
   /** Array of words/options to display */
   words: string[];
 
-  /** Grid layout (2x2=4, 3x3=9, 4x4=16) */
-  gridSize: 4 | 9 | 16;
+  /** Grid layout (2x2=4, 3x3=9, 4x4=16, 5x5=25) */
+  gridSize: 4 | 9 | 16 | 25;
 
   /** Selection mode */
   selectionMode: 'single' | 'multiple';

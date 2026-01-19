@@ -256,18 +256,18 @@ export default function SetupPage() {
 
                     {/* Avatar Selection */}
                     <div className="mb-5">
-                      <label className="block text-xs text-steel-500 uppercase tracking-wider mb-2 font-mono">
+                      <label className="block text-xs text-steel-500 uppercase tracking-wider mb-3 font-mono">
                         Avatar
                       </label>
-                      <div className="grid grid-cols-7 gap-2">
+                      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-3">
                         {Array.from({ length: AVATAR_COUNT }, (_, i) => (
                           <button
                             key={i + 1}
                             onClick={() => handleUpdateForm(form.id, 'avatar', i + 1)}
                             className={`aspect-square rounded-full overflow-hidden transition-all ${
                               form.avatar === i + 1
-                                ? 'ring-2 ring-glitch ring-offset-2 ring-offset-void scale-110'
-                                : 'border-2 border-steel-700 hover:border-steel-500'
+                                ? 'ring-3 ring-glitch ring-offset-2 ring-offset-void scale-105 shadow-glow'
+                                : 'border-2 border-steel-700 hover:border-steel-500 hover:scale-105'
                             }`}
                           >
                             <img

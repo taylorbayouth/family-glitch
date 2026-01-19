@@ -19,7 +19,7 @@ import type { Turn } from '@/lib/types/game-state';
 // MINI-GAME TYPES (extensible)
 // ============================================================================
 
-export type MiniGameType = 'trivia_challenge' | 'personality_match' | 'madlibs_challenge';
+export type MiniGameType = 'trivia_challenge' | 'personality_match' | 'madlibs_challenge' | 'cryptic_connection';
 
 export type MiniGameStatus =
   | 'intro'       // Showing challenge intro
@@ -205,10 +205,10 @@ export interface EligibilityResult {
 }
 
 // ============================================================================
-// MINI-GAME REGISTRY
+// MINI-GAME ELIGIBILITY
 // ============================================================================
 
-export interface MiniGameDefinition {
+export interface MiniGameEligibilityDef {
   type: MiniGameType;
   name: string;
   description: string;

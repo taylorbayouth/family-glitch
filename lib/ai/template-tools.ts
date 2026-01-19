@@ -212,7 +212,7 @@ registerTool<{
   prompt: string;
   subtitle?: string;
   words: string[];
-  gridSize: 4 | 9 | 16;
+  gridSize: 4 | 9 | 16 | 25;
   selectionMode: 'single' | 'multiple';
   minSelections?: number;
   maxSelections?: number;
@@ -235,15 +235,15 @@ registerTool<{
         },
         words: {
           type: 'array',
-          description: 'Array of words/options to display. Must provide exactly 4, 9, or 16 words to match the grid size.',
+          description: 'Array of words/options to display. Must provide exactly 4, 9, 16, or 25 words to match the grid size.',
           items: { type: 'string' },
           minItems: 4,
-          maxItems: 16,
+          maxItems: 25,
         },
         gridSize: {
           type: 'number',
-          enum: [4, 9, 16],
-          description: 'Grid layout: 4 (2x2), 9 (3x3), or 16 (4x4). Must match the length of the words array.',
+          enum: [4, 9, 16, 25],
+          description: 'Grid layout: 4 (2x2), 9 (3x3), 16 (4x4), or 25 (5x5). Must match the length of the words array.',
         },
         selectionMode: {
           type: 'string',
@@ -523,6 +523,70 @@ registerTool<{
         subjectPlayerId: args.subjectPlayerId,
         subjectPlayerName: args.subjectPlayerName,
         intro: args.intro,
+      },
+    };
+  }
+);
+
+/**
+ * Tool: Trigger Mad Libs Challenge
+ * A fill-in-the-blank word game where the AI generates a template and player fills in words.
+ */
+registerTool<{
+  intro?: string;
+}>(
+  {
+    type: 'function',
+    name: 'trigger_madlibs_challenge',
+    description: 'Start a MAD LIBS mini-game! Generate a funny fill-in-the-blank sentence template. The player fills blanks with words starting with specific letters. The AI scores for creativity and humor. Available anytime - no player data needed!',
+    parameters: {
+      type: 'object',
+      properties: {
+        intro: {
+          type: 'string',
+          description: 'Optional intro text for the challenge (e.g., "Time to get creative with words!")',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  async (args) => {
+    return {
+      templateType: 'madlibs_challenge',
+      params: {
+        intro: args.intro || 'Mad Libs time!',
+      },
+    };
+  }
+);
+
+/**
+ * Tool: Trigger Cryptic Connection Challenge
+ * A word association puzzle where the player finds hidden connections in a 5x5 grid.
+ */
+registerTool<{
+  intro?: string;
+}>(
+  {
+    type: 'function',
+    name: 'trigger_cryptic_connection',
+    description: 'Start a CRYPTIC CONNECTION mini-game! Present a vague, enigmatic clue and a 5x5 grid of 25 words. The player must find which words secretly connect to the riddle. AI scores with fuzzy logic - creative interpretations get partial credit. The puzzle should be hard and cryptic. Available anytime - no player data needed!',
+    parameters: {
+      type: 'object',
+      properties: {
+        intro: {
+          type: 'string',
+          description: 'Optional intro text for the challenge (e.g., "The Riddler has a mystery for you...")',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  async (args) => {
+    return {
+      templateType: 'cryptic_connection',
+      params: {
+        intro: args.intro || 'A riddle awaits...',
       },
     };
   }

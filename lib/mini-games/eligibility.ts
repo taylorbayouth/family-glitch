@@ -9,7 +9,7 @@ import type { Turn } from '@/lib/types/game-state';
 import type {
   EligibilityContext,
   EligibilityResult,
-  MiniGameDefinition,
+  MiniGameEligibilityDef,
   MiniGameType,
 } from './types';
 
@@ -148,10 +148,31 @@ function checkMadLibsEligibility(context: EligibilityContext): EligibilityResult
 }
 
 // ============================================================================
+// CRYPTIC CONNECTION ELIGIBILITY
+// ============================================================================
+
+function checkCrypticConnectionEligibility(context: EligibilityContext): EligibilityResult {
+  const { currentAct } = context;
+
+  // Rule 1: Must be in Act 2 or 3
+  if (currentAct < 2) {
+    return {
+      eligible: false,
+      reason: 'Cryptic Connection unlocks in Act II',
+    };
+  }
+
+  // Cryptic Connection doesn't require other players' turns - it's standalone
+  return {
+    eligible: true,
+  };
+}
+
+// ============================================================================
 // MINI-GAME REGISTRY
 // ============================================================================
 
-export const MINI_GAME_REGISTRY: Record<MiniGameType, MiniGameDefinition> = {
+export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef> = {
   trivia_challenge: {
     type: 'trivia_challenge',
     name: 'Trivia Challenge',
@@ -172,6 +193,13 @@ export const MINI_GAME_REGISTRY: Record<MiniGameType, MiniGameDefinition> = {
     description: 'Fill in the blanks with words starting with specific letters - scored for creativity',
     minAct: 2,
     checkEligibility: checkMadLibsEligibility,
+  },
+  cryptic_connection: {
+    type: 'cryptic_connection',
+    name: 'Cryptic Connection',
+    description: 'Find hidden connections in a cryptic word puzzle - fuzzy scoring rewards creative thinking',
+    minAct: 2,
+    checkEligibility: checkCrypticConnectionEligibility,
   },
 };
 
