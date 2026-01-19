@@ -8,6 +8,7 @@ export const DEFAULT_CONFIG: Required<AIRequestConfig> = {
   temperature: 0.7,
   maxTokens: 4096,
   tools: [], // Empty = all tools available
+  toolChoice: 'auto',
   reasoningEffort: 'medium',
   stream: true,
 };

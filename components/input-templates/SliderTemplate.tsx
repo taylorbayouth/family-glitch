@@ -28,7 +28,9 @@ export function SliderTemplate({
   showValue = true,
   onSubmit,
 }: SliderParams) {
+  // Start with middle value visually, but track if user has interacted
   const [value, setValue] = useState(defaultValue ?? Math.floor((min + max) / 2));
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   // Calculate percentage for visual representation
@@ -106,7 +108,10 @@ export function SliderTemplate({
               max={max}
               step={step}
               value={value}
-              onChange={(e) => setValue(Number(e.target.value))}
+              onChange={(e) => {
+                setValue(Number(e.target.value));
+                setHasInteracted(true);
+              }}
               onMouseDown={() => setIsDragging(true)}
               onMouseUp={() => setIsDragging(false)}
               onTouchStart={() => setIsDragging(true)}
@@ -135,15 +140,17 @@ export function SliderTemplate({
           </div>
         </div>
 
-        {/* Submit Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={handleSubmit}
-          className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
-        >
-          Confirm
-        </motion.button>
+        {/* Submit Button - only show after user interacts */}
+        {hasInteracted && (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleSubmit}
+            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
+          >
+            Confirm
+          </motion.button>
+        )}
 
         {/* Hint */}
         <p className="text-center text-steel-600 text-xs font-mono">

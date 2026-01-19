@@ -164,7 +164,16 @@ export async function POST(req: NextRequest) {
       });
 
       // Execute tool calls and add results
-      const templateTools = ['ask_for_text', 'ask_for_list', 'ask_binary_choice', 'ask_word_selection', 'ask_rating', 'ask_player_vote'];
+      // Template tools return immediately (they configure UI components, not produce text)
+      const templateTools = [
+        'ask_for_text',
+        'ask_for_list',
+        'ask_binary_choice',
+        'ask_word_selection',
+        'ask_rating',
+        'ask_player_vote',
+        'trigger_trivia_challenge',
+      ];
 
       for (const toolCall of message.tool_calls) {
         try {

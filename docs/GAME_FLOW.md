@@ -7,8 +7,8 @@ Complete documentation of the Family Glitch game flow from setup to gameplay.
 Family Glitch uses a **pass-and-play** model where:
 1. Questions are **preloaded** during the "pass" screen to minimize wait time
 2. Players **slide to unlock** their question for privacy
-3. Questions use one of **6 dynamic input templates**
-4. AI provides **witty commentary** after each response
+3. Questions use one of **6 dynamic input templates** (or mini-games in Act 2+)
+4. AI provides **witty commentary** (max 10 words) after each response
 5. Game continues in rounds until complete
 
 ## Complete Flow Diagram
@@ -62,15 +62,24 @@ app/
 components/
 ├── PassToPlayerScreen.tsx        # Privacy screen between turns
 ├── SlideToUnlock.tsx             # Swipeable unlock mechanism
-└── input-templates/
-    ├── TextAreaTemplate.tsx      # All 6 templates...
-    └── index.tsx                 # TemplateRenderer
+├── GameProgressBar.tsx           # Visual progress indicator with acts
+├── input-templates/
+│   ├── TextAreaTemplate.tsx      # All 6 templates...
+│   └── index.tsx                 # TemplateRenderer
+└── mini-games/
+    ├── TriviaChallengeUI.tsx     # Trivia challenge mini-game UI
+    └── index.tsx                 # Mini-game exports
 
 lib/
 ├── ai/
 │   ├── game-master-prompt.ts    # System prompt with examples
-│   ├── template-tools.ts        # 6 tools for AI to call
+│   ├── template-tools.ts        # 7 tools for AI to call
 │   └── client.ts                # API communication
+├── mini-games/
+│   ├── index.ts                 # Mini-game exports
+│   ├── eligibility.ts           # Turn eligibility for trivia
+│   └── trivia-challenge/
+│       └── prompt.ts            # Quizmaster AI prompt
 └── store/
     ├── player-store.ts          # Persistent player data
     └── game-store.ts            # Game state & turns
@@ -307,18 +316,20 @@ buildGameMasterPrompt(players, gameState)
 
 ### Tool Calls
 
-AI has access to 6 tools:
+AI has access to 7 tools:
 1. `ask_for_text` - Detailed paragraphs
 2. `ask_for_list` - Multiple short answers
 3. `ask_binary_choice` - Timed this-or-that
 4. `ask_word_selection` - Grid selection
 5. `ask_rating` - Scale ratings
 6. `ask_player_vote` - Vote for another player
+7. `trigger_trivia_challenge` - Mini-game (Act 2+ only)
 
 **Tool selection is automatic** - AI chooses based on:
 - Question type
 - Context
 - Tool descriptions in schema
+- Current act (trivia only available in Act 2+)
 
 ---
 
@@ -422,16 +433,121 @@ Templates use React.memo() for efficient re-renders.
 
 ---
 
+## Game Progression System
+
+### Round Tracking
+
+The game uses a dynamic round calculation system:
+
+**Formula:** `Total Rounds = Number of Players × AVERAGE_TURNS_PER_PLAYER`
+
+**Tuning Variable:** [lib/constants.ts](../lib/constants.ts)
+```typescript
+export const AVERAGE_TURNS_PER_PLAYER = 4; // Change this to adjust game length
+```
+
+**Example:**
+- 3 players × 4 turns = 12 total rounds
+- 5 players × 4 turns = 20 total rounds
+- Change to 6: 3 players × 6 turns = 18 rounds
+
+### Act System
+
+The game divides into three dramatic acts:
+
+- **ACT I (0-33%)** - "Getting Started" (mint green)
+- **ACT II (33-66%)** - "Rising Tension" (glitch purple)
+- **ACT III (66-100%)** - "Final Round" (alert red)
+
+Acts can be used by the AI to adjust question difficulty and tone.
+
+### Progress Bar
+
+Visual progress indicator showing:
+- Current act with color coding
+- Round counter (e.g., "Round 5 of 12")
+- Progress percentage
+- Visual markers at act boundaries (33%, 66%)
+
+**Location:** Displayed in header during question phase
+
+### Game Completion
+
+The system automatically detects when all rounds are complete:
+```typescript
+isGameComplete = (currentRound >= totalRounds)
+```
+
+**Current behavior:** Shows "🎉 Game Complete! Thanks for playing!"
+
+**Future:** Will transition to end-game summary screen
+
+### Implementation Details
+
+**Store Methods:**
+- `getTotalRounds()` - Calculates total based on player count
+- `getCurrentRound()` - Counts completed turns
+- `getCurrentAct()` - Returns 1, 2, or 3
+- `getProgressPercentage()` - Returns 0-100
+- `isGameComplete()` - Boolean completion check
+
+**Files:**
+- [lib/constants.ts](../lib/constants.ts) - Calculation functions
+- [lib/store/game-store.ts](../lib/store/game-store.ts) - Computed properties
+- [components/GameProgressBar.tsx](../components/GameProgressBar.tsx) - Visual component
+
+---
+
+## Mini-Games System
+
+### Overview
+
+Mini-games add variety to the main question flow. They become available in **Act 2+** when there are enough completed turns to draw from.
+
+### Trivia Challenge
+
+**What it does:** Quiz the current player about something another player said earlier.
+
+**Requirements:**
+- Game must be in Act 2 or later (33%+ complete)
+- At least 3 eligible turns from other players
+- AI decides when to trigger (roughly once every 4-5 turns)
+
+**Flow:**
+1. Game Master triggers `trigger_trivia_challenge` tool
+2. Quizmaster AI (separate personality) generates a question
+3. Player answers in text input
+4. Quizmaster scores 0-5 points with witty commentary
+5. Game continues to next player
+
+**Quizmaster Personality:**
+- Sharp and quick-witted
+- Mocks low scores playfully
+- Celebrates high scores with genuine surprise
+- MAX 10 words commentary
+
+**Files:**
+- [lib/mini-games/eligibility.ts](../lib/mini-games/eligibility.ts) - Turn selection
+- [lib/mini-games/trivia-challenge/prompt.ts](../lib/mini-games/trivia-challenge/prompt.ts) - Quizmaster AI
+- [components/mini-games/TriviaChallengeUI.tsx](../components/mini-games/TriviaChallengeUI.tsx) - UI
+
+---
+
 ## Future Enhancements
 
-- [ ] End-game summary with winner announcement
+- [x] Game progression tracking with acts
+- [x] Visual progress bar
+- [x] Game completion detection
+- [x] Mini-games system (Trivia Challenge)
+- [ ] End-game summary screen with winner announcement
 - [ ] Leaderboard screen
 - [ ] Share results feature
-- [ ] Question difficulty progression
+- [ ] Question difficulty progression based on acts
 - [ ] Custom question categories
 - [ ] Multiplayer simultaneous input
 - [ ] Voice input for responses
 - [ ] Game replay/history
+- [ ] Additional mini-games
 
 ---
 
@@ -460,5 +576,5 @@ Templates use React.memo() for efficient re-renders.
 ---
 
 **Status:** ✅ Production Ready
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Last Updated:** 2026-01-19

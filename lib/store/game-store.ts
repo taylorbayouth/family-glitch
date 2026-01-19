@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameState as GameStateType, Turn, CreateTurnInput } from '@/lib/types/game-state';
+import { calculateTotalRounds, calculateCurrentAct, calculateProgressPercentage } from '@/lib/constants';
 
 interface Player {
   id: string;
@@ -21,7 +22,7 @@ interface GameStoreState extends Omit<GameStateType, 'startedAt' | 'endedAt'> {
   // Actions
   addPlayer: (player: Player) => void;
   removePlayer: (playerId: string) => void;
-  startGame: () => void;
+  startGame: (numberOfPlayers?: number) => void;
   startNewGame: () => void;
   resetGame: () => void;
   nextRound: () => void;
@@ -33,6 +34,27 @@ interface GameStoreState extends Omit<GameStateType, 'startedAt' | 'endedAt'> {
   skipTurn: (turnId: string) => void;
   updatePlayerScore: (playerId: string, points: number) => void;
   getCurrentTurn: () => Turn | null;
+
+  // Computed properties (read-only)
+  getTotalRounds: () => number;
+  getCurrentRound: () => number;
+  getCurrentAct: () => 1 | 2 | 3;
+  getProgressPercentage: () => number;
+  isGameComplete: () => boolean;
+}
+
+/**
+ * Helper function to get player count with fallbacks
+ * Priority: settings.numberOfPlayers → players.length → unique players in turns
+ */
+function getPlayerCount(state: GameStoreState): number {
+  let count = state.settings?.numberOfPlayers || state.players.length;
+  // If still 0, count unique players from turns (for backward compatibility)
+  if (count === 0 && state.turns.length > 0) {
+    const uniquePlayerIds = new Set(state.turns.map(t => t.playerId));
+    count = uniquePlayerIds.size;
+  }
+  return count;
 }
 
 export const useGameStore = create<GameStoreState>()(
@@ -50,6 +72,7 @@ export const useGameStore = create<GameStoreState>()(
         totalRounds: 10,
         difficulty: 'casual',
         allowTargeting: true,
+        numberOfPlayers: 0,
       },
 
       // Legacy state (for backwards compatibility)
@@ -68,14 +91,18 @@ export const useGameStore = create<GameStoreState>()(
           players: state.players.filter((p) => p.id !== playerId),
         })),
 
-      startGame: () =>
-        set({
+      startGame: (numberOfPlayers) =>
+        set((state) => ({
           gameStarted: true,
           gameId: crypto.randomUUID(),
           startedAt: new Date().toISOString(),
           status: 'playing',
           currentRound: 1,
-        }),
+          settings: {
+            ...state.settings,
+            numberOfPlayers: numberOfPlayers || state.players.length,
+          },
+        })),
 
       startNewGame: () =>
         set({
@@ -177,6 +204,39 @@ export const useGameStore = create<GameStoreState>()(
           return state.turns[state.currentTurnIndex];
         }
         return null;
+      },
+
+      // Computed properties for game progression
+      getTotalRounds: () => {
+        const state = get();
+        return calculateTotalRounds(getPlayerCount(state));
+      },
+
+      getCurrentRound: () => {
+        const state = get();
+        // Current round = number of completed turns
+        return state.turns.filter(t => t.status === 'completed').length;
+      },
+
+      getCurrentAct: () => {
+        const state = get();
+        const currentRound = state.turns.filter(t => t.status === 'completed').length;
+        const totalRounds = get().getTotalRounds(); // Reuse getTotalRounds logic
+        return calculateCurrentAct(currentRound, totalRounds);
+      },
+
+      getProgressPercentage: () => {
+        const state = get();
+        const currentRound = state.turns.filter(t => t.status === 'completed').length;
+        const totalRounds = get().getTotalRounds(); // Reuse getTotalRounds logic
+        return calculateProgressPercentage(currentRound, totalRounds);
+      },
+
+      isGameComplete: () => {
+        const state = get();
+        const currentRound = state.turns.filter(t => t.status === 'completed').length;
+        const totalRounds = get().getTotalRounds(); // Reuse getTotalRounds logic
+        return currentRound >= totalRounds;
       },
     }),
     {

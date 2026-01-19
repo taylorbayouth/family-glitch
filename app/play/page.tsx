@@ -7,10 +7,13 @@ import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
 import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
+import { GameProgressBar } from '@/components/GameProgressBar';
+import { TriviaChallengeUI } from '@/components/mini-games/TriviaChallengeUI';
+import { getEligibleTurnsForPlayer, selectTurnForTrivia } from '@/lib/mini-games';
 import type { ChatMessage } from '@/lib/ai/types';
-import type { TemplateParams } from '@/lib/types/template-params';
+import type { Turn } from '@/lib/types/game-state';
 
-type GamePhase = 'pass' | 'question' | 'loading';
+type GamePhase = 'pass' | 'question' | 'loading' | 'trivia';
 
 /**
  * Main Game Play Page
@@ -33,6 +36,7 @@ export default function PlayPage() {
     completeTurn,
     updatePlayerScore,
     startGame,
+    isGameComplete,
   } = useGameStore();
 
   // Game state
@@ -53,6 +57,9 @@ export default function PlayPage() {
   const [currentTurnId, setCurrentTurnId] = useState<string>('');
   const [turnStartTime, setTurnStartTime] = useState<number>(0);
 
+  // Trivia challenge state
+  const [triviaSourceTurn, setTriviaSourceTurn] = useState<Turn | null>(null);
+
   const currentPlayer = players[currentPlayerIndex];
 
   // Initialize game
@@ -64,7 +71,7 @@ export default function PlayPage() {
 
     // Start game in store if not started
     if (!gameId) {
-      startGame();
+      startGame(players.length);
     }
 
     // Initialize system prompt
@@ -92,8 +99,30 @@ export default function PlayPage() {
     setError(null);
 
     try {
+      // Calculate eligible turns for trivia challenges
+      const eligibleTurns = currentPlayer
+        ? getEligibleTurnsForPlayer(turns, currentPlayer.id)
+        : [];
+
+      // Create a summary of eligible turns for the prompt
+      const triviaEligibleTurns = eligibleTurns.length >= 3
+        ? [...new Map(eligibleTurns.map(t => [t.playerId, t])).values()].map(t => ({
+            playerId: t.playerId,
+            playerName: t.playerName,
+            turnId: t.turnId,
+          }))
+        : undefined;
+
+      // Update system prompt with current game state and trivia eligibility
+      const systemPrompt = buildGameMasterPrompt(
+        players,
+        { gameId, turns, scores, status: 'playing' },
+        { currentPlayerId: currentPlayer?.id, triviaEligibleTurns }
+      );
+
       const newMessages: ChatMessage[] = [
-        ...messages,
+        { role: 'system', content: systemPrompt },
+        ...messages.slice(1), // Keep conversation history, replace system prompt
         {
           role: 'user',
           content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them ONE short, direct question.
@@ -112,6 +141,24 @@ CRITICAL RULES:
 
       // Parse tool call result (template configuration)
       const templateConfig = JSON.parse(response.text);
+
+      // Check if this is a trivia challenge
+      if (templateConfig.templateType === 'trivia_challenge') {
+        // Find the source turn for the trivia challenge
+        const sourcePlayerId = templateConfig.params?.sourcePlayerId;
+        const selectedTurn = sourcePlayerId
+          ? eligibleTurns.find(t => t.playerId === sourcePlayerId)
+          : selectTurnForTrivia(eligibleTurns);
+
+        if (selectedTurn) {
+          setTriviaSourceTurn(selectedTurn);
+          setCurrentTemplate(templateConfig);
+          setMessages([...newMessages, { role: 'assistant', content: response.text }]);
+          return; // Don't create a regular turn for trivia
+        }
+        // If no valid turn found, fall through to regular question
+        console.warn('Trivia challenge requested but no valid source turn found');
+      }
 
       // Sanitize prompt - remove player names if AI ignored instructions
       let sanitizedPrompt = templateConfig.prompt;
@@ -146,8 +193,23 @@ CRITICAL RULES:
    * Handle player unlocking the question
    */
   const handleUnlock = () => {
-    setPhase('question');
+    // Check if this is a trivia challenge
+    if (currentTemplate?.templateType === 'trivia_challenge' && triviaSourceTurn) {
+      setPhase('trivia');
+    } else {
+      setPhase('question');
+    }
     setTurnStartTime(Date.now());
+  };
+
+  /**
+   * Handle trivia challenge completion
+   */
+  const handleTriviaComplete = (result: { score: number; commentary: string }) => {
+    setPhase('loading');
+    setAiCommentary(result.commentary);
+    setTriviaSourceTurn(null);
+    setCurrentTemplate(null);
   };
 
   /**
@@ -172,11 +234,15 @@ CRITICAL RULES:
         ...messages,
         {
           role: 'user',
-          content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. Give punchy commentary in 1-2 sentences. Make it sharp and land your point.`,
+          content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`,
         },
       ];
 
-      const aiResponse = await sendChatRequest(newMessages);
+      // Use toolChoice: 'none' to prevent AI from accidentally calling tools
+      // We only want text commentary here, not a new question
+      const aiResponse = await sendChatRequest(newMessages, {
+        toolChoice: 'none',
+      });
       setAiCommentary(aiResponse.text);
       setMessages([...newMessages, { role: 'assistant', content: aiResponse.text }]);
     } catch (err) {
@@ -195,6 +261,14 @@ CRITICAL RULES:
    * Handle advancing to next player after commentary
    */
   const handleContinueToNext = () => {
+    // Check if game is complete
+    if (isGameComplete()) {
+      // TODO: Show end game screen with final scores
+      // For now, just show a message
+      setAiCommentary('🎉 Game Complete! Thanks for playing!');
+      return;
+    }
+
     // NOW move to next player
     const nextIndex = (currentPlayerIndex + 1) % players.length;
     setCurrentPlayerIndex(nextIndex);
@@ -298,7 +372,7 @@ CRITICAL RULES:
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
 
         {/* Header */}
-        <div className="relative z-10 p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
+        <div className="relative z-10 p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm space-y-4">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div>
               <p className="font-mono text-xs text-steel-500 uppercase tracking-wider">
@@ -314,6 +388,11 @@ CRITICAL RULES:
                 {scores[currentPlayer.id] || 0}
               </p>
             </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="max-w-7xl mx-auto">
+            <GameProgressBar />
           </div>
         </div>
 
@@ -335,6 +414,28 @@ CRITICAL RULES:
           />
         </div>
       </div>
+    );
+  }
+
+  // Trivia challenge screen
+  if (phase === 'trivia' && triviaSourceTurn && currentPlayer) {
+    return (
+      <TriviaChallengeUI
+        targetPlayer={{
+          id: currentPlayer.id,
+          name: currentPlayer.name,
+          role: currentPlayer.role,
+        }}
+        sourceTurn={triviaSourceTurn}
+        allPlayers={players.map(p => ({ id: p.id, name: p.name, role: p.role }))}
+        onComplete={handleTriviaComplete}
+        onSkip={() => {
+          // Skip trivia and move to next player
+          setTriviaSourceTurn(null);
+          setCurrentTemplate(null);
+          handleContinueToNext();
+        }}
+      />
     );
   }
 

@@ -35,9 +35,6 @@ export function TimedBinaryTemplate({
       setTimeLeft((prev) => {
         if (prev <= 0.1) {
           clearInterval(interval);
-          // Auto-submit null on timeout
-          onTimeout?.();
-          onSubmit({ choice: null, timedOut: true });
           return 0;
         }
         return prev - 0.1;
@@ -45,7 +42,20 @@ export function TimedBinaryTemplate({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [hasSelected, onSubmit, onTimeout]);
+  }, [hasSelected]);
+
+  // Handle timeout separately to avoid setState during render
+  useEffect(() => {
+    if (!hasSelected && timeLeft <= 0) {
+      // Use setTimeout to defer submission to next tick
+      const timeoutId = setTimeout(() => {
+        setHasSelected(true);
+        onTimeout?.();
+        onSubmit({ choice: null, timedOut: true });
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [timeLeft, hasSelected, onSubmit, onTimeout]);
 
   const handleChoice = (choice: 'left' | 'right') => {
     if (!hasSelected) {

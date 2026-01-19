@@ -129,11 +129,7 @@ export function PlayerSelectorTemplate({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {selectablePlayers.map((player, index) => {
             const isSelected = selectedPlayerIds.includes(player.id);
-            const isDisabled =
-              !isSelected &&
-              !allowMultiple &&
-              selectedPlayerIds.length > 0 &&
-              !selectedPlayerIds.includes(player.id);
+            // Only disable in multi-select mode when max is reached
             const isMaxReached =
               allowMultiple &&
               !isSelected &&
@@ -143,7 +139,7 @@ export function PlayerSelectorTemplate({
               <motion.button
                 key={player.id}
                 onClick={() => handlePlayerClick(player.id)}
-                disabled={isDisabled || isMaxReached}
+                disabled={isMaxReached}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
@@ -156,7 +152,7 @@ export function PlayerSelectorTemplate({
                       : 'bg-void-light border-2 border-steel-800 hover:border-glitch/50'
                   }
                   ${
-                    isDisabled || isMaxReached
+                    isMaxReached
                       ? 'opacity-30 cursor-not-allowed'
                       : 'cursor-pointer'
                   }

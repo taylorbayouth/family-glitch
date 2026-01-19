@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
@@ -18,6 +19,7 @@ import { APP_VERSION, APP_TAGLINE } from '@/lib/constants';
  * Uses Framer Motion for smooth animations and follows the Digital Noir design system.
  */
 export function HamburgerMenu() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -31,6 +33,7 @@ export function HamburgerMenu() {
     startNewGame();
     setShowConfirmNewGame(false);
     setIsOpen(false);
+    router.push('/setup');
   };
 
   const handleLogout = async () => {

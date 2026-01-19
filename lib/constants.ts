@@ -5,7 +5,7 @@
 // Application info
 export const APP_NAME = 'Family Glitch';
 export const APP_DESCRIPTION = 'A family game application with AI integration';
-export const APP_VERSION = '1.0.0-stable';
+export const APP_VERSION = '1.1.0';
 export const APP_TAGLINE = 'DIGITAL NOIR';
 
 // URLs
@@ -53,6 +53,37 @@ export const PAGES = {
   CHAT: '/chat',
   SIGNIN: '/auth/signin',
 } as const;
+
+// Game Duration & Progression
+export const AVERAGE_TURNS_PER_PLAYER = 4; // Tunable: Adjust this to change game length
+
+/**
+ * Calculate total number of rounds based on player count
+ * Formula: numberOfPlayers * AVERAGE_TURNS_PER_PLAYER
+ */
+export function calculateTotalRounds(numberOfPlayers: number): number {
+  return numberOfPlayers * AVERAGE_TURNS_PER_PLAYER;
+}
+
+/**
+ * Calculate which act the game is currently in (1, 2, or 3)
+ * Acts divide the game into thirds (33%, 66%, 100%)
+ */
+export function calculateCurrentAct(currentRound: number, totalRounds: number): 1 | 2 | 3 {
+  if (totalRounds === 0) return 1;
+  const progress = currentRound / totalRounds;
+  if (progress < 0.33) return 1;
+  if (progress < 0.66) return 2;
+  return 3;
+}
+
+/**
+ * Calculate progress percentage (0-100)
+ */
+export function calculateProgressPercentage(currentRound: number, totalRounds: number): number {
+  if (totalRounds === 0) return 0;
+  return Math.min(Math.round((currentRound / totalRounds) * 100), 100);
+}
 
 // Environment variables (type-safe access)
 export function getEnv(key: string): string | undefined {

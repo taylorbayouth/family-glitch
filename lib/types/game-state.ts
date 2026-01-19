@@ -81,6 +81,9 @@ export interface GameState {
 
     /** Whether to allow voting/targeting mechanics */
     allowTargeting?: boolean;
+
+    /** Number of players in this game (stored at game start) */
+    numberOfPlayers?: number;
   };
 }
 
