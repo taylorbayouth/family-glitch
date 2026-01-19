@@ -96,14 +96,27 @@ export default function PlayPage() {
         ...messages,
         {
           role: 'user',
-          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them an original, creative question. Choose the best input template for your question.`,
+          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them an original, creative question using one of the template tools.
+
+CRITICAL: DO NOT include "${currentPlayer?.name}" or any player names in your question text. The UI already displays whose turn it is. Write the question as if speaking directly to them without using their name.`,
         },
       ];
 
-      const response = await sendChatRequest(newMessages);
+      const response = await sendChatRequest(newMessages, {
+        toolChoice: 'required', // Force AI to use one of the template tools
+      });
 
       // Parse tool call result (template configuration)
       const templateConfig = JSON.parse(response.text);
+
+      // Sanitize prompt - remove player names if AI ignored instructions
+      let sanitizedPrompt = templateConfig.prompt;
+      players.forEach(player => {
+        // Remove "PlayerName:" or "PlayerName (Role):" patterns at the start
+        const namePattern = new RegExp(`^${player.name}\\s*(?:\\([^)]+\\))?:\\s*`, 'i');
+        sanitizedPrompt = sanitizedPrompt.replace(namePattern, '');
+      });
+      templateConfig.prompt = sanitizedPrompt;
 
       // Create turn in game state and get the generated turnId
       const turnId = addTurn({
@@ -155,7 +168,7 @@ export default function PlayPage() {
         ...messages,
         {
           role: 'user',
-          content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. Provide brief, witty commentary (2-3 sentences max).`,
+          content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. Give punchy commentary in 1-2 sentences. Make it sharp and land your point.`,
         },
       ];
 
@@ -167,20 +180,28 @@ export default function PlayPage() {
       setAiCommentary('Nice answer! Moving on...');
     }
 
-    // Move to next player
+    // Reset template (but DON'T update player index yet)
+    setCurrentTemplate(null);
+
+    // Show commentary with button to continue
+    // (phase stays 'loading' to show commentary screen)
+  };
+
+  /**
+   * Handle advancing to next player after commentary
+   */
+  const handleContinueToNext = () => {
+    // NOW move to next player
     const nextIndex = (currentPlayerIndex + 1) % players.length;
     setCurrentPlayerIndex(nextIndex);
     setTurnNumber(turnNumber + 1);
 
-    // Reset template
-    setCurrentTemplate(null);
+    // Clear commentary and show pass screen
+    setAiCommentary('');
+    setPhase('pass');
 
-    // Show pass screen for next player
-    setTimeout(() => {
-      setPhase('pass');
-      // Preload next question while showing pass screen
-      loadQuestion();
-    }, 2000); // Show commentary for 2 seconds
+    // Preload next question while showing pass screen
+    loadQuestion();
   };
 
   // Error state
@@ -226,18 +247,25 @@ export default function PlayPage() {
 
   // Show AI commentary
   if (aiCommentary && phase === 'loading') {
+    // Calculate next player (currentPlayerIndex hasn't been updated yet)
+    const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    const nextPlayer = players[nextPlayerIndex];
+
     return (
       <div className="min-h-screen bg-void flex items-center justify-center p-6">
         <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
               <span className="text-3xl">🤖</span>
             </div>
             <p className="text-frost text-lg leading-relaxed">{aiCommentary}</p>
             <div className="pt-4">
-              <p className="text-steel-500 text-sm font-mono">
-                Preparing next question...
-              </p>
+              <button
+                onClick={handleContinueToNext}
+                className="bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105"
+              >
+                Pass to {nextPlayer.name}
+              </button>
             </div>
           </div>
         </div>

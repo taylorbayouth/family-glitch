@@ -43,6 +43,7 @@ export interface AIRequestConfig {
   temperature?: number;
   maxTokens?: number;
   tools?: string[]; // tool names to enable
+  toolChoice?: 'auto' | 'required' | 'none'; // Force tool usage
   reasoningEffort?: 'low' | 'medium' | 'high' | 'xhigh';
   stream?: boolean;
 }

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Home() {
   const { data: session } = useSession();
@@ -13,10 +14,11 @@ export default function Home() {
   };
 
   // If user is already signed in, redirect to setup
-  if (session) {
-    router.push('/setup');
-    return null;
-  }
+  useEffect(() => {
+    if (session) {
+      router.push('/setup');
+    }
+  }, [session, router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-void relative overflow-hidden">

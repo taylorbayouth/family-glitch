@@ -10,7 +10,9 @@
       "Bash(git reset:*)",
       "Bash(npm run build:*)",
       "Bash(openssl rand:*)",
-      "Bash(npx tailwindcss:*)"
+      "Bash(npx tailwindcss:*)",
+      "Bash(npx tsc:*)",
+      "Bash(lsof:*)"
     ]
   }
 }

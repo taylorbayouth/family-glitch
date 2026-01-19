@@ -41,7 +41,9 @@ function getOpenAIClient(): OpenAI {
 // Lazy-load toolRegistry to avoid build-time execution
 function getToolRegistry() {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { toolRegistry } = require('@/lib/ai/tools');
+  const { toolRegistry, ensureTemplateToolsLoaded } = require('@/lib/ai/tools');
+  // Ensure template tools are registered before using the registry
+  ensureTemplateToolsLoaded();
   return toolRegistry;
 }
 
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
         model: config.model,
         messages: chatMessages,
         tools: tools.length > 0 ? tools : undefined,
+        tool_choice: config.toolChoice || 'auto',
         temperature: config.temperature,
         max_completion_tokens: config.maxTokens,
       });
@@ -161,6 +164,8 @@ export async function POST(req: NextRequest) {
       });
 
       // Execute tool calls and add results
+      const templateTools = ['ask_for_text', 'ask_for_list', 'ask_binary_choice', 'ask_word_selection', 'ask_rating', 'ask_player_vote'];
+
       for (const toolCall of message.tool_calls) {
         try {
           const functionName = toolCall.function.name;
@@ -169,7 +174,16 @@ export async function POST(req: NextRequest) {
           // Execute tool
           const result = await registry.execute(functionName, args);
 
-          // Add tool result to messages
+          // If this is a template tool, return its result immediately
+          if (templateTools.includes(functionName)) {
+            console.log(`Template tool executed: ${functionName}`, { args, result });
+            return NextResponse.json({
+              text: JSON.stringify(result),
+              usage: response.usage,
+            });
+          }
+
+          // Add tool result to messages for non-template tools
           chatMessages.push({
             role: 'tool',
             tool_call_id: toolCall.id,

@@ -795,14 +795,33 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - **main** - Production branch, auto-deploys to Vercel
 - Feature branches not currently used (direct to main)
 
+## Recent Updates (2026-01-19)
+
+### Critical Fixes
+- **Fixed circular dependency error** - Lazy-loaded template tools to avoid `toolRegistry` initialization race condition
+- **Fixed JSON parse error** - Added `toolChoice: 'required'` to force AI to use template tools; API now returns template results immediately as JSON
+- **Fixed player name in questions** - Strengthened prompt rules and added client-side sanitization to remove player names from question text
+- **Fixed player selection bug** - Resolved race condition where commentary button showed wrong player name (moved state update to button click handler)
+- **Fixed React render error** - Moved `router.push()` into `useEffect` on home page
+
+### AI Prompt Improvements
+- **Simplified question format** - Removed multi-part questions, made prompts shorter and punchier
+- **Reframed rules positively** - Changed from "don't do this" to "do this" format
+- **Strategic question design** - Questions now focus on gathering data that can be referenced/contradicted later
+- **Shorter commentary** - AI now provides 1-2 punchy sentences instead of verbose responses
+- **Better examples** - Replaced silly questions (geese, etc.) with meaningful, character-revealing questions
+
+### Game Flow Enhancements
+- **Manual progression** - Replaced auto-timer with "Pass to {NextPlayer}" button after commentary
+- **Consistent state management** - Player index only updates when transitioning to next player, not during commentary
+
 ## Future Enhancements
 
 ### Planned Features
 - [ ] Add streaming support to AI chat
 - [ ] Implement rate limiting
 - [ ] Add database (Vercel Postgres or similar)
-- [ ] Add more AI tools (weather, calendar, etc.)
-- [ ] Create actual game mechanics
+- [ ] Create actual game mechanics (scoring, end conditions)
 - [ ] Add test suite
 - [ ] Add error tracking (Sentry)
 - [ ] Add analytics
@@ -810,6 +829,8 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ### Architecture Improvements
 - [x] Implement state management with Zustand + persist
 - [x] Configure Tailwind CSS v4 with custom theme
+- [x] Fix AI tool calling and template system
+- [x] Optimize question quality and game flow
 - [ ] Add component library (shadcn/ui or similar)
 - [ ] Add API middleware for auth checks
 - [ ] Create shared UI components

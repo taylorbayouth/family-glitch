@@ -65,8 +65,24 @@ export function registerTool<T = any>(
 }
 
 // ============================================
-// IMPORT TEMPLATE TOOLS
+// LAZY-LOAD TEMPLATE TOOLS
 // ============================================
 
-// Template tools for collecting player input
-import './template-tools';
+/**
+ * Template tools must be lazy-loaded to avoid circular dependency.
+ *
+ * Issue: template-tools.ts imports registerTool from this file,
+ * and registerTool uses toolRegistry. If we import template-tools
+ * at module level, toolRegistry won't be initialized yet.
+ *
+ * Solution: Load template tools on first access to the registry.
+ */
+let templateToolsLoaded = false;
+
+export function ensureTemplateToolsLoaded() {
+  if (!templateToolsLoaded) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('./template-tools');
+    templateToolsLoaded = true;
+  }
+}
