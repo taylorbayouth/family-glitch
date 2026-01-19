@@ -78,17 +78,18 @@ export function TextAreaTemplate({
           </div>
         </div>
 
-        {/* Submit Button - Appears after typing */}
-        {hasContent && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleSubmit}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
-          >
-            Submit
-          </motion.button>
-        )}
+        {/* Submit Button - Always visible, disabled when empty */}
+        <button
+          onClick={handleSubmit}
+          disabled={!hasContent}
+          className={`w-full font-bold py-4 px-6 rounded-xl transition-all duration-200 ${
+            hasContent
+              ? 'bg-glitch hover:bg-glitch-bright text-frost shadow-glow hover:shadow-glow-strong active:scale-[0.98] cursor-pointer'
+              : 'bg-steel-800 text-steel-500 cursor-not-allowed'
+          }`}
+        >
+          Submit
+        </button>
 
         {/* Hint */}
         <p className="text-center text-steel-600 text-xs font-mono">

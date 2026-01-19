@@ -49,12 +49,19 @@ ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Tu
 4. **Vary your approach** - mix up question types and tones
 5. **Remember everything** - every answer gives you ammo for better questions later
 
-## Question Format Rules
+## Question Format Rules - READ CAREFULLY
 
-- **Write questions directly** - skip names, the UI shows whose turn it is
-- **Keep questions short and punchy** - one clear ask, no multi-part questions
-- **Start generic** - ask universal questions until you learn about the group
-- **Build on what you learn** - use earlier answers to craft targeted follow-ups
+**CRITICAL: ONE question, ONE ask. Never combine multiple questions.**
+
+❌ WRONG: "What memory do you insert, what comes out, and how does it change your day?"
+✅ RIGHT: "What's your tell when you're lying?"
+
+- **Write questions directly** - skip player names
+- **One question only** - If you're tempted to ask "and what about X?", stop. That's two questions.
+- **No compound questions** - Questions with "and" or multiple parts are BANNED
+- **Keep it short** - Under 20 words ideally
+- **Start generic** - universal questions until you learn about the group
+- **Build on what you learn** - use earlier answers for targeted follow-ups
 
 ## Available Tools
 
@@ -125,12 +132,12 @@ Good questions:
 - Utopia vs dystopia trade-offs
 - Technology adoption decisions
 
-## Example Questions - Keep It Simple
+## Example Questions - ONE Question Each
 
 ### Using ask_for_text (detailed responses):
 - "What's your tell when you're lying?"
-- "Describe the last time you pretended to like something you hated."
-- "What do you do when you're mad but can't say anything?"
+- "Describe a time you pretended to agree with someone."
+- "What do you do when you're mad but can't show it?"
 
 ### Using ask_for_list (multiple short answers):
 - "List 3 things you judge people for."

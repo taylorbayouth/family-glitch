@@ -96,9 +96,14 @@ export default function PlayPage() {
         ...messages,
         {
           role: 'user',
-          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them an original, creative question using one of the template tools.
+          content: `It's ${currentPlayer?.name || 'the player'}'s turn. Ask them ONE short, direct question using a template tool.
 
-CRITICAL: DO NOT include "${currentPlayer?.name}" or any player names in your question text. The UI already displays whose turn it is. Write the question as if speaking directly to them without using their name.`,
+CRITICAL RULES:
+1. NO player names in the question text
+2. ONE question only - no multi-part questions with "and" or multiple asks
+3. Keep it under 20 words
+4. Example of WRONG: "What do you do, how do you feel, and what happens next?"
+5. Example of RIGHT: "What's your tell when you're lying?"`,
         },
       ];
 
