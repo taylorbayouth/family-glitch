@@ -21,19 +21,28 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { toolRegistry } from '@/lib/ai/tools';
 import { mergeConfig, validateApiKey } from '@/lib/ai/config';
 import type { ChatRequest, ChatResponse } from '@/lib/ai/types';
 
 export const runtime = 'nodejs'; // Required for tool execution + SDK
+export const dynamic = 'force-dynamic'; // Prevent static analysis
 
-// Initialize OpenAI client
-let openai: OpenAI;
-try {
-  validateApiKey();
-  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-} catch (error) {
-  console.error('Failed to initialize OpenAI client:', error);
+// OpenAI client singleton
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    validateApiKey();
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
+
+// Lazy-load toolRegistry to avoid build-time execution
+function getToolRegistry() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { toolRegistry } = require('@/lib/ai/tools');
+  return toolRegistry;
 }
 
 /**
@@ -78,12 +87,8 @@ function toChatCompletionMessages(
  */
 export async function POST(req: NextRequest) {
   try {
-    if (!openai) {
-      return NextResponse.json(
-        { error: 'OpenAI client not initialized. Check OPENAI_API_KEY.' },
-        { status: 500 }
-      );
-    }
+    // Initialize OpenAI client
+    const client = getOpenAIClient();
 
     const body: ChatRequest = await req.json();
     const { messages, config: userConfig } = body;
@@ -98,13 +103,16 @@ export async function POST(req: NextRequest) {
     // Merge user config with defaults
     const config = mergeConfig(userConfig);
 
+    // Get tool registry
+    const registry = getToolRegistry();
+
     // Get tool definitions
     const toolDefs = config.tools.length > 0
-      ? toolRegistry.getDefinitions(config.tools)
-      : toolRegistry.getDefinitions();
+      ? registry.getDefinitions(config.tools)
+      : registry.getDefinitions();
 
     // Convert to OpenAI tools format
-    const tools: OpenAI.Chat.ChatCompletionTool[] = toolDefs.map(def => ({
+    const tools: OpenAI.Chat.ChatCompletionTool[] = toolDefs.map((def: any) => ({
       type: 'function' as const,
       function: {
         name: def.name,
@@ -124,7 +132,7 @@ export async function POST(req: NextRequest) {
       iterations++;
 
       // Call OpenAI Chat Completions API
-      const response = await openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: config.model,
         messages: chatMessages,
         tools: tools.length > 0 ? tools : undefined,
@@ -159,7 +167,7 @@ export async function POST(req: NextRequest) {
           const args = JSON.parse(toolCall.function.arguments);
 
           // Execute tool
-          const result = await toolRegistry.execute(functionName, args);
+          const result = await registry.execute(functionName, args);
 
           // Add tool result to messages
           chatMessages.push({
@@ -206,9 +214,10 @@ export async function POST(req: NextRequest) {
  * GET /api/chat - Health check
  */
 export async function GET() {
+  const registry = getToolRegistry();
   return NextResponse.json({
     status: 'ok',
     model: 'gpt-5.2',
-    tools: toolRegistry.getDefinitions().map(t => t.name),
+    tools: registry.getDefinitions().map((t: any) => t.name),
   });
 }

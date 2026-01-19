@@ -146,7 +146,7 @@ export default function SetupPage() {
       }
     });
 
-    router.push('/chat');
+    router.push('/play');
   };
 
   const getPlayerSummary = (form: PlayerFormData) => {

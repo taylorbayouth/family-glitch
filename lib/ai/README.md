@@ -60,14 +60,17 @@ const response = await chat('What is 2+2?', {
 
 ```
 lib/ai/
-├── types.ts          # TypeScript definitions
-├── config.ts         # Configuration & defaults
-├── tools.ts          # Tool registry & tool definitions
-├── client.ts         # Client-side utilities & hooks
-└── README.md         # This file
+├── types.ts                      # TypeScript definitions
+├── config.ts                     # Configuration & defaults
+├── tools.ts                      # Tool registry & tool definitions
+├── template-tools.ts             # Input template tools (NEW)
+├── game-master-prompt.ts         # Game master system prompt builder (NEW)
+├── game-integration-example.ts   # Complete game flow examples (NEW)
+├── client.ts                     # Client-side utilities & hooks
+└── README.md                     # This file
 
 app/api/chat/
-└── route.ts          # API endpoint (tool execution happens here)
+└── route.ts                      # API endpoint (tool execution happens here)
 ```
 
 ## Configuration
@@ -350,8 +353,92 @@ See OpenAI's streaming docs for details.
 
 See [/app/chat/page.tsx](/app/chat/page.tsx) for a complete working example.
 
+## Family Glitch Game Integration
+
+### Template Tools
+
+Six specialized tools for collecting player input during gameplay:
+
+| Tool | Purpose | Example |
+|------|---------|---------|
+| `ask_for_text` | Detailed paragraph responses | "Describe your most embarrassing moment" |
+| `ask_for_list` | Multiple short answers | "Name 3 things in your pocket" |
+| `ask_binary_choice` | Timed "this or that" | "Pizza or Tacos? (5 seconds)" |
+| `ask_word_selection` | Select words from grid | "Select 3 words that describe Dad" |
+| `ask_rating` | Numeric scale rating | "How hungry are you? (0-10)" |
+| `ask_player_vote` | Vote for another player | "Who's the worst driver?" |
+
+### Game Master System
+
+The AI acts as a snarky, witty game master that:
+- Asks probing questions using the template tools
+- Provides commentary on player responses
+- Awards points strategically
+- Creates moments of tension and laughter
+
+**Usage:**
+
+```typescript
+import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
+import { sendChatRequest } from '@/lib/ai/client';
+
+// Build system prompt with player data
+const systemPrompt = buildGameMasterPrompt(players, gameState);
+
+// Start conversation
+const messages = [
+  { role: 'system', content: systemPrompt },
+  { role: 'user', content: 'Start the game and ask the first question.' },
+];
+
+// AI will call one of the template tools
+const response = await sendChatRequest(messages);
+```
+
+### Complete Game Flow Example
+
+See [game-integration-example.ts](./game-integration-example.ts) for:
+- Starting a new game
+- Handling player responses
+- Managing conversation history
+- React hooks for game sessions
+- Complete game loop implementation
+
+### Template Tool Responses
+
+When the AI calls a template tool, it returns configuration for rendering:
+
+```json
+{
+  "templateType": "tpl_slider",
+  "prompt": "How hungry are you right now?",
+  "params": {
+    "min": 0,
+    "max": 10,
+    "minLabel": "Not hungry",
+    "maxLabel": "STARVING"
+  }
+}
+```
+
+Use this with the `TemplateRenderer` component:
+
+```tsx
+import { TemplateRenderer } from '@/components/input-templates';
+
+<TemplateRenderer
+  templateType={response.templateType}
+  params={{
+    ...response.params,
+    onSubmit: handlePlayerResponse
+  }}
+/>
+```
+
 ## Resources
 
 - [OpenAI Responses API Docs](https://platform.openai.com/docs/api-reference/responses)
 - [Function Calling Guide](https://platform.openai.com/docs/guides/function-calling)
 - [GPT-5.2 Announcement](https://openai.com/gpt-5.2)
+- [Input Templates Documentation](../../docs/INPUT_TEMPLATES_SYSTEM.md)
+- [AI Template Guide](../../docs/AI_TEMPLATE_GUIDE.md)
