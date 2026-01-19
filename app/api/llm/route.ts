@@ -32,7 +32,8 @@ import { LLM } from '@/lib/constants';
  *
  * Accepts LLMRequest, returns LLMResponse
  *
- * Uses OpenAI GPT-5.2 API with direct fetch to /v1/responses endpoint
+ * Uses OpenAI GPT-5.2 with standard Chat Completions API
+ * Endpoint: https://api.openai.com/v1/chat/completions
  * API key must be set in environment: OPENAI_API_KEY=sk-...
  */
 export async function POST(request: NextRequest) {
@@ -64,9 +65,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call OpenAI GPT-5.2 with responses API
-    // Note: GPT-5.2 uses a different API endpoint format
-    const apiResponse = await fetch('https://api.openai.com/v1/responses', {
+    // Call OpenAI GPT-5.2 with Chat Completions API
+    // GPT-5.2 works with the standard Chat Completions endpoint
+    const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: LLM.MODEL,
-        input: [
+        messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
         top_p: LLM.TOP_P,
         frequency_penalty: LLM.FREQUENCY_PENALTY,
         presence_penalty: LLM.PRESENCE_PENALTY,
+        response_format: { type: 'json_object' },
       }),
     });
 
@@ -98,8 +100,8 @@ export async function POST(request: NextRequest) {
 
     const completion = await apiResponse.json();
 
-    // Parse JSON response from output_text
-    const content = completion.output_text;
+    // Parse JSON response from message content
+    const content = completion.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error('No content in response');
     }
