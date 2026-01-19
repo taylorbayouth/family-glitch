@@ -5,7 +5,8 @@
 // Application info
 export const APP_NAME = 'Family Glitch';
 export const APP_DESCRIPTION = 'A family game application with AI integration';
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '1.0.0-stable';
+export const APP_TAGLINE = 'DIGITAL NOIR';
 
 // URLs
 export const APP_URL_PRODUCTION = 'https://family-glitch.vercel.app';

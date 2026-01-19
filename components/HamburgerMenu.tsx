@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
+import { APP_VERSION, APP_TAGLINE } from '@/lib/constants';
 
 /**
  * Hamburger Menu Component
@@ -118,10 +119,10 @@ export function HamburgerMenu() {
               {/* Version */}
               <div className="mt-auto pt-6 border-t border-steel-800">
                 <p className="font-mono text-xs text-steel-600 text-center">
-                  v1.0.0-stable
+                  v{APP_VERSION}
                 </p>
                 <p className="font-mono text-xs text-steel-700 text-center mt-1">
-                  DIGITAL NOIR
+                  {APP_TAGLINE}
                 </p>
               </div>
             </motion.div>

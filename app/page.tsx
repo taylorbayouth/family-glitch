@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { APP_VERSION, APP_TAGLINE } from '@/lib/constants';
 
 export default function Home() {
   const { data: session } = useSession();
@@ -120,7 +121,7 @@ export default function Home() {
           {/* Version */}
           <div className="text-center pt-4">
             <span className="inline-block px-3 py-1.5 rounded-full bg-void-light border border-steel-800 text-xs text-steel-500 font-mono">
-              v1.0.0 &middot; DIGITAL NOIR
+              v{APP_VERSION} &middot; {APP_TAGLINE}
             </span>
           </div>
         </motion.div>
