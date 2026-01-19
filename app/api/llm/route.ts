@@ -41,12 +41,20 @@ const client = new OpenAI({
  *
  * Accepts LLMRequest, returns LLMResponse
  *
- * Uses OpenAI GPT-5.2 with standard Chat Completions API
- * Endpoint: https://api.openai.com/v1/chat/completions
+ * Uses OpenAI GPT-5.2 via the Responses API
+ * Endpoint: https://api.openai.com/v1/responses
  * API key must be set in environment: OPENAI_API_KEY=sk-...
  */
 export async function POST(request: NextRequest) {
   try {
+    // Basic env validation before making requests
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server misconfigured: OPENAI_API_KEY is missing' },
+        { status: 500 }
+      );
+    }
+
     // Parse request body
     const body: LLMRequest = await request.json();
 
@@ -74,8 +82,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Call OpenAI GPT-5.2 with responses API
-    // GPT-5.2 uses responses.create() with input parameter
+    // Call OpenAI GPT-5.2 with Responses API
+    // Keep it simple - GPT-5.2 responses.create() only needs model and input
     const completion = await (client as any).responses.create({
       model: LLM.MODEL,
       input: [
