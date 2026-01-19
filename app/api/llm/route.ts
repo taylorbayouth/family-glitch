@@ -20,23 +20,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import type { LLMRequest, LLMResponse } from '@/types/game';
 import { LLM } from '@/lib/constants';
-
-// ============================================================================
-// OPENAI CLIENT INITIALIZATION
-// ============================================================================
-
-/**
- * Initialize OpenAI client with API key from environment
- *
- * IMPORTANT: API key must be set in .env.local:
- * OPENAI_API_KEY=sk-...
- */
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // ============================================================================
 // REQUEST HANDLER
@@ -46,6 +31,9 @@ const openai = new OpenAI({
  * POST /api/llm
  *
  * Accepts LLMRequest, returns LLMResponse
+ *
+ * Uses OpenAI GPT-5.2 API with direct fetch to /v1/responses endpoint
+ * API key must be set in environment: OPENAI_API_KEY=sk-...
  */
 export async function POST(request: NextRequest) {
   try {
@@ -77,19 +65,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Call OpenAI GPT-5.2 with responses API
-    // Note: GPT-5.2 uses responses.create() with 'input' instead of 'messages'
-    const completion = await (openai as any).responses.create({
-      model: LLM.MODEL,
-      input: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: LLM.TEMPERATURE,
-      max_tokens: LLM.MAX_RESPONSE_TOKENS,
-      top_p: LLM.TOP_P,
-      frequency_penalty: LLM.FREQUENCY_PENALTY,
-      presence_penalty: LLM.PRESENCE_PENALTY,
+    // Note: GPT-5.2 uses a different API endpoint format
+    const apiResponse = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: LLM.MODEL,
+        input: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: LLM.TEMPERATURE,
+        max_tokens: LLM.MAX_RESPONSE_TOKENS,
+        top_p: LLM.TOP_P,
+        frequency_penalty: LLM.FREQUENCY_PENALTY,
+        presence_penalty: LLM.PRESENCE_PENALTY,
+      }),
     });
+
+    if (!apiResponse.ok) {
+      const errorData = await apiResponse.json().catch(() => ({}));
+      console.error('OpenAI API Error:', {
+        status: apiResponse.status,
+        statusText: apiResponse.statusText,
+        error: errorData,
+      });
+      throw new Error(`OpenAI API error: ${apiResponse.status} ${apiResponse.statusText}`);
+    }
+
+    const completion = await apiResponse.json();
 
     // Parse JSON response from output_text
     const content = completion.output_text;
