@@ -2,6 +2,7 @@
 
 import { useChat } from '@/lib/ai/client';
 import { useState } from 'react';
+import { Header } from '@/components/Header';
 
 export default function ChatPage() {
   const { messages, isLoading, error, sendMessage, clearMessages } = useChat({
@@ -26,7 +27,9 @@ export default function ChatPage() {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+    <>
+      <Header />
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>AI Chat Demo (GPT-5.2)</h1>
         <button
@@ -147,6 +150,7 @@ export default function ChatPage() {
           Try: "What time is it?", "Calculate 42 * 1337", "Look up customer@example.com"
         </p>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
