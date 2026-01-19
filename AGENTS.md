@@ -20,8 +20,136 @@ AI agent context for the Family Glitch project.
 - **Runtime:** React 19.0.0
 - **AI:** OpenAI SDK 4.77.3 (GPT-5.2)
 - **Auth:** NextAuth.js 5.0.0-beta.25
+- **State:** Zustand 5.0.2 (with persist middleware)
 - **Deployment:** Vercel
+- **Styling:** Tailwind CSS 4.1.18 (CSS-based config)
+- **Animations:** Framer Motion 12.x
 - **Package Manager:** npm
+
+## Tailwind CSS v4 Configuration
+
+### Important: CSS-Based Config
+This project uses **Tailwind CSS v4**, which uses CSS-based configuration instead of JavaScript config files. The `tailwind.config.ts` file is **NOT used** and is kept only for reference.
+
+**All theme configuration is in:** `app/globals.css`
+
+### Theme Configuration
+Colors, fonts, and design tokens are defined using the `@theme` directive:
+
+```css
+@import "tailwindcss";
+
+@theme {
+  /* Colors - Digital Noir Palette */
+  --color-void: #0A0A0F;
+  --color-void-light: #141419;
+  --color-glitch: #6C5CE7;
+  --color-glitch-bright: #A29BFE;
+  --color-frost: #F8F9FA;
+  --color-mint: #00FFA3;
+  --color-alert: #FF3B5C;
+  --color-steel-500: #ADB5BD;
+  --color-steel-800: #343A40;
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Shadows */
+  --shadow-glow: 0 0 20px rgba(108, 92, 231, 0.3);
+}
+```
+
+### Using Theme Colors
+Tailwind v4 automatically generates utility classes from `@theme` variables:
+
+```tsx
+// Background colors
+<div className="bg-void" />        // #0A0A0F
+<div className="bg-glitch" />      // #6C5CE7
+<div className="bg-frost" />       // #F8F9FA
+
+// Text colors
+<p className="text-frost" />       // #F8F9FA
+<p className="text-steel-500" />   // #ADB5BD
+
+// With opacity
+<div className="bg-glitch/50" />   // 50% opacity
+
+// Borders
+<div className="border-steel-800" />
+```
+
+### Design System Colors
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| `void` | #0A0A0F | Main background |
+| `void-light` | #141419 | Cards, inputs |
+| `glitch` | #6C5CE7 | Primary accent (purple) |
+| `glitch-bright` | #A29BFE | Hover states |
+| `frost` | #F8F9FA | Primary text |
+| `mint` | #00FFA3 | Success, interactive |
+| `alert` | #FF3B5C | Errors, destructive |
+| `steel-*` | Various | Grays (100-900) |
+
+### Custom Component Classes
+Defined in `@layer components` in globals.css:
+
+```css
+/* Glass morphism effect */
+.glass {
+  backdrop-filter: blur(12px);
+  background-color: rgba(20, 20, 25, 0.8);
+  border: 1px solid var(--color-steel-800);
+}
+
+/* Animated scan line */
+.scan-line { ... }
+
+/* Glitch text effect */
+.glitch-text { ... }
+
+/* Grid pattern background */
+.bg-grid-pattern { ... }
+```
+
+### Adding New Theme Values
+To add new colors or values, edit `app/globals.css`:
+
+```css
+@theme {
+  /* Add new color */
+  --color-accent: #FF6B6B;
+
+  /* Add new shadow */
+  --shadow-custom: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+```
+
+Then use in components:
+```tsx
+<div className="bg-accent shadow-custom" />
+```
+
+### PostCSS Configuration
+The PostCSS config (`postcss.config.mjs`) uses the Tailwind v4 plugin:
+
+```js
+const config = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+    autoprefixer: {},
+  },
+};
+```
+
+### Migration Notes
+- `tailwind.config.ts` is deprecated in v4
+- All `extend` values go in `@theme { }`
+- Custom utilities go in `@layer utilities { }`
+- Custom components go in `@layer components { }`
+- Content paths are auto-detected in v4
 
 ## Setup Commands
 
@@ -76,12 +204,15 @@ family-glitch/
 │   │   ├── chat/             # AI chat API (GPT-5.2)
 │   │   └── health/           # Health check endpoint
 │   ├── auth/signin/          # Sign-in page
-│   ├── chat/                 # AI chat demo page
+│   ├── chat/                 # AI chat demo page (testing only)
+│   ├── setup/                # Game setup page (after auth)
 │   ├── layout.tsx            # Root layout with SessionProvider
-│   └── page.tsx              # Home page
+│   └── page.tsx              # Home page (redirects to /setup if authenticated)
 ├── components/               # React components
 │   ├── Header.tsx            # Nav header with auth status
-│   └── SessionProvider.tsx   # NextAuth session wrapper
+│   ├── HamburgerMenu.tsx     # Main navigation menu (logged-in users)
+│   ├── SessionProvider.tsx   # NextAuth session wrapper
+│   └── index.ts              # Component exports
 ├── lib/                      # Shared utilities
 │   ├── ai/                   # AI system (modular)
 │   │   ├── types.ts          # TypeScript definitions
@@ -89,6 +220,11 @@ family-glitch/
 │   │   ├── tools.ts          # Tool registry & definitions
 │   │   ├── client.ts         # Client hooks & utilities
 │   │   └── README.md         # AI system documentation
+│   ├── store/                # State management (Zustand)
+│   │   ├── game-store.ts     # Game state with localStorage persist
+│   │   ├── player-store.ts   # Player roster (persistent across games)
+│   │   ├── use-hydration.ts  # SSR-safe hydration hook
+│   │   └── index.ts          # Store exports
 │   └── constants.ts          # Global constants
 ├── auth.ts                   # NextAuth configuration
 ├── .env.local                # Local environment variables (git-ignored)
@@ -207,6 +343,296 @@ export function Component() {
 ```typescript
 import { signOut } from 'next-auth/react';
 await signOut({ redirectTo: '/' });
+```
+
+## Navigation & UI
+
+### Hamburger Menu
+The app uses a fixed hamburger menu in the top-right corner for logged-in users. The menu is globally available across all authenticated pages.
+
+**Location:** `components/HamburgerMenu.tsx`
+
+**Features:**
+- Only visible when user is authenticated
+- Smooth slide-in animation from right
+- Glassmorphism design matching app aesthetic
+- Three menu options:
+  1. **How to Play** - Opens modal with game instructions
+  2. **Start a New Game** - Resets game data (keeps players), requires confirmation
+  3. **Log Out** - Signs user out of Google auth
+
+**Usage:**
+The component is automatically included in the root layout and requires no additional setup:
+
+```typescript
+// Already included in app/layout.tsx
+import { HamburgerMenu } from '@/components/HamburgerMenu';
+
+<SessionProvider>
+  <HamburgerMenu />
+  {children}
+</SessionProvider>
+```
+
+**Integrations:**
+- Uses `useSession()` from NextAuth to check auth status
+- Uses `useGameStore()` to access `startNewGame()` action
+- Uses Framer Motion for animations
+- Matches Digital Noir design system (glass, frost, steel colors)
+
+### Setup Page
+After authentication, users are redirected to the setup page where they configure their player roster.
+
+**Location:** `app/setup/page.tsx`
+**Route:** `/setup`
+
+**Features:**
+- Add 3-7 players (defaults to 3 empty slots)
+- Collect player information:
+  - **Name** (required)
+  - **Role** (Dad, Mom, Son, Daughter, Brother, Sister, Grandpa, Grandma, Uncle, Aunt, Cousin, Friend, Other)
+  - **Age** (required, 1-120)
+  - **Avatar** (select from 20 emoji options)
+- Add/remove players dynamically
+- Form validation with error display
+- Smooth animations with Framer Motion
+- Data saved to `usePlayerStore` (persists across games)
+
+**Player Avatars:**
+The page provides 20 emoji avatars in a grid layout:
+👨 👩 👦 👧 🧔 👴 👵 👱‍♂️ 👱‍♀️ 🧑 👨‍🦰 👩‍🦰 👨‍🦱 👩‍🦱 👨‍🦲 👩‍🦲 👨‍🦳 👩‍🦳 🧒 👶
+
+**Design:**
+- Glass cards with border-steel-800
+- Glitch-themed accent colors
+- Responsive grid layout optimized for mobile
+- Animated "Continue" button with gradient border
+- Player count indicator (X of 7 players)
+
+## State Management & Local Storage
+
+### Zustand with Persist Middleware
+The app uses **Zustand** for state management with localStorage persistence, optimized for smartphone gameplay where players pass a single device around.
+
+**Key Features:**
+- SSR-safe with Next.js
+- Tiny bundle size (~1KB)
+- Auto-syncs across tabs
+- Type-safe with TypeScript
+- Persists state to localStorage with separate keys
+- Handles hydration mismatches
+
+### Two-Store Architecture
+
+The app uses **two separate stores** with different persistence strategies:
+
+1. **Player Store** (`player-store.ts`) - Player roster that persists across games
+2. **Game Store** (`game-store.ts`) - Current game state that resets between games
+
+This separation ensures player information (names, roles, ages, avatars) is never lost when starting a new game, while game progress can be reset independently.
+
+### Player Store
+
+**Location:** `lib/store/player-store.ts`
+**localStorage key:** `family-glitch-players`
+**Purpose:** Persistent player roster (survives "Start New Game")
+
+```typescript
+export interface Player {
+  id: string;
+  name: string;
+  role: PlayerRole; // Dad, Mom, Son, Daughter, etc.
+  age: number;
+  avatar: number; // 1-20
+}
+
+interface PlayerState {
+  players: Player[];
+  addPlayer: (player: Omit<Player, 'id'>) => void;
+  updatePlayer: (id: string, updates: Partial<Omit<Player, 'id'>>) => void;
+  removePlayer: (id: string) => void;
+  clearAllPlayers: () => void;
+}
+```
+
+**Usage:**
+```typescript
+import { usePlayerStore } from '@/lib/store';
+
+const players = usePlayerStore((state) => state.players);
+const addPlayer = usePlayerStore((state) => state.addPlayer);
+
+addPlayer({
+  name: 'John',
+  role: 'Dad',
+  age: 42,
+  avatar: 1,
+});
+```
+
+### Game Store
+
+**Location:** `lib/store/game-store.ts`
+**localStorage key:** `family-glitch-game`
+**Purpose:** Current game progress (resets with "Start New Game")
+
+```typescript
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+interface Player {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
+interface GameState {
+  players: Player[];
+  currentRound: number;
+  gameStarted: boolean;
+
+  addPlayer: (player: Player) => void;
+  removePlayer: (playerId: string) => void;
+  startGame: () => void;
+  resetGame: () => void;
+  nextRound: () => void;
+}
+
+export const useGameStore = create<GameState>()(
+  persist(
+    (set) => ({
+      // Initial state
+      players: [],
+      currentRound: 0,
+      gameStarted: false,
+
+      // Actions
+      addPlayer: (player) =>
+        set((state) => ({
+          players: [...state.players, player],
+        })),
+
+      removePlayer: (playerId) =>
+        set((state) => ({
+          players: state.players.filter((p) => p.id !== playerId),
+        })),
+
+      startGame: () =>
+        set({
+          gameStarted: true,
+          currentRound: 1,
+        }),
+
+      resetGame: () =>
+        set({
+          players: [],
+          currentRound: 0,
+          gameStarted: false,
+        }),
+
+      nextRound: () =>
+        set((state) => ({
+          currentRound: state.currentRound + 1,
+        })),
+    }),
+    {
+      name: 'family-glitch-game', // localStorage key
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+```
+
+### Using the Store
+
+**Basic Usage:**
+```typescript
+'use client';
+
+import { useGameStore } from '@/lib/store/game-store';
+
+export function GameComponent() {
+  const players = useGameStore((state) => state.players);
+  const addPlayer = useGameStore((state) => state.addPlayer);
+
+  const handleAddPlayer = () => {
+    addPlayer({ id: crypto.randomUUID(), name: 'Player 1' });
+  };
+
+  return (
+    <div>
+      <button onClick={handleAddPlayer}>Add Player</button>
+      <ul>
+        {players.map((player) => (
+          <li key={player.id}>{player.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+**SSR-Safe Usage:**
+```typescript
+'use client';
+
+import { useHydration } from '@/lib/store/use-hydration';
+import { useGameStore } from '@/lib/store/game-store';
+
+export function GameComponent() {
+  const hasHydrated = useHydration();
+  const players = useGameStore((state) => state.players);
+
+  // Prevent hydration mismatch
+  if (!hasHydrated) {
+    return <div>Loading...</div>;
+  }
+
+  return <div>{players.length} players</div>;
+}
+```
+
+### Best Practices
+
+1. **Use selectors** - Only subscribe to state you need:
+   ```typescript
+   const playerCount = useGameStore((state) => state.players.length);
+   ```
+
+2. **Batch updates** - Use single `set()` call for multiple changes:
+   ```typescript
+   set({ players: newPlayers, currentRound: 1, gameStarted: true });
+   ```
+
+3. **Partial persistence** - Only persist necessary fields:
+   ```typescript
+   partialize: (state) => ({
+     players: state.players,
+     currentRound: state.currentRound
+   })
+   ```
+
+4. **Handle hydration** - Use `useHydration()` hook to prevent mismatches
+
+5. **Clear on sign out** - Call `resetGame()` when user signs out
+
+### Local Storage Key
+Game state is stored in localStorage under the key: `family-glitch-game`
+
+### Migration Support
+To handle schema changes across app versions:
+```typescript
+{
+  name: 'family-glitch-game',
+  version: 1,
+  migrate: (persistedState: any, version: number) => {
+    if (version === 0) {
+      // Migrate from v0 to v1
+      persistedState.newField = 'default';
+    }
+    return persistedState;
+  },
+}
 ```
 
 ## Code Style Guidelines
@@ -382,9 +808,9 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - [ ] Add analytics
 
 ### Architecture Improvements
-- [ ] Move inline styles to Tailwind CSS
+- [x] Implement state management with Zustand + persist
+- [x] Configure Tailwind CSS v4 with custom theme
 - [ ] Add component library (shadcn/ui or similar)
-- [ ] Implement proper state management if needed
 - [ ] Add API middleware for auth checks
 - [ ] Create shared UI components
 

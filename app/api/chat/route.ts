@@ -1,3 +1,24 @@
+/**
+ * Chat API Route
+ *
+ * Handles AI chat requests with GPT-5.2 and tool calling (function calling).
+ * Implements a tool execution loop where the AI can call registered tools
+ * and incorporate their results into responses.
+ *
+ * Security considerations:
+ * - API keys are server-side only (never exposed to client)
+ * - Tool execution happens server-side with proper error handling
+ * - Rate limiting should be added for production (TODO: implement with Vercel KV)
+ * - Request validation ensures messages array is provided
+ * - Tool schemas use additionalProperties: false to prevent injection
+ *
+ * TODO for production:
+ * - Add rate limiting per user/IP
+ * - Add request size limits
+ * - Add authentication check (currently public)
+ * - Add monitoring/logging for security events
+ * - Consider adding CORS restrictions if needed
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { toolRegistry } from '@/lib/ai/tools';

@@ -2,8 +2,14 @@
 
 import { useChat } from '@/lib/ai/client';
 import { useState } from 'react';
-import { Header } from '@/components/Header';
 
+/**
+ * Chat Demo Page
+ *
+ * A simple demo page for testing the AI chat functionality with tool calling.
+ * This page uses inline styles and is meant for development/testing only.
+ * Not part of the main game flow.
+ */
 export default function ChatPage() {
   const { messages, isLoading, error, sendMessage, clearMessages } = useChat({
     temperature: 0.7,
@@ -27,9 +33,7 @@ export default function ChatPage() {
   };
 
   return (
-    <>
-      <Header />
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>AI Chat Demo (GPT-5.2)</h1>
         <button
@@ -150,7 +154,6 @@ export default function ChatPage() {
           Try: "What time is it?", "Calculate 42 * 1337", "Look up customer@example.com"
         </p>
       </div>
-      </div>
-    </>
+    </div>
   );
 }
