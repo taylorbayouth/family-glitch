@@ -9,6 +9,7 @@ import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
 import { GameHeader } from '@/components/GameHeader';
 import { EndGameResults } from '@/components/EndGameResults';
+import { calculateCurrentAct, calculateTotalRounds } from '@/lib/constants';
 // Import registry - this also triggers all mini-game registrations
 import {
   getMiniGame,
@@ -158,8 +159,36 @@ CRITICAL RULES:
         },
       ];
 
+      // Calculate current act and enforce tool restrictions
+      const completedTurns = turns.filter(t => t.status === 'completed').length;
+      const totalRounds = calculateTotalRounds(players.length);
+      const currentAct = calculateCurrentAct(completedTurns, totalRounds);
+
+      // Define tool sets by act
+      const act1Tools = [
+        'ask_for_text',
+        'ask_for_list',
+        'ask_binary_choice',
+        'ask_word_selection',
+        'ask_rating',
+        'ask_player_vote',
+      ];
+
+      const act23Tools = [
+        'trigger_trivia_challenge',
+        'trigger_personality_match',
+        'trigger_hard_trivia',
+        'trigger_madlibs_challenge',
+        'trigger_cryptic_connection',
+        'trigger_the_filter',
+      ];
+
+      // Select tools based on current act
+      const allowedTools = currentAct === 1 ? act1Tools : act23Tools;
+
       const response = await sendChatRequest(newMessages, {
         toolChoice: 'required', // Force AI to use one of the template tools
+        tools: allowedTools, // Restrict to act-appropriate tools (enforced at API level)
       });
 
       // Parse tool call result (template configuration)

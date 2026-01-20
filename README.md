@@ -11,11 +11,12 @@ Repository: https://github.com/taylorbayouth/family-glitch
 - Google OAuth via NextAuth v5
 - GPT-5.2 chat completions with server-side tool execution
 - Template-driven input system (6 templates)
-- Mini-game registry (Trivia Challenge, Personality Match, Mad Libs, Cryptic Connection, Hard Trivia)
+- Mini-game registry (6 games: Trivia Challenge, Hard Trivia, Personality Match, Mad Libs, Cryptic Connection, The Filter)
 - End-game announcer results (AI rankings and blurbs)
 - Zustand stores with localStorage persistence
 - Tailwind CSS v4 theme tokens in `app/globals.css`
 - Framer Motion animations
+- ARIA accessibility labels and keyboard navigation (v1.2.0)
 
 ## Quick Start
 

@@ -27,25 +27,6 @@ interface Player {
   role?: string;
 }
 
-/**
- * Create initial session data for a trivia challenge
- */
-export function createTriviaChallengeSession(
-  targetPlayer: Player,
-  sourceTurn: Turn,
-  question: string
-): Omit<TriviaChallengeSession, 'sessionId' | 'startedAt'> {
-  return {
-    gameType: 'trivia_challenge',
-    targetPlayerId: targetPlayer.id,
-    targetPlayerName: targetPlayer.name,
-    sourceTurnId: sourceTurn.turnId,
-    sourcePlayerId: sourceTurn.playerId,
-    sourcePlayerName: sourceTurn.playerName,
-    challengeQuestion: question,
-    status: 'intro',
-  };
-}
 
 // ============================================================================
 // RESPONSE PARSING

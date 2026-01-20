@@ -321,16 +321,6 @@ export function MadLibsUI({
                   </span>
                 </motion.div>
 
-                {/* Game icon */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', delay: 0.3 }}
-                  className="text-7xl"
-                >
-                  📝
-                </motion.div>
-
                 {/* Title */}
                 <motion.h1
                   initial={{ y: 20, opacity: 0 }}

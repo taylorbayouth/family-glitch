@@ -4,8 +4,9 @@
  * Registers the Personality Match mini-game with the central registry.
  */
 
+import type { ComponentType } from 'react';
 import { PersonalityMatchUI } from '@/components/mini-games/PersonalityMatchUI';
-import { registerMiniGame, type MiniGameConfig, type MiniGamePlayer } from '../registry';
+import { registerMiniGame, type MiniGameConfig, type MiniGamePlayer, type BaseMiniGameProps } from '../registry';
 
 // Config specific to Personality Match
 export interface PersonalityMatchConfig extends MiniGameConfig {
@@ -16,7 +17,7 @@ registerMiniGame<PersonalityMatchConfig>({
   type: 'personality_match',
   name: 'Personality Match',
 
-  component: PersonalityMatchUI as any,
+  component: PersonalityMatchUI as ComponentType<BaseMiniGameProps & PersonalityMatchConfig>,
 
   extractConfig: (templateConfig, context) => {
     const { players } = context;

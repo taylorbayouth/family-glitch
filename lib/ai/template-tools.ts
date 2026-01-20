@@ -623,3 +623,35 @@ registerTool<{
     };
   }
 );
+
+/**
+ * Tool: Trigger The Filter Challenge
+ * Binary classification game where players identify items that pass a specific rule.
+ */
+registerTool<{
+  intro?: string;
+}>(
+  {
+    type: 'function',
+    name: 'trigger_the_filter',
+    description: 'Start THE FILTER mini-game. Players identify all items that pass a specific rule (history, science, logic, etc.). Fast-paced binary classification.',
+    parameters: {
+      type: 'object',
+      properties: {
+        intro: {
+          type: 'string',
+          description: 'Optional intro text for the challenge (e.g., "Time to test your knowledge!")',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  async (args) => {
+    return {
+      templateType: 'the_filter',
+      params: {
+        intro: args.intro || 'Apply the filter!',
+      },
+    };
+  }
+);

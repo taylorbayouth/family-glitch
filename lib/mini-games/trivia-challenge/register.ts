@@ -4,8 +4,9 @@
  * Registers the Trivia Challenge mini-game with the central registry.
  */
 
+import type { ComponentType } from 'react';
 import { TriviaChallengeUI } from '@/components/mini-games/TriviaChallengeUI';
-import { registerMiniGame, type MiniGameConfig } from '../registry';
+import { registerMiniGame, type MiniGameConfig, type BaseMiniGameProps } from '../registry';
 import { selectTurnForTrivia, getEligibleTurnsForPlayer } from '../eligibility';
 import type { Turn } from '@/lib/types/game-state';
 
@@ -20,7 +21,7 @@ registerMiniGame<TriviaConfig>({
 
   // Cast needed because TriviaChallengeUI has slightly different prop types
   // (uses `Turn` type for sourceTurn instead of generic config)
-  component: TriviaChallengeUI as any,
+  component: TriviaChallengeUI as ComponentType<BaseMiniGameProps & TriviaConfig>,
 
   extractConfig: (templateConfig, context) => {
     const { players, turns, currentPlayerId } = context;

@@ -73,11 +73,13 @@ Set-up and payoff examples:
 - "What's Dad's go-to comfort food?" -> Later: "What did Mom say Dad always eats?"
 - "Name a hobby the family shares." -> Later: "According to your brother, what hobby do you all do?"
 - "Who is the worst driver?" -> Later: "Who got voted worst driver and why?"
-` : `ACT ${currentAct} = MINI-GAMES ONLY (payoff). Use mini-game triggers only.
+` : `ACT ${currentAct} = MINI-GAMES ONLY (payoff).
 
-- Rotate mini-game types. Do not repeat the same one twice.
-- Only trigger Trivia/Personality if there is usable data.
-- If trivia/personality are not available, choose Hard Trivia (Act 2+) or Mad Libs/Cryptic (Act 3).
+CRITICAL: You MUST use mini-game triggers ONLY. Regular question tools are DISABLED in this act.
+
+- Rotate mini-game types. Do not repeat the same one twice in a row.
+- Only trigger Trivia Challenge or Personality Match if eligible players are listed below.
+- If no eligible players, use Hard Trivia or Mad Libs/Cryptic Connection instead.
 `}
 
 ${currentAct === 1 ? `## Tool Guidance (Act 1)
@@ -92,23 +94,30 @@ ${currentAct === 1 ? `## Tool Guidance (Act 1)
 
 ${currentAct >= 2 ? `## Mini-Game Options (Act ${currentAct})
 
-Trivia Challenge (trigger_trivia_challenge):
-- Use a different player's past answer
-- Available players: ${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? options.triviaEligibleTurns.map(t => t.playerName).join(', ') : 'none yet'}
+${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? `Trivia Challenge (trigger_trivia_challenge):
+- Quiz the current player on a previous answer from another player
+- Eligible players with data: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}
 
 Personality Match (trigger_personality_match):
-- Pick a subject player (not the current player)
-- Available players: ${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? options.triviaEligibleTurns.map(t => t.playerName).join(', ') : 'none yet'}
+- Player selects words that describe another player's personality
+- Eligible subject players: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}
 
-Hard Trivia (trigger_hard_trivia):
+` : ''}Hard Trivia (trigger_hard_trivia):
+- Multiple choice trivia question (4 options, one correct)
 - Use family interests if known; otherwise general pop culture
-- 4 options, one correct answer
+- ALWAYS AVAILABLE
 
 ${currentAct >= 3 ? `Mad Libs (trigger_madlibs_challenge):
-- Funny fill-in-the-blank sentence, 1-3 blanks
+- Fill-in-the-blank with letter constraints (1-3 blanks)
+- ALWAYS AVAILABLE
 
 Cryptic Connection (trigger_cryptic_connection):
-- Cryptic clue + 25-word grid with 5-8 correct words
+- Word grid puzzle with mystery word (25 words, find connections)
+- ALWAYS AVAILABLE
+
+The Filter (trigger_the_filter):
+- Binary classification (select items that pass a rule)
+- ALWAYS AVAILABLE
 ` : ''}` : ''}
 
 ## Topic Rotator (Act 1)

@@ -9,6 +9,12 @@
 
 import type { MiniGameResult } from '../types';
 
+/**
+ * Grid size for Cryptic Connection puzzle.
+ * A 5x5 grid provides the right balance of challenge and playability.
+ */
+const CRYPTIC_GRID_SIZE = 25;
+
 interface GeneratePromptContext {
   targetPlayerName: string;
   allPlayers: Array<{ id: string; name: string; role?: string }>;
@@ -17,112 +23,120 @@ interface GeneratePromptContext {
 
 /**
  * Build the system prompt for generating a cryptic puzzle
+ * Uses the "Mystery Word" approach with layered associations
  */
 export function buildCrypticGeneratorPrompt(context: GeneratePromptContext): string {
   const { targetPlayerName } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
-  return `You are THE RIDDLER - a mysterious puzzle master for Family Glitch.
+  return `You are THE SEMANTIC ARCHITECT - creating word association puzzles for Family Glitch.
 
 ## MISSION
-Create a cryptic word association puzzle for ${targetName}.
+Generate a JSON object for a word association game for ${targetName}.
 
-## PUZZLE FORMAT
-1. Write a cryptic clue (poetic, abstract, not obvious)
-2. Generate exactly 25 UNIQUE single words for a 5x5 grid
-3. Choose 5-8 words that secretly connect to the clue
-4. The rest are strong decoys that almost fit
+## STEP 1: Choose a "Mystery Word"
+Pick a polysemous word with multiple meanings (e.g., "BAR", "POUND", "BANK", "SPRING", "PITCH").
 
-## CLUE STYLE
-- Metaphorical or abstract\n- Open to interpretation\n- Hard enough that perfect scores are rare
+## STEP 2: Generate 25 Grid Words
+Create an array of exactly 25 UNIQUE single words with intentional layers:
+- 5 words that are LITERAL associations (obvious physical/direct connections)
+- 5 words that are IDIOMATIC or METAPHORICAL associations (phrases, sayings)
+- 5 words that are PUNS or COMPOUND words (wordplay, combinations with mystery word)
+- 10 words that are completely UNRELATED distractors (no connection at all)
 
-## WORD SELECTION RULES
-- Mix nouns, adjectives, concepts\n- Avoid category giveaways (no easy lists)\n- correctWords must be a subset of words\n- No duplicates
+## QUALITY RULES
+- All words must be single words (no spaces or hyphens)
+- Mix nouns, verbs, adjectives
+- Make distractors convincing but clearly wrong
+- Ensure variety - avoid obvious lists or categories
 
 ## RESPONSE FORMAT
-Respond with valid JSON:
+Respond with valid JSON only:
 {
-  \"clue\": \"The cryptic clue phrase\",
-  \"hint\": \"Optional subtle nudge (keep vague)\",
-  \"words\": [\"word1\", \"word2\", ... 25 total words],
-  \"correctWords\": [\"words\", \"that\", \"match\"],
-  \"explanation\": \"Brief explanation of the connection\"
+  "mysteryWord": "WORD",
+  "words": ["word1", "word2", ... exactly 25 words],
+  "hint": "Optional cryptic hint (keep vague, max 10 words)"
 }
 
-Generate ONE cryptic puzzle now.`;
+Generate ONE puzzle now.`;
 }
 
 interface ScorePromptContext {
   targetPlayerName: string;
-  clue: string;
+  mysteryWord: string;
   selectedWords: string[];
-  correctWords: string[];
   allWords: string[];
-  explanation: string;
 }
 
 /**
  * Build the prompt for scoring the player's selections
+ * Uses fuzzy AI judging with per-word scoring
  */
 export function buildCrypticScorerPrompt(context: ScorePromptContext): string {
-  const { targetPlayerName, clue, selectedWords, correctWords, allWords, explanation } = context;
+  const { targetPlayerName, mysteryWord, selectedWords, allWords } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
-  const safeClue = clue || 'the puzzle';
+  const safeMysteryWord = mysteryWord || 'the mystery word';
   const safeSelectedWords = selectedWords || [];
-  const safeCorrectWords = correctWords || [];
   const safeAllWords = allWords || [];
-  const safeExplanation = explanation || 'The connection';
 
-  return `You are THE RIDDLER - judging ${targetName}'s cryptic puzzle attempt.
+  return `You are THE FUZZY JUDGE - evaluating ${targetName}'s word association attempt.
 
-## PUZZLE
-Clue: \"${safeClue}\"
-Intended connection: ${safeExplanation}
+## THE MYSTERY WORD
+${safeMysteryWord.toUpperCase()}
 
-## GRID WORDS
+## THE GRID (all 25 words)
 ${safeAllWords.join(', ')}
 
-## CORRECT WORDS (${safeCorrectWords.length})
-${safeCorrectWords.join(', ')}
-
-## PLAYER SELECTIONS (${safeSelectedWords.length})
+## PLAYER SELECTED (${safeSelectedWords.length} words)
 ${safeSelectedWords.join(', ')}
 
-## SCORING (FUZZY LOGIC)
-1. Exact matches = full credit\n2. Creative but plausible matches = partial credit\n3. Clearly wrong selections reduce score
+## SCORING RULES (Per-Word, 0-5 points)
+Evaluate EACH selected word individually:
+- 0 pts: No logical connection (Distractor)
+- 1-2 pts: Obvious/Literal connection (e.g., "Tender" for "BAR" = Bartender)
+- 3-4 pts: Clever metaphor, idiom, or compound word (e.g., "Exam" for "BAR" = Bar Exam)
+- 5 pts: Brilliant lateral thinking or deep wordplay (e.g., "Mars" for "BAR" = Mars Bar)
+
+## FUZZY LOGIC
+- If a player finds a valid connection you didn't think of, REWARD IT
+- Example: "Space" for "BAR" could be "Space Bar" (keyboard) = 4-5 points
+- Be generous with creative interpretations if they make semantic sense
 
 ## RESPONSE FORMAT
-Respond with valid JSON:
+Return JSON only:
 {
-  \"score\": 0-5,
-  \"exactMatches\": [\"words\", \"that\", \"matched\"],
-  \"creativeMatches\": [\"words\", \"given\", \"partial\", \"credit\"],
-  \"misses\": [\"clearly\", \"wrong\", \"ones\"],
-  \"commentary\": \"Short cryptic line (max 15 words)\",
-  \"revealedAnswer\": \"The full explanation of the connection\"
+  "breakdown": [
+    { "word": "WORD", "points": 0-5, "reason": "Brief explanation (max 10 words)" },
+    ...
+  ],
+  "totalScore": 0-5,
+  "commentary": "One witty line about their performance (max 15 words)"
 }
 
-Only list words that appear in the grid.`;
+The totalScore should be normalized to 0-5 based on the average quality of selections, not just the sum.`;
 }
 
 export interface CrypticGenerateResponse {
-  clue: string;
+  mysteryWord: string;
   hint?: string;
   words: string[];
-  correctWords: string[];
-  explanation: string;
 }
 
+export interface WordScore {
+  word: string;
+  points: number;
+  reason: string;
+}
+
+export type { WordScore };
+
 export interface CrypticScoreResponse {
-  score: number;
-  exactMatches: string[];
-  creativeMatches: string[];
-  misses: string[];
+  breakdown: WordScore[];
+  totalScore: number;
   commentary: string;
-  revealedAnswer: string;
 }
 
 /**
@@ -135,26 +149,24 @@ export function parseCrypticGeneratorResponse(text: string): CrypticGenerateResp
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    if (!parsed.clue || !Array.isArray(parsed.words) || !Array.isArray(parsed.correctWords)) {
+    if (!parsed.mysteryWord || !Array.isArray(parsed.words)) {
       return null;
     }
 
-    // Ensure we have exactly 25 words
-    if (parsed.words.length !== 25) {
-      console.warn(`Expected 25 words, got ${parsed.words.length}`);
-      // Pad or trim to 25
-      while (parsed.words.length < 25) {
+    // Ensure we have exactly the required grid size
+    if (parsed.words.length !== CRYPTIC_GRID_SIZE) {
+      console.warn(`Expected ${CRYPTIC_GRID_SIZE} words, got ${parsed.words.length}`);
+      // Pad or trim to correct size
+      while (parsed.words.length < CRYPTIC_GRID_SIZE) {
         parsed.words.push('mystery');
       }
-      parsed.words = parsed.words.slice(0, 25);
+      parsed.words = parsed.words.slice(0, CRYPTIC_GRID_SIZE);
     }
 
     return {
-      clue: parsed.clue,
+      mysteryWord: parsed.mysteryWord,
       hint: parsed.hint,
       words: parsed.words,
-      correctWords: parsed.correctWords,
-      explanation: parsed.explanation || 'The connection remains a mystery...',
     };
   } catch {
     return null;
@@ -171,17 +183,18 @@ export function parseCrypticScoreResponse(text: string): CrypticScoreResponse | 
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    if (typeof parsed.score !== 'number' || !parsed.commentary) {
+    if (!Array.isArray(parsed.breakdown) || typeof parsed.totalScore !== 'number' || !parsed.commentary) {
       return null;
     }
 
     return {
-      score: Math.min(5, Math.max(0, Math.round(parsed.score * 10) / 10)),
-      exactMatches: parsed.exactMatches || [],
-      creativeMatches: parsed.creativeMatches || [],
-      misses: parsed.misses || [],
+      breakdown: parsed.breakdown.map((item: any) => ({
+        word: item.word || '',
+        points: Math.min(5, Math.max(0, item.points || 0)),
+        reason: item.reason || '',
+      })),
+      totalScore: Math.min(5, Math.max(0, parsed.totalScore)),
       commentary: parsed.commentary,
-      revealedAnswer: parsed.revealedAnswer || 'The answer remains shrouded...',
     };
   } catch {
     return null;
@@ -191,16 +204,18 @@ export function parseCrypticScoreResponse(text: string): CrypticScoreResponse | 
 /**
  * Convert AI response to standard MiniGameResult
  */
-export function toMiniGameResult(response: CrypticScoreResponse): MiniGameResult {
-  const matchCount = response.exactMatches.length + response.creativeMatches.length;
+export function toMiniGameResult(response: CrypticScoreResponse, mysteryWord: string): MiniGameResult {
+  // Calculate stats
+  const highScorers = response.breakdown.filter(b => b.points >= 4);
+  const totalPoints = response.breakdown.reduce((sum, b) => sum + b.points, 0);
 
   return {
-    score: response.score,
+    score: response.totalScore,
     maxScore: 5,
     commentary: response.commentary,
-    correctAnswer: response.revealedAnswer,
-    bonusInfo: matchCount > 0
-      ? `Found ${response.exactMatches.length} exact + ${response.creativeMatches.length} creative matches`
-      : undefined,
+    correctAnswer: `Mystery word: ${mysteryWord.toUpperCase()}`,
+    bonusInfo: highScorers.length > 0
+      ? `Best picks: ${highScorers.map(b => `${b.word} (${b.points}pts)`).join(', ')}`
+      : `Total points: ${totalPoints} across ${response.breakdown.length} selections`,
   };
 }

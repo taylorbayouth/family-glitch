@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
-  buildCrypticGeneratorPrompt,
-  buildCrypticScorerPrompt,
-  parseCrypticGeneratorResponse,
-  parseCrypticScoreResponse,
+  buildFilterGeneratorPrompt,
+  buildFilterScorerPrompt,
+  parseFilterGeneratorResponse,
+  parseFilterScoreResponse,
   toMiniGameResult,
-  type WordScore,
-} from '@/lib/mini-games/cryptic-connection';
+  type FilterGenerateResponse,
+} from '@/lib/mini-games/the-filter';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
 interface Player {
@@ -20,7 +20,7 @@ interface Player {
   role?: string;
 }
 
-interface CrypticConnectionUIProps {
+interface TheFilterUIProps {
   /** Player answering the challenge */
   targetPlayer: Player;
 
@@ -34,31 +34,30 @@ interface CrypticConnectionUIProps {
   onSkip?: () => void;
 }
 
-type CrypticPhase = 'loading' | 'intro' | 'playing' | 'scoring' | 'result';
+type FilterPhase = 'loading' | 'intro' | 'playing' | 'scoring' | 'result';
 
 /**
- * Cryptic Connection UI Component
+ * The Filter UI Component
  *
  * Flow:
- * 1. Loading - AI generates cryptic clue + 25 words
- * 2. Intro - Show the cryptic challenge
- * 3. Playing - Player selects words from 5x5 grid
+ * 1. Loading - AI generates rule + 9-12 items
+ * 2. Intro - Show the filter challenge
+ * 3. Playing - Player selects items that pass the filter
  * 4. Scoring - AI evaluates with fuzzy logic
- * 5. Result - Show score with revealed answer
+ * 5. Result - Show score with breakdown
  */
-export function CrypticConnectionUI({
+export function TheFilterUI({
   targetPlayer,
   allPlayers,
   onComplete,
   onSkip,
-}: CrypticConnectionUIProps) {
-  const [phase, setPhase] = useState<CrypticPhase>('loading');
-  const [mysteryWord, setMysteryWord] = useState('');
+}: TheFilterUIProps) {
+  const [phase, setPhase] = useState<FilterPhase>('loading');
+  const [rule, setRule] = useState('');
   const [hint, setHint] = useState<string | undefined>();
-  const [words, setWords] = useState<string[]>([]);
-  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [gridItems, setGridItems] = useState<FilterGenerateResponse['gridItems']>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
-  const [breakdown, setBreakdown] = useState<WordScore[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const scores = useGameStore((state) => state.scores);
@@ -74,7 +73,7 @@ export function CrypticConnectionUI({
     setError(null);
 
     try {
-      const prompt = buildCrypticGeneratorPrompt({
+      const prompt = buildFilterGeneratorPrompt({
         targetPlayerName: targetPlayer.name,
         allPlayers,
         scores,
@@ -82,96 +81,102 @@ export function CrypticConnectionUI({
 
       const response = await sendChatRequest([
         { role: 'system', content: prompt },
-        { role: 'user', content: 'Generate a cryptic puzzle now.' },
+        { role: 'user', content: 'Generate a Filter puzzle now.' },
       ], {
         toolChoice: 'none',
       });
 
-      const parsed = parseCrypticGeneratorResponse(response.text);
+      const parsed = parseFilterGeneratorResponse(response.text);
 
       if (!parsed) {
         throw new Error('Invalid puzzle response from AI');
       }
 
-      setMysteryWord(parsed.mysteryWord);
+      setRule(parsed.rule);
       setHint(parsed.hint);
-      setWords(parsed.words);
+      setGridItems(parsed.gridItems);
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate puzzle:', err);
       // Fallback puzzle
-      setMysteryWord('BAR');
-      setHint('Think compounds and phrases');
-      setWords([
-        'soap', 'tender', 'mars', 'exam', 'stool',
-        'none', 'raiser', 'code', 'bell', 'space',
-        'alcohol', 'cloud', 'puppy', 'tuesday', 'garden',
-        'mitzvah', 'graph', 'music', 'harbor', 'iron',
-        'gold', 'silver', 'steel', 'top', 'crow',
+      setRule('Invented before 1900');
+      setHint('Think twice about the modern stuff');
+      setGridItems([
+        { label: 'Bicycle', isCorrect: true, reason: '1817' },
+        { label: 'Sliced Bread', isCorrect: false, isTrick: true, reason: '1928' },
+        { label: 'Lightbulb', isCorrect: true, reason: '1879' },
+        { label: 'Oreo Cookies', isCorrect: false, isTrick: true, reason: '1912' },
+        { label: 'Stapler', isCorrect: true, reason: '1866' },
+        { label: 'Matches', isCorrect: true, reason: '1826' },
+        { label: 'Paperclip', isCorrect: true, reason: '1899 (edge case)' },
+        { label: 'Zipper', isCorrect: false, reason: '1913' },
+        { label: 'Toilet Paper', isCorrect: true, reason: '1857' },
       ]);
       setPhase('intro');
     }
   };
 
-  const handleWordClick = (word: string) => {
-    if (selectedWords.includes(word)) {
-      setSelectedWords(selectedWords.filter((w) => w !== word));
+  const handleItemClick = (itemLabel: string) => {
+    if (selectedItems.includes(itemLabel)) {
+      setSelectedItems(selectedItems.filter((item) => item !== itemLabel));
     } else {
-      setSelectedWords([...selectedWords, word]);
+      setSelectedItems([...selectedItems, itemLabel]);
     }
   };
 
   const handleSubmit = async () => {
-    if (selectedWords.length === 0) return;
-
     setPhase('scoring');
     setError(null);
 
+    // Get correct items
+    const correctItems = gridItems.filter(item => item.isCorrect).map(item => item.label);
+
     try {
-      const prompt = buildCrypticScorerPrompt({
+      const prompt = buildFilterScorerPrompt({
         targetPlayerName: targetPlayer.name,
-        mysteryWord,
-        selectedWords,
-        allWords: words,
+        rule,
+        selectedItems,
+        correctItems,
       });
 
       const response = await sendChatRequest([
         { role: 'system', content: prompt },
-        { role: 'user', content: 'Score this puzzle attempt now.' },
+        { role: 'user', content: 'Score this filter attempt now.' },
       ], {
         toolChoice: 'none',
       });
 
-      const parsed = parseCrypticScoreResponse(response.text);
+      const parsed = parseFilterScoreResponse(response.text);
 
       if (!parsed) {
         throw new Error('Invalid score response from AI');
       }
 
       // Update score
-      updatePlayerScore(targetPlayer.id, parsed.totalScore);
+      updatePlayerScore(targetPlayer.id, parsed.score);
 
-      const gameResult = toMiniGameResult(parsed, mysteryWord);
+      const gameResult = toMiniGameResult(parsed, rule, correctItems);
       setResult(gameResult);
-      setBreakdown(parsed.breakdown);
       setPhase('result');
     } catch (err) {
       console.error('Failed to score puzzle:', err);
       // Fallback scoring
-      const fallbackScore = Math.min(5, Math.max(1, selectedWords.length / 2));
+      const correctSelections = selectedItems.filter(item => correctItems.includes(item));
+      const wrongSelections = selectedItems.filter(item => !correctItems.includes(item));
+
+      const fallbackScore = Math.min(5, Math.max(0,
+        Math.round(((correctSelections.length * 2) - wrongSelections.length) / gridItems.length * 5)
+      ));
+
       const fallbackResult: MiniGameResult = {
         score: fallbackScore,
         maxScore: 5,
-        commentary: 'The Fuzzy Judge considers your choices...',
-        correctAnswer: `Mystery word: ${mysteryWord.toUpperCase()}`,
+        commentary: 'The Logic Master nods thoughtfully...',
+        correctAnswer: `Rule: "${rule}"`,
+        bonusInfo: `Correct items: ${correctItems.join(', ')}`,
       };
       updatePlayerScore(targetPlayer.id, fallbackScore);
       setResult(fallbackResult);
-      setBreakdown(selectedWords.map(w => ({
-        word: w,
-        points: 2,
-        reason: 'Connection unclear',
-      })));
       setPhase('result');
     }
   };
@@ -182,17 +187,24 @@ export function CrypticConnectionUI({
     }
   };
 
-  // Score color based on value (purple/mystery theme)
+  // Score color based on value (cyan/teal theme)
   const getScoreColor = (score: number) => {
-    if (score >= 4) return 'text-violet-400';
-    if (score >= 2) return 'text-violet-500';
+    if (score >= 4) return 'text-cyan-400';
+    if (score >= 2) return 'text-cyan-500';
     return 'text-alert';
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 4) return 'bg-violet-400/20 border-violet-400/50';
-    if (score >= 2) return 'bg-violet-500/20 border-violet-500/50';
+    if (score >= 4) return 'bg-cyan-400/20 border-cyan-400/50';
+    if (score >= 2) return 'bg-cyan-500/20 border-cyan-500/50';
     return 'bg-alert/20 border-alert/50';
+  };
+
+  // Calculate grid columns based on item count
+  const getGridCols = () => {
+    if (gridItems.length === 9) return 'grid-cols-3';
+    if (gridItems.length <= 10) return 'grid-cols-3';
+    return 'grid-cols-4';
   };
 
   return (
@@ -201,13 +213,13 @@ export function CrypticConnectionUI({
       <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-xs text-violet-400 uppercase tracking-wider">
-              Cryptic Connection
+            <p className="font-mono text-xs text-cyan-400 uppercase tracking-wider">
+              The Filter
             </p>
             <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
           </div>
           <div className="text-right">
-            <p className="font-mono text-xs text-steel-500">Find the pattern</p>
+            <p className="font-mono text-xs text-steel-500">Pass or Fail?</p>
           </div>
         </div>
       </div>
@@ -228,33 +240,33 @@ export function CrypticConnectionUI({
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-4 h-4 rounded-full bg-violet-400 animate-pulse"
+                    className="w-4 h-4 rounded-full bg-cyan-400 animate-pulse"
                     style={{ animationDelay: `${i * 200}ms` }}
                   />
                 ))}
               </div>
-              <p className="text-frost font-mono">The Riddler weaves a mystery...</p>
+              <p className="text-frost font-mono">The Logic Master calibrates...</p>
             </motion.div>
           )}
 
-          {/* Intro Phase - Dramatic Full Screen */}
+          {/* Intro Phase */}
           {phase === 'intro' && (
             <motion.div
               key="intro"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gradient-to-br from-violet-500/20 via-void to-violet-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden"
+              className="fixed inset-0 bg-gradient-to-br from-cyan-400/20 via-void to-cyan-500/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden"
             >
-              {/* Animated background elements */}
+              {/* Animated background */}
               <div className="absolute inset-0 overflow-hidden">
                 <motion.div
-                  className="absolute top-1/3 left-1/4 w-64 h-64 bg-violet-500/20 rounded-full blur-3xl"
+                  className="absolute top-1/3 left-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl"
                   animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
                 <motion.div
-                  className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-violet-600/30 rounded-full blur-3xl"
+                  className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-cyan-600/30 rounded-full blur-3xl"
                   animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
                   transition={{ duration: 2.5, repeat: Infinity }}
                 />
@@ -271,9 +283,9 @@ export function CrypticConnectionUI({
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 rounded-full bg-violet-500/30 border border-violet-400"
+                  className="inline-block px-4 py-2 rounded-full bg-cyan-500/30 border border-cyan-400"
                 >
-                  <span className="font-mono text-sm text-violet-400 uppercase tracking-widest">
+                  <span className="font-mono text-sm text-cyan-400 uppercase tracking-widest">
                     Mini-Game
                   </span>
                 </motion.div>
@@ -285,7 +297,7 @@ export function CrypticConnectionUI({
                   transition={{ type: 'spring', delay: 0.3 }}
                   className="text-7xl"
                 >
-                  🔮
+                  🎯
                 </motion.div>
 
                 {/* Title */}
@@ -295,19 +307,19 @@ export function CrypticConnectionUI({
                   transition={{ delay: 0.4 }}
                   className="text-4xl md:text-5xl font-black text-frost"
                 >
-                  Cryptic Connection
+                  The Filter
                 </motion.h1>
 
-                {/* The Mystery Word */}
+                {/* The Rule */}
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="glass rounded-xl p-6 border border-violet-400/30 space-y-3"
+                  className="glass rounded-xl p-6 border border-cyan-400/30 space-y-3"
                 >
-                  <p className="font-mono text-xs text-violet-400 uppercase">Mystery Word</p>
-                  <p className="text-frost text-5xl font-black tracking-wider">
-                    {mysteryWord.toUpperCase()}
+                  <p className="font-mono text-xs text-cyan-400 uppercase">The Rule</p>
+                  <p className="text-frost text-2xl font-bold">
+                    {rule}
                   </p>
                   {hint && (
                     <p className="text-steel-500 text-sm italic">Hint: {hint}</p>
@@ -321,7 +333,7 @@ export function CrypticConnectionUI({
                   transition={{ delay: 0.6 }}
                   className="text-steel-400"
                 >
-                  Select words that connect to this mystery word
+                  Select ALL items that pass the filter
                 </motion.p>
 
                 {/* Place phone reminder */}
@@ -341,9 +353,9 @@ export function CrypticConnectionUI({
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.7 }}
                   onClick={() => setPhase('playing')}
-                  className="w-full bg-violet-500 hover:bg-violet-400 text-frost font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]"
+                  className="w-full bg-cyan-500 hover:bg-cyan-400 text-void font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]"
                 >
-                  Solve the Riddle
+                  Apply the Filter
                 </motion.button>
 
                 {onSkip && (
@@ -361,7 +373,7 @@ export function CrypticConnectionUI({
             </motion.div>
           )}
 
-          {/* Playing Phase - 5x5 Grid */}
+          {/* Playing Phase - 3x3 or 3x4 Grid */}
           {phase === 'playing' && (
             <motion.div
               key="playing"
@@ -370,65 +382,42 @@ export function CrypticConnectionUI({
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-2xl space-y-6"
             >
-              {/* Mystery word reminder */}
-              <div className="glass rounded-xl p-4 border border-violet-400/30 text-center">
-                <p className="font-mono text-xs text-violet-400 uppercase mb-1">Find connections to...</p>
-                <p className="text-frost text-3xl font-black tracking-wider">{mysteryWord.toUpperCase()}</p>
+              {/* Rule reminder */}
+              <div className="glass rounded-xl p-4 border border-cyan-400/30 text-center">
+                <p className="font-mono text-xs text-cyan-400 uppercase mb-1">Select items that...</p>
+                <p className="text-frost text-xl font-bold">{rule}</p>
               </div>
 
               {/* Selection count */}
               <div className="text-center">
                 <p className="text-steel-400 text-sm">
-                  {selectedWords.length} words selected
+                  {selectedItems.length} items selected
                 </p>
               </div>
 
-              {/* 5x5 Word Grid - Responsive: 3 cols on mobile, 4 on tablet, 5 on desktop */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                {words.map((word, index) => {
-                  const isSelected = selectedWords.includes(word);
+              {/* Grid */}
+              <div className={`grid ${getGridCols()} gap-3`}>
+                {gridItems.map((item, index) => {
+                  const isSelected = selectedItems.includes(item.label);
                   return (
                     <motion.button
                       key={index}
-                      onClick={() => handleWordClick(word)}
+                      onClick={() => handleItemClick(item.label)}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.02 }}
+                      transition={{ delay: index * 0.03 }}
                       whileTap={{ scale: 0.95 }}
                       className={`
-                        aspect-square rounded-xl font-medium text-xs md:text-sm p-1
-                        transition-all duration-200 relative overflow-hidden
-                        ${
-                          isSelected
-                            ? 'bg-violet-500 border-2 border-violet-400 text-frost shadow-[0_0_10px_rgba(139,92,246,0.4)]'
-                            : 'bg-void-light border-2 border-steel-800 text-frost hover:border-violet-400/50'
+                        aspect-square rounded-lg font-medium text-sm p-2
+                        flex items-center justify-center text-center
+                        transition-all duration-200
+                        ${isSelected
+                          ? 'bg-cyan-500/30 border-2 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                          : 'bg-steel-800/50 border-2 border-steel-700 text-frost hover:border-cyan-500/50'
                         }
                       `}
                     >
-                      <span className="relative z-10 break-words leading-tight">{word}</span>
-
-                      {/* Selection indicator */}
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute top-1 right-1 w-4 h-4 rounded-full bg-void flex items-center justify-center"
-                        >
-                          <svg
-                            className="w-2.5 h-2.5 text-violet-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </motion.div>
-                      )}
+                      {item.label}
                     </motion.button>
                   );
                 })}
@@ -436,13 +425,10 @@ export function CrypticConnectionUI({
 
               {/* Submit Button */}
               <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: selectedWords.length > 0 ? 1 : 0.5 }}
                 onClick={handleSubmit}
-                disabled={selectedWords.length === 0}
-                className="w-full bg-violet-500 hover:bg-violet-400 disabled:bg-steel-800 disabled:cursor-not-allowed text-frost font-bold py-4 px-6 rounded-xl transition-all"
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-void font-bold py-4 px-6 rounded-xl transition-all"
               >
-                {selectedWords.length > 0 ? `Submit ${selectedWords.length} words` : 'Select at least 1 word'}
+                Submit Filter
               </motion.button>
             </motion.div>
           )}
@@ -460,12 +446,12 @@ export function CrypticConnectionUI({
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-4 h-4 rounded-full bg-violet-400 animate-pulse"
+                    className="w-4 h-4 rounded-full bg-cyan-400 animate-pulse"
                     style={{ animationDelay: `${i * 200}ms` }}
                   />
                 ))}
               </div>
-              <p className="text-frost font-mono">The Fuzzy Judge evaluates...</p>
+              <p className="text-frost font-mono">The Logic Master evaluates...</p>
             </motion.div>
           )}
 
@@ -499,43 +485,20 @@ export function CrypticConnectionUI({
                 className="glass rounded-xl p-6 border border-steel-800"
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">🔮</span>
+                  <span className="text-2xl">🎯</span>
                   <p className="text-frost text-lg">{result.commentary}</p>
                 </div>
               </motion.div>
 
-              {/* Word-by-word breakdown */}
-              {breakdown.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="glass rounded-xl p-4 border border-steel-800 space-y-2"
-                >
-                  <p className="font-mono text-xs text-violet-400 uppercase mb-2">Word Breakdown</p>
-                  {breakdown.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-frost font-medium">{item.word}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`${item.points >= 4 ? 'text-green-400' : item.points >= 2 ? 'text-violet-400' : 'text-steel-500'} font-mono text-xs`}>
-                          {item.points}pts
-                        </span>
-                        <span className="text-steel-500 text-xs max-w-[180px] truncate">{item.reason}</span>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-
-              {/* Mystery Word Revealed */}
+              {/* Rule Revealed */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="glass rounded-xl p-6 border border-violet-400/30"
+                className="glass rounded-xl p-6 border border-cyan-400/30"
               >
-                <p className="font-mono text-xs text-violet-400 uppercase mb-2">The Mystery Word Was</p>
-                <p className="text-frost text-3xl font-black tracking-wider">{mysteryWord.toUpperCase()}</p>
+                <p className="font-mono text-xs text-cyan-400 uppercase mb-2">The Rule Was</p>
+                <p className="text-frost text-xl font-bold">{rule}</p>
                 {result.bonusInfo && (
                   <p className="text-steel-400 text-sm mt-3">{result.bonusInfo}</p>
                 )}
@@ -547,7 +510,7 @@ export function CrypticConnectionUI({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
                 onClick={handleComplete}
-                className="w-full bg-violet-500 hover:bg-violet-400 text-frost font-bold py-4 px-6 rounded-xl transition-all"
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-void font-bold py-4 px-6 rounded-xl transition-all"
               >
                 Continue
               </motion.button>

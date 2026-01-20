@@ -64,8 +64,7 @@ When a mini-game template is returned:
 - `/play` uses the registry in `lib/mini-games/`.
 - The mini-game UI handles its own AI calls and scoring.
 - On completion, the mini-game returns a `MiniGameResult`.
-
-Note: `/play` currently does not create a `Turn` entry for mini-game rounds.
+- Mini-games create `Turn` entries via `addTurn()` for proper progress tracking (fixed in v1.1.1).
 
 ## Commentary Phase
 

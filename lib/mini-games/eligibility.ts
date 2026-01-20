@@ -14,6 +14,25 @@ import type {
 } from './types';
 
 // ============================================================================
+// TURN SELECTION SCORING WEIGHTS
+// ============================================================================
+
+/**
+ * Scoring weights for selecting the best turn for trivia challenges.
+ * Higher scores indicate more suitable turns for generating interesting questions.
+ */
+const TURN_SELECTION_WEIGHTS = {
+  /** Bonus for non-binary template types (more nuanced answers) */
+  NON_BINARY_TEMPLATE_BONUS: 50,
+
+  /** Bonus for text response templates (rich content for questions) */
+  TEXT_RESPONSE_BONUS: 30,
+
+  /** Random variance to add unpredictability (0-40 points) */
+  RANDOMNESS_RANGE: 40,
+} as const;
+
+// ============================================================================
 // TURN QUERIES - Find usable turns for trivia
 // ============================================================================
 
@@ -247,12 +266,6 @@ export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef>
 // PUBLIC API
 // ============================================================================
 
-/**
- * Check if trivia challenge is eligible for current player
- */
-export function isTriviaEligible(context: EligibilityContext): EligibilityResult {
-  return checkTriviaChallengeEligibility(context);
-}
 
 /**
  * Select the best turn to use for a trivia challenge
@@ -279,16 +292,16 @@ export function selectTurnForTrivia(
 
     // Prefer non-binary templates (more interesting answers)
     if (turn.templateType !== 'tpl_timed_binary') {
-      score += 50;
+      score += TURN_SELECTION_WEIGHTS.NON_BINARY_TEMPLATE_BONUS;
     }
 
     // Prefer text responses (more to work with)
     if (turn.templateType === 'tpl_text_area' || turn.templateType === 'tpl_text_input') {
-      score += 30;
+      score += TURN_SELECTION_WEIGHTS.TEXT_RESPONSE_BONUS;
     }
 
-    // Add randomness
-    score += Math.random() * 40;
+    // Add randomness to prevent always picking the same turn
+    score += Math.random() * TURN_SELECTION_WEIGHTS.RANDOMNESS_RANGE;
 
     return { turn, score };
   });

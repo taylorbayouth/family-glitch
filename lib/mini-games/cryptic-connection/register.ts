@@ -4,8 +4,9 @@
  * Registers the Cryptic Connection mini-game with the central registry.
  */
 
+import type { ComponentType } from 'react';
 import { CrypticConnectionUI } from '@/components/mini-games/CrypticConnectionUI';
-import { registerMiniGame, type MiniGameConfig } from '../registry';
+import { registerMiniGame, type MiniGameConfig, type BaseMiniGameProps } from '../registry';
 
 // Cryptic Connection has no special config - AI generates everything
 export interface CrypticConnectionConfig extends MiniGameConfig {
@@ -16,7 +17,7 @@ registerMiniGame<CrypticConnectionConfig>({
   type: 'cryptic_connection',
   name: 'Cryptic Connection',
 
-  component: CrypticConnectionUI as any,
+  component: CrypticConnectionUI as ComponentType<BaseMiniGameProps & CrypticConnectionConfig>,
 
   extractConfig: () => {
     // Cryptic Connection always works - no special setup needed

@@ -177,6 +177,7 @@ export async function POST(req: NextRequest) {
         'trigger_madlibs_challenge',
         'trigger_cryptic_connection',
         'trigger_hard_trivia',
+        'trigger_the_filter',
       ];
 
       for (const toolCall of message.tool_calls) {

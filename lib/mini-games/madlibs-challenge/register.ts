@@ -4,8 +4,9 @@
  * Registers the Mad Libs mini-game with the central registry.
  */
 
+import type { ComponentType } from 'react';
 import { MadLibsUI } from '@/components/mini-games/MadLibsUI';
-import { registerMiniGame, type MiniGameConfig } from '../registry';
+import { registerMiniGame, type MiniGameConfig, type BaseMiniGameProps } from '../registry';
 
 // Mad Libs has no special config - it generates everything itself
 export interface MadLibsConfig extends MiniGameConfig {
@@ -16,7 +17,7 @@ registerMiniGame<MadLibsConfig>({
   type: 'madlibs_challenge',
   name: 'Mad Libs Challenge',
 
-  component: MadLibsUI as any,
+  component: MadLibsUI as ComponentType<BaseMiniGameProps & MadLibsConfig>,
 
   extractConfig: () => {
     // Mad Libs always works - no special setup needed

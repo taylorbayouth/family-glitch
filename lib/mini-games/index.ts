@@ -28,6 +28,7 @@ import './personality-match/register';
 import './madlibs-challenge/register';
 import './cryptic-connection/register';
 import './hard-trivia/register';
+import './the-filter/register';
 
 // Types and utilities
 export * from './types';
@@ -75,3 +76,12 @@ export {
   toMiniGameResult as hardTriviaToResult,
 } from './hard-trivia';
 export type { HardTriviaGenerateResponse, HardTriviaScoreResponse } from './hard-trivia';
+
+export {
+  buildFilterGeneratorPrompt,
+  buildFilterScorerPrompt,
+  parseFilterGeneratorResponse,
+  parseFilterScoreResponse,
+  toMiniGameResult as filterToResult,
+} from './the-filter';
+export type { FilterGenerateResponse, FilterScoreResponse } from './the-filter';

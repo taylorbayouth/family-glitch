@@ -119,10 +119,11 @@ Tools in `lib/ai/template-tools.ts`:
 
 Template tools that start mini-games:
 - `trigger_trivia_challenge`
+- `trigger_hard_trivia`
 - `trigger_personality_match`
 - `trigger_madlibs_challenge`
 - `trigger_cryptic_connection`
-- `trigger_hard_trivia`
+- `trigger_the_filter`
 
 ### Game Master Prompt
 
@@ -156,12 +157,13 @@ Notes:
 
 Mini-games are registered in `lib/mini-games/*/register.ts` and discovered via the registry in `lib/mini-games/registry.ts`.
 
-Available mini-games:
-- Trivia Challenge
-- Personality Match
-- Mad Libs Challenge
-- Cryptic Connection
-- Hard Trivia
+Available mini-games (6 total):
+- Trivia Challenge (glitch theme)
+- Hard Trivia (cyan theme)
+- Personality Match (mint theme)
+- Mad Libs Challenge (amber theme)
+- Cryptic Connection (violet theme)
+- The Filter (teal theme)
 
 Eligibility rules live in `lib/mini-games/eligibility.ts`. `/play` currently uses `getEligibleTurnsForPlayer()` to pass trivia eligibility data into the prompt.
 
@@ -254,7 +256,37 @@ npm start
 - `lib/store/facts-store.ts` is intentionally empty (turns are the source of truth).
 - `tailwind.config.ts` is deprecated in Tailwind v4.
 
-## Recent Fixes (v1.1.1)
+## Recent Updates
+
+### v1.2.0 - Code Quality & Accessibility Refactor
+
+**Shared Component Library**:
+- Created 5 shared mini-game components: `LoadingSpinner`, `ScoreDisplay`, `CommentaryCard`, `ErrorToast`, `IntroScreen`
+- Extracted common utilities to `lib/mini-games/utils.ts` (JSON parsing, score colors, null safety helpers)
+- Centralized game themes in `lib/mini-games/themes.ts` with unique color schemes for each game
+
+**TypeScript Improvements**:
+- Added `'the_filter'` to `MiniGameType` union for complete type coverage
+- Fixed all 6 register files to use proper `ComponentType<BaseMiniGameProps>` instead of `as any` casts
+- Added `TheFilterUI` to barrel exports in `components/mini-games/index.ts`
+- Removed unused exports: `isTriviaEligible()` and `createTriviaChallengeSession()`
+
+**Code Quality**:
+- Extracted magic numbers to named constants (`TURN_SELECTION_WEIGHTS`, `CRYPTIC_GRID_SIZE`)
+- Reduced code duplication by ~40% through shared components
+- Standardized border radius (`rounded-xl`) across all grid items
+
+**Accessibility**:
+- Added ARIA labels to all shared components (`role="status"`, `aria-label`, `aria-live="polite"`)
+- Fixed z-index conflicts in error toasts (`z-[60]` to appear above intro screens)
+- Improved responsive grid layouts (mobile: 3 cols → tablet: 4 cols → desktop: 5 cols)
+
+**Documentation**:
+- Updated all *.md files to reflect v1.1.1 fixes and v1.2.0 changes
+- Created CHANGELOG.md for version history
+- Added shared component documentation to lib/mini-games/README.md
+
+### v1.1.1 - Critical Bug Fixes
 
 ### Critical Bug Fixes
 1. **React Hooks Violation**: Moved `useState` call out of conditional error render block in `/play` to comply with Rules of Hooks.
