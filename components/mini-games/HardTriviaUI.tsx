@@ -120,7 +120,7 @@ export function HardTriviaUI({
           <h2 className="text-alert font-bold text-xl mb-2">Error</h2>
           <p className="text-frost mb-4">{error}</p>
           <button
-            onClick={() => onComplete({ score: 0, maxScore: 10, commentary: 'Error occurred' })}
+            onClick={() => onComplete({ score: 0, maxScore: 5, commentary: 'Error occurred' })}
             className="w-full bg-steel-700 hover:bg-steel-600 text-frost font-bold py-3 px-6 rounded-lg transition-colors"
           >
             Continue

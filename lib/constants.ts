@@ -55,7 +55,7 @@ export const PAGES = {
 } as const;
 
 // Game Duration & Progression
-export const AVERAGE_TURNS_PER_PLAYER = 3; // Tunable: Adjust this to change game length
+export const AVERAGE_TURNS_PER_PLAYER = 4; // Tunable: Adjust this to change game length
 
 /**
  * Calculate total number of rounds based on player count
@@ -72,8 +72,8 @@ export function calculateTotalRounds(numberOfPlayers: number): number {
 export function calculateCurrentAct(currentRound: number, totalRounds: number): 1 | 2 | 3 {
   if (totalRounds === 0) return 1;
   const progress = currentRound / totalRounds;
-  if (progress < 0.33) return 1;
-  if (progress < 0.66) return 2;
+  if (progress < 0.25) return 1;
+  if (progress < 0.65) return 2;
   return 3;
 }
 

@@ -100,7 +100,7 @@ ${correctAnswer}
 ${playerAnswer}
 
 ## SCORING RULES
-- If the player's answer matches the correct answer → they got it RIGHT → 10 points
+- If the player's answer matches the correct answer → they got it RIGHT → 5 points
 - If the player's answer does NOT match the correct answer → they got it WRONG → 0 points
 
 ## OUTPUT FORMAT
@@ -108,7 +108,7 @@ Respond with ONLY valid JSON in this exact format:
 
 {
   "correct": true,
-  "points": 10,
+  "points": 5,
   "commentary": "Nice! You nailed it."
 }
 

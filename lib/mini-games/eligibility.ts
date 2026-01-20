@@ -154,11 +154,11 @@ function checkMadLibsEligibility(context: EligibilityContext): EligibilityResult
 function checkCrypticConnectionEligibility(context: EligibilityContext): EligibilityResult {
   const { currentAct } = context;
 
-  // Rule 1: Must be in Act 2 or 3
-  if (currentAct < 2) {
+  // Rule 1: Must be in Act 3
+  if (currentAct < 3) {
     return {
       eligible: false,
-      reason: 'Cryptic Connection unlocks in Act II',
+      reason: 'Cryptic Connection unlocks in Act III',
     };
   }
 
@@ -231,7 +231,7 @@ export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef>
     type: 'cryptic_connection',
     name: 'Cryptic Connection',
     description: 'Find hidden connections in a cryptic word puzzle - fuzzy scoring rewards creative thinking',
-    minAct: 2,
+    minAct: 3,
     checkEligibility: checkCrypticConnectionEligibility,
   },
   hard_trivia: {

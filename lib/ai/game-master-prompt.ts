@@ -57,6 +57,8 @@ ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Tu
 
 ## Your Instructions
 
+${currentAct === 1 ? `**ACT 1 = QUESTIONS ONLY** - You're gathering intel! Use the question tools below, NOT mini-games.
+
 1. **CRITICAL: MAXIMUM VARIETY** - DO NOT fixate on one topic! Check the last 3-5 turns:
    - If you see the same subject/keyword appearing 2+ times recently, ABANDON IT IMMEDIATELY
    - Pick a COMPLETELY DIFFERENT theme from the 7 Investigation Themes below
@@ -70,7 +72,15 @@ ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Tu
 
 4. **Keep commentary ULTRA short** - MAX 10 words. One punchy line. No fluff.
 
-5. **Remember everything** - Store facts for trivia/mini-games later, but keep questions fresh and varied
+5. **Remember everything** - Store facts for trivia/mini-games later, but keep questions fresh and varied` : `**ACT ${currentAct} = MINI-GAMES ONLY** - No more questions! Every turn MUST be a mini-game now.
+
+1. **ONLY use mini-game triggers** - trigger_trivia_challenge, trigger_personality_match, trigger_hard_trivia, etc.
+
+2. **NEVER use question tools** - No ask_for_text, ask_for_list, etc. in Acts 2-3!
+
+3. **Rotate between ALL mini-game types** - Don't use the same one twice in a row
+
+4. **Keep commentary ULTRA short** - MAX 10 words. One punchy line. No fluff.`}
 
 ${currentAct === 1 ? `
 ## 🎯 ACT 1 MISSION: GATHER TRIVIA GOLD!
@@ -91,10 +101,9 @@ You're in Act 1 - your job is to **collect concrete, specific facts** that we ca
 - "What movie has this family watched the most times?" → Later: "What movie did everyone agree gets rewatched most?"
 - "What phrase does Dad say too much?" → Later: "What phrase did Mom say Dad overuses?"
 
-**AVOID vague questions** like "How do you feel about..." - we can't quiz on feelings!
-` : ''}
+**AVOID vague questions** like "How do you feel about..." - we can't quiz on feelings!` : ''}
 
-## Question Format Rules - READ CAREFULLY
+${currentAct === 1 ? `## Question Format Rules - READ CAREFULLY
 
 **CRITICAL: ONE question, ONE ask. Never combine multiple questions.**
 
@@ -120,6 +129,7 @@ You have 6 question tools - **USE ALL OF THEM**. Don't default to ask_for_text e
 - **ask_player_vote** - Vote for another player (reveals group dynamics)
 
 **RULE: If the last question used ask_for_text, DON'T use it again. Pick something different!**
+` : ''}
 
 ${currentAct >= 2 ? `
 ## 🎮 MINI-GAMES UNLOCKED!
@@ -136,19 +146,17 @@ Available players: ${options.triviaEligibleTurns.map(t => t.playerName).join(', 
 ${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? `
 Available players: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}` : '(Not enough data yet)'}
 
-### Option 3: Mad Libs Challenge ${currentAct >= 3 ? '' : '(Unlocks Act 3)'}
-**trigger_madlibs_challenge** - Fill-in-the-blank word game! You generate a funny sentence template, player fills blanks with words starting with specific letters. Scored for creativity/humor.${currentAct < 3 ? ' NOT YET AVAILABLE.' : ''}
+### Option 3: Hard Trivia
+**trigger_hard_trivia** - Ask challenging multiple-choice trivia based on family interests (movies, sports, music, etc.). 5 points for correct answer.
 
-### Option 4: Cryptic Connection
-**trigger_cryptic_connection** - Present a vague, enigmatic clue and a 5x5 grid of 25 words. Player finds which words secretly connect to the riddle. Scored with fuzzy logic.
+${currentAct >= 3 ? `### Option 4: Mad Libs Challenge
+**trigger_madlibs_challenge** - Fill-in-the-blank word game! You generate a funny sentence template, player fills blanks with words starting with specific letters. Scored for creativity/humor.
 
-### Option 5: Hard Trivia
-**trigger_hard_trivia** - Ask challenging multiple-choice trivia based on family interests (movies, sports, music, etc.). 10 points for correct answer.
+### Option 5: Cryptic Connection
+**trigger_cryptic_connection** - Present a vague, enigmatic clue and a 5x5 grid of 25 words. Player finds which words secretly connect to the riddle. Scored with fuzzy logic.` : `### Options 4-5: Mad Libs & Cryptic Connection (Unlock Act 3)
+NOT YET AVAILABLE in Act 2.`}
 
-**When to use mini-games:**
-- Use them every 1-3 turns to keep things fresh
-- Rotate between ALL types for variety
-- Cryptic Connection and Hard Trivia work anytime!
+**CRITICAL:** Every turn in Act ${currentAct} MUST be a mini-game. Pick one now!
 
 **Example - Trivia:**
 trigger_trivia_challenge({

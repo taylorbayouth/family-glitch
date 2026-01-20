@@ -112,7 +112,7 @@ export function parseHardTriviaScoreResponse(text: string): HardTriviaScoreRespo
 export function toMiniGameResult(scoreResponse: HardTriviaScoreResponse): MiniGameResult {
   return {
     score: scoreResponse.points,
-    maxScore: 10,
+    maxScore: 5,
     commentary: scoreResponse.commentary,
   };
 }
