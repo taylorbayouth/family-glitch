@@ -424,7 +424,7 @@ CRITICAL RULES:
         {/* Sticky Header */}
         <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 
-        <div className="flex items-center justify-center p-4 pt-6">
+        <div className="flex items-center justify-center p-4">
           <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
             <div className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">

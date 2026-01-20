@@ -34,7 +34,7 @@ export function TextAreaTemplate({
   return (
     <div className="min-h-dvh bg-void flex flex-col safe-y">
       {/* Content - centered */}
-      <div className="flex-1 flex items-center justify-center px-6 pt-6">
+      <div className="flex-1 flex items-center justify-center px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
