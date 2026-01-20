@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
-  selectWordsForGrid,
   getTurnsAboutPlayer,
+  buildPersonalityWordGeneratorPrompt,
+  parsePersonalityWordGeneratorResponse,
   buildPersonalityMatchPrompt,
   parsePersonalityMatchResponse,
   toMiniGameResult,
@@ -66,10 +67,58 @@ export function PersonalityMatchUI({
   const scores = useGameStore((state) => state.scores);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
 
-  // Generate word grid on mount
+  // Generate word grid on mount using AI
   useEffect(() => {
-    setWords(selectWordsForGrid(16)); // 4x4 grid
-  }, []);
+    const generateWords = async () => {
+      try {
+        // Get relevant turns about the subject player for context
+        const relevantTurns = getTurnsAboutPlayer(
+          turns.filter((t) => t.status === 'completed'),
+          subjectPlayer.id,
+          subjectPlayer.name
+        );
+
+        const prompt = buildPersonalityWordGeneratorPrompt({
+          subjectPlayerName: subjectPlayer.name,
+          subjectPlayerRole: subjectPlayer.role,
+          relevantTurns,
+          allPlayers,
+        });
+
+        const response = await sendChatRequest([
+          { role: 'system', content: prompt },
+          { role: 'user', content: 'Generate the 16 personality words now.' },
+        ], {
+          toolChoice: 'none',
+        });
+
+        const parsed = parsePersonalityWordGeneratorResponse(response.text);
+
+        if (parsed && parsed.words.length === 16) {
+          setWords(parsed.words);
+        } else {
+          // Fallback words if AI fails
+          setWords([
+            'Caring', 'Stubborn', 'Creative', 'Organized',
+            'Funny', 'Reserved', 'Loyal', 'Anxious',
+            'Bold', 'Patient', 'Dramatic', 'Generous',
+            'Sarcastic', 'Thoughtful', 'Competitive', 'Chill'
+          ]);
+        }
+      } catch (err) {
+        console.error('Failed to generate words:', err);
+        // Fallback words
+        setWords([
+          'Caring', 'Stubborn', 'Creative', 'Organized',
+          'Funny', 'Reserved', 'Loyal', 'Anxious',
+          'Bold', 'Patient', 'Dramatic', 'Generous',
+          'Sarcastic', 'Thoughtful', 'Competitive', 'Chill'
+        ]);
+      }
+    };
+
+    generateWords();
+  }, [subjectPlayer.id, subjectPlayer.name, subjectPlayer.role, allPlayers, turns]);
 
   const handleWordClick = (word: string) => {
     if (selectedWords.includes(word)) {
