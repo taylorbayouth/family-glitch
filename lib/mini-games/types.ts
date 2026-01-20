@@ -19,7 +19,7 @@ import type { Turn } from '@/lib/types/game-state';
 // MINI-GAME TYPES (extensible)
 // ============================================================================
 
-export type MiniGameType = 'trivia_challenge' | 'personality_match' | 'madlibs_challenge' | 'cryptic_connection';
+export type MiniGameType = 'trivia_challenge' | 'personality_match' | 'madlibs_challenge' | 'cryptic_connection' | 'hard_trivia';
 
 export type MiniGameStatus =
   | 'intro'       // Showing challenge intro

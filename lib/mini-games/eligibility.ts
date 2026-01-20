@@ -169,6 +169,39 @@ function checkCrypticConnectionEligibility(context: EligibilityContext): Eligibi
 }
 
 // ============================================================================
+// HARD TRIVIA ELIGIBILITY
+// ============================================================================
+
+function checkHardTriviaEligibility(context: EligibilityContext): EligibilityResult {
+  const { currentAct, turns } = context;
+
+  // Rule 1: Must be in Act 2 or 3
+  if (currentAct < 2) {
+    return {
+      eligible: false,
+      reason: 'Hard Trivia unlocks in Act II',
+    };
+  }
+
+  // Rule 2: Should have some turns about interests/hobbies (but not strictly required)
+  // Hard Trivia can work with general topics if no specific interests collected
+  const interestTurns = turns.filter(t =>
+    t.status === 'completed' &&
+    t.response &&
+    (t.prompt?.toLowerCase().includes('interest') ||
+     t.prompt?.toLowerCase().includes('hobby') ||
+     t.prompt?.toLowerCase().includes('hobbies') ||
+     t.prompt?.toLowerCase().includes('love') ||
+     t.prompt?.toLowerCase().includes('favorite'))
+  );
+
+  return {
+    eligible: true,
+    eligibleTurns: interestTurns, // Passed to prompt builder for context
+  };
+}
+
+// ============================================================================
 // MINI-GAME REGISTRY
 // ============================================================================
 
@@ -200,6 +233,13 @@ export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef>
     description: 'Find hidden connections in a cryptic word puzzle - fuzzy scoring rewards creative thinking',
     minAct: 2,
     checkEligibility: checkCrypticConnectionEligibility,
+  },
+  hard_trivia: {
+    type: 'hard_trivia',
+    name: 'Hard Trivia',
+    description: 'Answer challenging trivia questions based on the family\'s interests and hobbies',
+    minAct: 2,
+    checkEligibility: checkHardTriviaEligibility,
   },
 };
 

@@ -591,3 +591,35 @@ registerTool<{
     };
   }
 );
+
+/**
+ * Tool: Trigger Hard Trivia Challenge
+ * Ask challenging trivia questions based on the family's interests and hobbies.
+ */
+registerTool<{
+  intro?: string;
+}>(
+  {
+    type: 'function',
+    name: 'trigger_hard_trivia',
+    description: 'Start a HARD TRIVIA mini-game! Ask a challenging trivia question based on topics the family is interested in (movies, sports, music, cooking, etc.). Multiple choice format. 10 points for correct answer. Use this to test their knowledge on subjects they love! Available Act 2+ - works best when you know their interests.',
+    parameters: {
+      type: 'object',
+      properties: {
+        intro: {
+          type: 'string',
+          description: 'Optional intro text for the challenge (e.g., "Time to test your movie knowledge!")',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  async (args) => {
+    return {
+      templateType: 'hard_trivia',
+      params: {
+        intro: args.intro || 'Time to test your knowledge!',
+      },
+    };
+  }
+);

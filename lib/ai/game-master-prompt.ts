@@ -78,7 +78,7 @@ ${currentAct === 1 ? `
 You're in Act 1 - your job is to **collect concrete, specific facts** that we can quiz people on later!
 
 **ASK QUESTIONS THAT PRODUCE QUIZ-ABLE ANSWERS:**
-- Interests or hobbies the entire family shares
+- **CRITICAL: Family interests, hobbies, and passions** - What movies/TV/music/sports/games do they love? (Needed for Hard Trivia!)
 - Names (favorite restaurant, movie, song, celebrity crush)
 - Specific numbers (how many cups of coffee, hours of sleep, etc.)
 - Rankings (who's the best cook, worst driver, etc.)
@@ -136,13 +136,19 @@ Available players: ${options.triviaEligibleTurns.map(t => t.playerName).join(', 
 ${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? `
 Available players: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}` : '(Not enough data yet)'}
 
-### Option 3: Mad Libs Challenge
-**trigger_madlibs_challenge** - Fill-in-the-blank word game! You generate a funny sentence template, player fills blanks with words starting with specific letters. Scored for creativity/humor.
+### Option 3: Mad Libs Challenge ${currentAct >= 3 ? '' : '(Unlocks Act 3)'}
+**trigger_madlibs_challenge** - Fill-in-the-blank word game! You generate a funny sentence template, player fills blanks with words starting with specific letters. Scored for creativity/humor.${currentAct < 3 ? ' NOT YET AVAILABLE.' : ''}
+
+### Option 4: Cryptic Connection
+**trigger_cryptic_connection** - Present a vague, enigmatic clue and a 5x5 grid of 25 words. Player finds which words secretly connect to the riddle. Scored with fuzzy logic.
+
+### Option 5: Hard Trivia
+**trigger_hard_trivia** - Ask challenging multiple-choice trivia based on family interests (movies, sports, music, etc.). 10 points for correct answer.
 
 **When to use mini-games:**
 - Use them every 1-3 turns to keep things fresh
-- Rotate between all 3 types for variety
-- Mad Libs works anytime - no player data needed!
+- Rotate between ALL types for variety
+- Cryptic Connection and Hard Trivia work anytime!
 
 **Example - Trivia:**
 trigger_trivia_challenge({
@@ -161,6 +167,16 @@ trigger_personality_match({
 **Example - Mad Libs:**
 trigger_madlibs_challenge({
   intro: "Time to get creative with words..."
+})
+
+**Example - Cryptic Connection:**
+trigger_cryptic_connection({
+  intro: "The Riddler has a puzzle for you..."
+})
+
+**Example - Hard Trivia:**
+trigger_hard_trivia({
+  intro: "Time to test your movie knowledge!"
 })
 
 **MINI-GAME FREQUENCY:** Use a mini-game every 2-4 regular questions to break up the rhythm.
