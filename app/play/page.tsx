@@ -336,7 +336,7 @@ CRITICAL RULES:
     const [showDetails, setShowDetails] = useState(false);
 
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-void flex items-center justify-center p-6">
         <div className="glass rounded-xl p-6 border border-alert max-w-2xl w-full">
           <h2 className="text-alert font-bold text-xl mb-4">Error</h2>
           <p className="text-frost mb-6">{error}</p>
@@ -396,7 +396,7 @@ CRITICAL RULES:
   // Initial loading
   if (phase === 'loading' && !currentTemplate && !aiCommentary) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="min-h-dvh bg-void flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="flex justify-center space-x-2">
             {[0, 1, 2].map((i) => (
@@ -420,7 +420,7 @@ CRITICAL RULES:
     const nextPlayer = players[nextPlayerIndex];
 
     return (
-      <div className="min-h-screen bg-void">
+      <div className="min-h-dvh bg-void">
         {/* Sticky Header */}
         <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 
@@ -461,7 +461,7 @@ CRITICAL RULES:
   // Question screen (regular templates)
   if (phase === 'question' && currentTemplate) {
     return (
-      <div className="min-h-screen bg-void relative">
+      <div className="min-h-dvh bg-void relative">
         {/* Background */}
         <div className="scan-line" />
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
@@ -498,7 +498,7 @@ CRITICAL RULES:
       const MiniGameComponent = miniGameDef.component;
 
       return (
-        <div className="min-h-screen bg-void">
+        <div className="min-h-dvh bg-void">
           {/* Fixed Header */}
           <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 

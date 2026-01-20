@@ -115,7 +115,7 @@ export function HardTriviaUI({
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-void flex items-center justify-center p-4">
         <div className="glass rounded-xl p-6 border border-alert max-w-md">
           <h2 className="text-alert font-bold text-xl mb-2">Error</h2>
           <p className="text-frost mb-4">{error}</p>
@@ -133,7 +133,7 @@ export function HardTriviaUI({
   // Loading state
   if (phase === 'loading' || !triviaData) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="min-h-dvh bg-void flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -149,7 +149,7 @@ export function HardTriviaUI({
   // Intro phase
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-void flex items-center justify-center p-4">
         <div className="scan-line" />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -220,7 +220,7 @@ export function HardTriviaUI({
   // Question phase
   if (phase === 'question') {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-void flex items-center justify-center p-4">
         <div className="scan-line" />
         <motion.div
           initial={{ opacity: 0 }}
@@ -297,7 +297,7 @@ export function HardTriviaUI({
   // Scoring phase
   if (phase === 'scoring') {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="min-h-dvh bg-void flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -315,7 +315,7 @@ export function HardTriviaUI({
     const isCorrect = scoreData.correct;
 
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-void flex items-center justify-center p-4">
         <div className="scan-line" />
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

@@ -183,7 +183,7 @@ export function EndGameResults({ onPlayAgain }: EndGameResultsProps) {
   // Loading state
   if (phase === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 safe-y">
+      <div className="min-h-dvh flex items-center justify-center p-6 safe-y">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -217,7 +217,7 @@ export function EndGameResults({ onPlayAgain }: EndGameResultsProps) {
   // Intro phase
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 safe-y">
+      <div className="min-h-dvh flex items-center justify-center p-6 safe-y">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -247,7 +247,7 @@ export function EndGameResults({ onPlayAgain }: EndGameResultsProps) {
   // Countdown phase
   if (phase === 'countdown') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 safe-y">
+      <div className="min-h-dvh flex items-center justify-center p-6 safe-y">
         <AnimatePresence mode="wait">
           <motion.div
             key={countdown}
@@ -266,7 +266,7 @@ export function EndGameResults({ onPlayAgain }: EndGameResultsProps) {
 
   // Revealing phase and Complete phase
   return (
-    <div className="min-h-screen p-6 pb-32 safe-y">
+    <div className="min-h-dvh p-6 pb-32 safe-y">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div

@@ -21,7 +21,7 @@ export function PassToPlayerScreen({
   isLoadingQuestion,
 }: PassToPlayerScreenProps) {
   return (
-    <div className="min-h-screen bg-void flex flex-col safe-y">
+    <div className="min-h-dvh bg-void flex flex-col safe-y">
       {/* Background effects */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />

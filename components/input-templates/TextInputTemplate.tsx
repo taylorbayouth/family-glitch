@@ -69,7 +69,7 @@ export function TextInputTemplate({
   }, []);
 
   return (
-    <div className="min-h-screen bg-void flex flex-col safe-y">
+    <div className="min-h-dvh bg-void flex flex-col safe-y">
       {/* Content - centered */}
       <div className="flex-1 flex items-center justify-center px-6 pt-6">
         <motion.div

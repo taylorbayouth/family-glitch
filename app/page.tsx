@@ -22,7 +22,7 @@ export default function Home() {
   }, [session, router]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-void relative overflow-hidden">
+    <div className="min-h-dvh flex flex-col bg-void relative overflow-hidden">
       {/* Background effects */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />

@@ -60,7 +60,7 @@ export default function SetupPage() {
 
   if (!hasHydrated || !hasInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-void">
+      <div className="min-h-dvh flex items-center justify-center bg-void">
         <div className="text-frost font-mono text-sm animate-pulse">Loading...</div>
       </div>
     );
@@ -163,13 +163,13 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-void relative">
+    <div className="min-h-dvh bg-void relative">
       {/* Background */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
       <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-glitch/15 rounded-full blur-[120px]" />
 
-      <div className="relative z-10 min-h-screen flex flex-col max-w-lg mx-auto">
+      <div className="relative z-10 min-h-dvh flex flex-col max-w-lg mx-auto">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}

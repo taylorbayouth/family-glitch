@@ -192,7 +192,7 @@ export function TriviaChallengeUI({
   // Intro screen (before loading)
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-glitch/20 via-void to-glitch/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <div className="min-h-dvh bg-gradient-to-br from-glitch/20 via-void to-glitch/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
@@ -319,7 +319,7 @@ export function TriviaChallengeUI({
   }
 
   return (
-    <div className="min-h-screen bg-void flex flex-col">
+    <div className="min-h-dvh bg-void flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
