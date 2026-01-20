@@ -9,7 +9,9 @@ import type { MiniGameResult } from '../types';
 
 interface GeneratePromptContext {
   targetPlayerName: string;
-  allPlayers: Array<{ id: string; name: string; role?: string }>;
+  targetPlayerAge?: number;
+  targetPlayerRole?: string;
+  allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
   scores: Record<string, number>;
 }
 
@@ -18,16 +20,30 @@ interface GeneratePromptContext {
  * Creates a rule/constraint and 9-12 items to classify
  */
 export function buildFilterGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName } = context;
+  const { targetPlayerName, targetPlayerAge, targetPlayerRole } = context;
 
   const targetName = targetPlayerName || 'Player';
+  const ageInfo = targetPlayerAge ? `, age ${targetPlayerAge}` : '';
+  const roleInfo = targetPlayerRole ? ` (${targetPlayerRole})` : '';
+
   return `You are THE LOGIC MASTER - creating binary classification puzzles for Family Glitch.
 
 ## MISSION
-Generate a JSON object for "The Filter" game for ${targetName}.
+Generate a JSON object for "The Filter" game for ${targetName}${roleInfo}${ageInfo}.
+
+## PLAYER CONTEXT
+- Match category difficulty to a ${targetPlayerAge || 'typical'}-year-old's knowledge
+- Younger players (under 12) need accessible categories with familiar items
+- Teens and adults can handle more obscure facts and edge cases
+- Use cultural references and knowledge they'd reasonably have
 
 ## STEP 1: Create The Rule
-Pick a specific, testable constraint. Categories:
+Pick a specific, testable constraint appropriate for the player's age:
+- **Kids-friendly**: "Is a mammal", "Has wheels", "Is found in a kitchen"
+- **All ages**: "Contains the letter E", "Is a palindrome", "Has more than 5 letters"
+- **Teens/Adults**: "Invented before 1900", "Is heavier than water", "Predates the internet"
+
+Categories to choose from:
 - **History**: "Invented before 1900", "Happened in the 20th century"
 - **Science**: "Heavier than water", "Is technically a berry", "Can survive in space"
 - **Geography**: "Has population > 1 million", "Is in the Southern Hemisphere"
@@ -42,10 +58,11 @@ Create exactly 9-12 items with intentional difficulty layers:
 - **1-2 EDGE CASES** (technically correct but debatable)
 
 ## QUALITY RULES
-- Items should be nouns, names, or concepts (short labels)
+- Items should be nouns, names, or concepts the player would know
+- Match complexity to their age - no obscure references for young players
 - Make it debate-worthy - some should spark "Wait, really?" moments
 - Trick items are worth bonus points if correctly identified
-- Mix obvious and subtle items
+- Mix obvious and subtle items appropriate for their knowledge level
 
 ## RESPONSE FORMAT
 Respond with valid JSON only:

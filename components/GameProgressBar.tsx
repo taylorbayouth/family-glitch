@@ -61,11 +61,11 @@ export function GameProgressBar() {
 
       {/* Progress Bar */}
       <div className="relative h-3 bg-void-light rounded-full overflow-hidden border border-steel-800">
-        {/* Background sections for each act */}
+        {/* Background sections for each act (matching calculateCurrentAct boundaries) */}
         <div className="absolute inset-0 flex">
-          <div className="flex-1 bg-mint/10" />
-          <div className="flex-1 bg-glitch/10" />
-          <div className="flex-1 bg-alert/10" />
+          <div className="bg-mint/10" style={{ width: '20%' }} />
+          <div className="bg-glitch/10" style={{ width: '45%' }} />
+          <div className="bg-alert/10" style={{ width: '35%' }} />
         </div>
 
         {/* Fill */}
@@ -74,9 +74,9 @@ export function GameProgressBar() {
           style={{ width: `${progressPercentage}%` }}
         />
 
-        {/* Act dividers (at 33% and 66%) */}
-        <div className="absolute top-0 left-[33.33%] w-0.5 h-full bg-steel-700" />
-        <div className="absolute top-0 left-[66.66%] w-0.5 h-full bg-steel-700" />
+        {/* Act dividers (at 20% and 65% to match calculateCurrentAct) */}
+        <div className="absolute top-0 left-[20%] w-0.5 h-full bg-steel-700" />
+        <div className="absolute top-0 left-[65%] w-0.5 h-full bg-steel-700" />
       </div>
     </div>
   );

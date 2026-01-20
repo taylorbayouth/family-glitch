@@ -13,15 +13,16 @@ import type { MiniGameResult } from '../types';
 interface WordGeneratorContext {
   subjectPlayerName: string;
   subjectPlayerRole?: string;
+  subjectPlayerAge?: number;
   relevantTurns: Turn[];
-  allPlayers: Array<{ id: string; name: string; role?: string }>;
+  allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
 }
 
 /**
  * Build prompt for AI to generate personality words for the grid
  */
 export function buildPersonalityWordGeneratorPrompt(context: WordGeneratorContext): string {
-  const { subjectPlayerName, subjectPlayerRole, relevantTurns } = context;
+  const { subjectPlayerName, subjectPlayerRole, subjectPlayerAge, relevantTurns } = context;
 
   // Defensive null checks
   const subjectName = subjectPlayerName || 'Player';
@@ -37,7 +38,7 @@ export function buildPersonalityWordGeneratorPrompt(context: WordGeneratorContex
   return `You are THE ANALYST - generating personality words for a Family Glitch challenge.
 
 ## MISSION
-Generate exactly 16 personality words for a 4x4 grid about ${subjectName}${subjectPlayerRole ? ` (${subjectPlayerRole})` : ''}.
+Generate exactly 16 personality words for a 4x4 grid about ${subjectName}${subjectPlayerRole ? ` (${subjectPlayerRole}` : ''}${subjectPlayerAge ? `, age ${subjectPlayerAge})` : subjectPlayerRole ? ')' : ''}.
 
 ## WHAT WE KNOW ABOUT ${subjectName.toUpperCase()}
 ${turnsSummary || 'No specific game data yet - use general personality words.'}
@@ -45,10 +46,11 @@ ${turnsSummary || 'No specific game data yet - use general personality words.'}
 ## WORD RULES
 1. EXACTLY 16 words, single-word traits only
 2. Mix positive, negative, and neutral
-3. Include at least 4 strong fits based on evidence
+3. Include at least 4 strong fits based on evidence above
 4. Include 4 clear decoys that do NOT fit
 5. The rest should be plausible but debatable
-6. No names, no phrases, no repeats
+6. Use age-appropriate vocabulary - keep it family-friendly and understandable to all ages
+7. No names, no phrases, no repeats
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
@@ -56,7 +58,7 @@ Respond with valid JSON:
   "words": ["word1", "word2", ... exactly 16 words]
 }
 
-Make the choices fun and arguable so the table debates.`;
+Make the choices fun and arguable so the family debates them together.`;
 }
 
 export interface PersonalityWordGeneratorResponse {

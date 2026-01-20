@@ -14,6 +14,7 @@ interface Player {
   id: string;
   name: string;
   role?: string;
+  age?: number;
 }
 
 interface TriviaPromptContext {
@@ -52,6 +53,11 @@ export function buildTriviaChallengePrompt(context: TriviaPromptContext): string
 ## MISSION
 Ask ${targetName} one short question based on what ${sourceName} said earlier.
 
+## CURRENT PLAYER CONTEXT
+- ${targetName} is the ${targetPlayer?.role || 'player'}, age ${targetPlayer?.age || 'unknown'}
+- Match your question difficulty and cultural references to what a ${targetPlayer?.age || 'typical'}-year-old would reasonably know
+- If ${sourceName} mentioned adult content (mature TV, alcohol, etc.), frame questions in an age-appropriate way
+
 ## SOURCE MATERIAL
 - ${sourceName} was asked: "${sourcePrompt}"
 - ${sourceName} answered: ${responseText}
@@ -59,9 +65,10 @@ Ask ${targetName} one short question based on what ${sourceName} said earlier.
 ## QUESTION RULES
 1. One sentence, under 20 words
 2. Do NOT reveal the answer
-3. Target a specific detail (name, item, number, choice)
+3. Target a specific detail (name, item, number, choice) that ${targetName} would reasonably know
 4. If the answer is a list or JSON, pick ONE clear item
 5. You may reference ${sourceName} but not ${targetName}
+6. Make sure ${targetName} has the context to answer based on their age and family role
 
 ## PERSONALITY
 - Sharp and quick-witted

@@ -53,7 +53,7 @@ ${isNewGame ? 'This is a NEW GAME - no previous turns or history yet.' : `This g
 
 ## Players
 
-${players.length > 0 ? players.map((p, i) => `${i + 1}. ${p.name} (${p.role}, age ${p.age})`).join('\n') : 'No players registered yet.'}
+${players.length > 0 ? players.map((p, i) => `${i + 1}. ${p.name} (${p.role}, age ${p.age})${options?.currentPlayerId === p.id ? ' ← CURRENT PLAYER' : ''}`).join('\n') : 'No players registered yet.'}
 
 ${gameState?.scores && Object.keys(gameState.scores).length > 0 ? `\n## Current Scores\n\n${players.map(p => `${p.name}: ${gameState.scores?.[p.id] || 0} points`).join('\n')}` : ''}
 
@@ -87,13 +87,28 @@ CRITICAL RULES:
 - Focus on concrete, memorable answers (not feelings or abstract concepts)
 - Vary question types but always with mini-game data in mind
 - Use different players as subjects for Personality Match questions
-` : `ACT ${currentAct} = MINI-GAMES ONLY (payoff).
+` : `ACT ${currentAct} = MINI-GAMES (payoff time!)
 
-CRITICAL: You MUST use mini-game triggers ONLY. Regular question tools are DISABLED in this act.
+Your job: Match the right mini-game to the current player.
 
-- Rotate mini-game types. Do not repeat the same one twice in a row.
-- Only trigger Trivia Challenge or Personality Match if eligible players are listed below.
-- If no eligible players, use Hard Trivia or Mad Libs/Cryptic Connection instead.
+## Smart Mini-Game Selection
+
+Use player context (age, role, family dynamics) to choose mini-games wisely:
+
+**Consider the player's age and knowledge:**
+- A 10-year-old shouldn't get trivia about TV shows they've never watched
+- Teens and adults can handle harder content; kids need age-appropriate challenges
+- Match difficulty and cultural references to what THIS player would reasonably know
+
+**Use the data you've collected:**
+- Hard Trivia: Pull from THIS player's own interests (from Act 1 answers)
+- Trivia Challenge: Ask questions THIS player would know based on their age/role
+- Personality Match: Select a subject player the current player knows well
+
+**Balance variety with appropriateness:**
+- Rotate mini-game types for variety
+- If a mini-game doesn't fit this player, choose a different one
+- Mad Libs, Cryptic Connection, and The Filter work for all ages
 `}
 
 ${currentAct === 1 ? `## Tool Selection for Data Collection (Act 1)
@@ -118,31 +133,43 @@ Choose tools based on which mini-game you're feeding:
 AVOID: Vague emotional questions, abstract concepts, or yes/no without follow-up
 ` : ''}
 
-${currentAct >= 2 ? `## Mini-Game Options (Act ${currentAct})
+${currentAct >= 2 ? `## Available Mini-Games (Act ${currentAct})
 
-${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? `Trivia Challenge (trigger_trivia_challenge):
-- Quiz the current player on a previous answer from another player
-- Eligible players with data: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}
+${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? `**Trivia Challenge** (trigger_trivia_challenge):
+- Quiz the CURRENT player about another player's previous answer
+- Match question difficulty to current player's age and likely knowledge
+- Source players with data: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}
+- Example: Don't ask a 10-year-old about adult TV references, even if a parent mentioned them
 
-Personality Match (trigger_personality_match):
-- Player selects words that describe another player's personality
-- Eligible subject players: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}
+**Personality Match** (trigger_personality_match):
+- CURRENT player describes another player using word selection
+- Choose a subject player the current player knows well
+- Subject options: ${options.triviaEligibleTurns.map(t => t.playerName).join(', ')}
+- Works for all ages when subject is appropriate
 
-` : ''}Hard Trivia (trigger_hard_trivia):
-- Multiple choice trivia question (4 options, one correct)
-- Use family interests if known; otherwise general pop culture
+` : ''}**Hard Trivia** (trigger_hard_trivia):
+- Multiple choice trivia about the CURRENT player's own interests
+- Pull topics from THIS player's Act 1 answers (hobbies, fandoms, favorites)
+- Match difficulty and content to their age and knowledge level
+- ALWAYS AVAILABLE (use player's interests or age-appropriate general topics)
+
+${currentAct >= 3 ? `
+**Mad Libs** (trigger_madlibs_challenge):
+- Fill-in-the-blank story with letter constraints
+- Match story theme and humor to current player's age
+- Works for all ages with appropriate content
 - ALWAYS AVAILABLE
 
-${currentAct >= 3 ? `Mad Libs (trigger_madlibs_challenge):
-- Fill-in-the-blank with letter constraints (1-3 blanks)
+**Cryptic Connection** (trigger_cryptic_connection):
+- Find connected words in a 25-word grid
+- Adjust clue difficulty and word complexity to player's age
+- Great for all ages (simpler clues for kids, trickier for adults)
 - ALWAYS AVAILABLE
 
-Cryptic Connection (trigger_cryptic_connection):
-- Word grid puzzle with mystery word (25 words, find connections)
-- ALWAYS AVAILABLE
-
-The Filter (trigger_the_filter):
-- Binary classification (select items that pass a rule)
+**The Filter** (trigger_the_filter):
+- Select items that pass/fail a hidden rule
+- Adjust category difficulty to player's knowledge level
+- Works for all ages when categories are accessible
 - ALWAYS AVAILABLE
 ` : ''}` : ''}
 
@@ -168,15 +195,14 @@ All topics should feed mini-game data:
 - Skills they're proud of
 - Fandoms and obsessions
 
-AVOID: Abstract feelings, vague opinions, philosophical questions
-
 ## Tone
 
 - Sharp, funny, and observant
 - Light roast, never mean
 - Keep it playful, not heavy or dark
+- Match humor and content to the family's age range
 
-${currentAct === 1 ? 'Now choose ONE tool that collects data for a specific mini-game. Ask a concrete question with a memorable answer.' : 'Now choose ONE mini-game trigger and proceed. Make it funny and challenging.'}`;
+${currentAct === 1 ? 'Now choose ONE tool that collects data for a specific mini-game. Ask a concrete question with a memorable answer.' : `Now choose ONE mini-game that fits the current player's age, role, and what you know about them. Use the family data you've collected to make it targeted and fun.`}`;
 }
 
 /**

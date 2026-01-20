@@ -17,7 +17,9 @@ const CRYPTIC_GRID_SIZE = 25;
 
 interface GeneratePromptContext {
   targetPlayerName: string;
-  allPlayers: Array<{ id: string; name: string; role?: string }>;
+  targetPlayerAge?: number;
+  targetPlayerRole?: string;
+  allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
   scores: Record<string, number>;
 }
 
@@ -26,17 +28,28 @@ interface GeneratePromptContext {
  * Uses the "Mystery Word" approach with layered associations
  */
 export function buildCrypticGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName } = context;
+  const { targetPlayerName, targetPlayerAge, targetPlayerRole } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
+  const ageInfo = targetPlayerAge ? `, age ${targetPlayerAge}` : '';
+  const roleInfo = targetPlayerRole ? ` (${targetPlayerRole})` : '';
+
   return `You are THE SEMANTIC ARCHITECT - creating word association puzzles for Family Glitch.
 
 ## MISSION
-Generate a JSON object for a word association game for ${targetName}.
+Generate a JSON object for a word association game for ${targetName}${roleInfo}${ageInfo}.
+
+## PLAYER CONTEXT
+- Adjust clue complexity to a ${targetPlayerAge || 'typical'}-year-old's vocabulary
+- Younger players (under 12) need simpler mystery words with obvious connections
+- Teens and adults can handle more subtle wordplay and obscure meanings
+- Use words and cultural references they'd understand
 
 ## STEP 1: Choose a "Mystery Word"
-Pick a polysemous word with multiple meanings (e.g., "BAR", "POUND", "BANK", "SPRING", "PITCH").
+Pick a polysemous word with multiple meanings appropriate for the player's age:
+- Kids: Simple words like "STAR", "ROCK", "LIGHT", "PLAY"
+- Teens/Adults: More complex like "BAR", "POUND", "BANK", "SPRING", "PITCH"
 
 ## STEP 2: Generate 25 Grid Words
 Create an array of exactly 25 UNIQUE single words with intentional layers:
@@ -47,7 +60,8 @@ Create an array of exactly 25 UNIQUE single words with intentional layers:
 
 ## QUALITY RULES
 - All words must be single words (no spaces or hyphens)
-- Mix nouns, verbs, adjectives
+- Match vocabulary to player's age and knowledge level
+- Mix nouns, verbs, adjectives appropriate for their age
 - Make distractors convincing but clearly wrong
 - Ensure variety - avoid obvious lists or categories
 

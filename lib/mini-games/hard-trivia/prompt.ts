@@ -30,9 +30,24 @@ export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): 
 
   // Defensive null checks
   const targetName = targetPlayer?.name || 'Player';
+  const targetAge = targetPlayer?.age || 0;
+  const targetRole = targetPlayer?.role || 'player';
 
-  // Extract family interests from turns
-  const interestTurns = (turns || []).filter(t =>
+  // Extract THIS player's interests from their own turns
+  const playerInterests = (turns || []).filter(t =>
+    t &&
+    t.playerId === targetPlayer?.id &&
+    t.status === 'completed' &&
+    t.response &&
+    (t.prompt?.toLowerCase().includes('interest') ||
+     t.prompt?.toLowerCase().includes('hobby') ||
+     t.prompt?.toLowerCase().includes('hobbies') ||
+     t.prompt?.toLowerCase().includes('love') ||
+     t.prompt?.toLowerCase().includes('favorite'))
+  );
+
+  // Also check family-wide interests as backup
+  const familyInterests = (turns || []).filter(t =>
     t &&
     t.status === 'completed' &&
     t.response &&
@@ -43,20 +58,38 @@ export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): 
      t.prompt?.toLowerCase().includes('favorite'))
   );
 
-  const interestSummary = interestTurns.length > 0
-    ? interestTurns.slice(-10).map(t => `${t.playerName || 'Someone'}: ${JSON.stringify(t.response)}`).join('\n')
-    : 'No specific interests identified yet - use general pop culture topics';
+  const playerInterestSummary = playerInterests.length > 0
+    ? `${targetName}'s interests: ${playerInterests.map(t => JSON.stringify(t.response)).join(', ')}`
+    : '';
+
+  const familyInterestSummary = familyInterests.length > 0
+    ? `Family interests: ${familyInterests.slice(-5).map(t => `${t.playerName}: ${JSON.stringify(t.response)}`).join(', ')}`
+    : '';
+
+  const interestContext = playerInterestSummary || familyInterestSummary ||
+    'No specific interests identified - use age-appropriate general pop culture';
 
   return `You are THE QUIZMASTER for Family Glitch's Hard Trivia Challenge.
 
 ## MISSION
-Generate one challenging multiple-choice trivia question for ${targetName}.
+Generate one challenging trivia question for ${targetName} based on THEIR interests.
 
-## FAMILY INTERESTS AND HOBBIES
-${interestSummary}
+## PLAYER CONTEXT
+- ${targetName} is the ${targetRole}, age ${targetAge}
+- Match difficulty and content to a ${targetAge}-year-old's knowledge level
+- Use cultural references they'd understand
+
+## INTERESTS TO USE
+${interestContext}
 
 ## QUESTION RULES
-1. Use the interests above if possible. If none, use general pop culture.\n2. Make it hard but fair (not trivial, not obscure).\n3. Provide 4 options: one correct, three plausible wrong.\n4. Keep the question to 1-2 short sentences.\n5. Avoid trick wording.
+1. Prioritize ${targetName}'s OWN interests if available (listed first above)
+2. If using family interests, ensure ${targetName} would know the topic
+3. Match difficulty to their age: kids get easier, teens/adults get harder
+4. Make it challenging but fair (not impossible, not trivial)
+5. Provide 4 options: one correct, three plausible wrong
+6. Keep question to 1-2 short sentences
+7. No trick wording or cultural references beyond their age range
 
 ## OUTPUT FORMAT
 Respond with ONLY valid JSON:

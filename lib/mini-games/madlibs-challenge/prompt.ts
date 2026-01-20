@@ -22,7 +22,9 @@ export function selectRandomLetters(count: number): string[] {
 
 interface GeneratePromptContext {
   targetPlayerName: string;
-  allPlayers: Array<{ id: string; name: string; role?: string }>;
+  targetPlayerAge?: number;
+  targetPlayerRole?: string;
+  allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
   scores: Record<string, number>;
 }
 
@@ -30,20 +32,29 @@ interface GeneratePromptContext {
  * Build the system prompt for generating a Mad Libs sentence
  */
 export function buildMadLibsGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName } = context;
+  const { targetPlayerName, targetPlayerAge, targetPlayerRole } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
+  const ageInfo = targetPlayerAge ? `, age ${targetPlayerAge}` : '';
+  const roleInfo = targetPlayerRole ? ` (${targetPlayerRole})` : '';
+
   return `You are THE WORDSMITH - a witty, playful word game host for Family Glitch.
 
 ## MISSION
-Generate one Mad Libs-style sentence for ${targetName} to complete.
+Generate one Mad Libs-style sentence for ${targetName}${roleInfo}${ageInfo} to complete.
+
+## PLAYER CONTEXT
+- Match humor and vocabulary to a ${targetPlayerAge || 'typical'}-year-old's level
+- Keep themes age-appropriate but fun for the whole family
+- Younger players (under 12) need simpler sentences and concepts
+- Teens and adults can handle more complex or slightly edgier humor
 
 ## SENTENCE RULES
 1. 8-14 words total
 2. Include 1-3 blanks marked as ___
 3. The reveal should be funny or oddly revealing when filled in
-4. Use family-safe but edgy humor (no explicit content)
+4. Use family-safe humor appropriate for the player's age
 5. Avoid proper names and real people
 6. The system assigns starting letters later
 

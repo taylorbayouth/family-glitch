@@ -25,6 +25,7 @@ export interface MiniGamePlayer {
   name: string;
   role?: string;
   avatar?: number;
+  age?: number;
 }
 
 // Base props that ALL mini-game components must accept
