@@ -433,16 +433,15 @@ CRITICAL RULES:
   // Question screen (regular templates)
   if (phase === 'question' && currentTemplate) {
     return (
-      <div className="min-h-dvh bg-void relative">
+      <div className="min-h-dvh bg-void relative flex flex-col">
         {/* Background */}
-        <div className="scan-line" />
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
 
         {/* Sticky Header */}
         <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} />
 
         {/* Template */}
-        <div className="relative z-10">
+        <div className="relative z-10 flex-1 flex flex-col">
           <TemplateRenderer
             templateType={currentTemplate.templateType}
             params={{

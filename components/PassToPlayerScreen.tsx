@@ -87,7 +87,6 @@ export function PassToPlayerScreen({
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       {/* Background effects */}
-      <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
 
       {/* Main content - flex-1 pushes button to bottom when content is short */}

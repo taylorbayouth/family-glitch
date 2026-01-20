@@ -24,7 +24,6 @@ export default function Home() {
   return (
     <div className="min-h-dvh flex flex-col bg-void relative overflow-hidden">
       {/* Background effects */}
-      <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
       <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-glitch/20 rounded-full blur-[150px]" />
       <div className="absolute bottom-[-100px] right-[-100px] w-[400px] h-[400px] bg-mint/10 rounded-full blur-[120px]" />

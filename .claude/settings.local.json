@@ -18,7 +18,9 @@
       "Bash(grep:*)",
       "Bash(git pull:*)",
       "Bash(git restore:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(perl -i -pe:*)"
     ]
   }
 }

@@ -165,7 +165,6 @@ export default function SetupPage() {
   return (
     <div className="min-h-dvh bg-void relative">
       {/* Background */}
-      <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
       <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-glitch/15 rounded-full blur-[120px]" />
 
@@ -192,11 +191,18 @@ export default function SetupPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
+                layout
                 className="mb-3"
               >
-                {/* Collapsed view */}
-                {!form.isExpanded ? (
-                  <motion.button
+                <AnimatePresence mode="wait">
+                  {/* Collapsed view */}
+                  {!form.isExpanded ? (
+                    <motion.button
+                      key="collapsed"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
                     onClick={() => toggleExpanded(form.id)}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -247,10 +253,17 @@ export default function SetupPage() {
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </motion.svg>
-                  </motion.button>
-                ) : (
-                  /* Expanded view */
-                  <div className="glass rounded-xl p-5 border-glitch/30">
+                    </motion.button>
+                  ) : (
+                    /* Expanded view */
+                    <motion.div
+                      key="expanded"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="glass rounded-xl p-5 border-glitch/30 overflow-hidden"
+                    >
                     {/* Header */}
                     <div className="flex items-center justify-between mb-5">
                       <div className="flex items-center gap-3">
@@ -360,8 +373,9 @@ export default function SetupPage() {
                         }`}
                       />
                     </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             ))}
           </AnimatePresence>
