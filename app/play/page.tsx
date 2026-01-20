@@ -62,7 +62,6 @@ export default function PlayPage() {
   // AI conversation
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentTemplate, setCurrentTemplate] = useState<any>(null);
-  const [aiCommentary, setAiCommentary] = useState<string>('');
 
   // Loading states
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
@@ -247,10 +246,9 @@ CRITICAL RULES:
    * Handle mini-game completion (generic for ALL mini-games)
    */
   const handleMiniGameComplete = (result: MiniGameResult | { score: number; commentary: string }) => {
-    setPhase('loading');
-    setAiCommentary(result.commentary);
     setActiveMiniGame(null);
     setCurrentTemplate(null);
+    handleContinueToNext();
   };
 
   /**
@@ -266,8 +264,6 @@ CRITICAL RULES:
    * Handle player submitting their response
    */
   const handleResponse = async (response: any) => {
-    setPhase('loading');
-
     // Calculate turn duration
     const duration = (Date.now() - turnStartTime) / 1000;
 
@@ -276,33 +272,11 @@ CRITICAL RULES:
 
     // Note: Points are only awarded through mini-games (0-5 scoring system)
 
-    // Send response to AI for commentary
-    try {
-      const newMessages: ChatMessage[] = [
-        ...messages,
-        {
-          role: 'user',
-          content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`,
-        },
-      ];
-
-      // Use toolChoice: 'none' to prevent AI from accidentally calling tools
-      // We only want text commentary here, not a new question
-      const aiResponse = await sendChatRequest(newMessages, {
-        toolChoice: 'none',
-      });
-      setAiCommentary(aiResponse.text);
-      setMessages([...newMessages, { role: 'assistant', content: aiResponse.text }]);
-    } catch (err) {
-      console.error('Failed to get AI commentary:', err);
-      setAiCommentary('Nice answer! Moving on...');
-    }
-
-    // Reset template (but DON'T update player index yet)
+    // Reset template
     setCurrentTemplate(null);
 
-    // Show commentary with button to continue
-    // (phase stays 'loading' to show commentary screen)
+    // Move directly to next player
+    handleContinueToNext();
   };
 
   /**
@@ -320,8 +294,7 @@ CRITICAL RULES:
     setCurrentPlayerIndex(nextIndex);
     setTurnNumber(turnNumber + 1);
 
-    // Clear commentary and show pass screen
-    setAiCommentary('');
+    // Show pass screen
     setPhase('pass');
 
     // Preload next question while showing pass screen, passing the nextIndex explicitly
@@ -391,7 +364,7 @@ CRITICAL RULES:
   }
 
   // Initial loading
-  if (phase === 'loading' && !currentTemplate && !aiCommentary) {
+  if (phase === 'loading' && !currentTemplate) {
     return (
       <div className="min-h-dvh bg-void flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -405,39 +378,6 @@ CRITICAL RULES:
             ))}
           </div>
           <p className="text-frost font-mono">Initializing game...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show AI commentary
-  if (aiCommentary && phase === 'loading') {
-    // Calculate next player (currentPlayerIndex hasn't been updated yet)
-    const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-    const nextPlayer = players[nextPlayerIndex];
-
-    return (
-      <div className="min-h-dvh bg-void">
-        {/* Sticky Header */}
-        <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
-
-        <div className="flex items-center justify-center p-4">
-          <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
-                <span className="text-3xl">🤖</span>
-              </div>
-              <p className="text-frost text-lg leading-relaxed">{aiCommentary}</p>
-              <div className="pt-4">
-                <button
-                  onClick={handleContinueToNext}
-                  className="bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  Pass to {nextPlayer.name}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
