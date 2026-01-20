@@ -61,18 +61,32 @@ ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `\n## Recent Tu
 
 ## Act Rules
 
-${currentAct === 1 ? `ACT 1 = QUESTIONS ONLY (setup). Use question tools only.
+${currentAct === 1 ? `ACT 1 = DATA COLLECTION FOR MINI-GAMES
 
-Your mission: collect concrete facts that can be used later.
-- Interests and hobbies (needed for Hard Trivia)
-- Specific names, places, items, and numbers
-- Rankings and "most likely to" picks
-- Short, memorable stories and habits
+Your ONLY job in Act 1 is to collect data that powers Acts 2-3 mini-games. Every question must feed specific mini-games:
 
-Set-up and payoff examples:
-- "What's Dad's go-to comfort food?" -> Later: "What did Mom say Dad always eats?"
-- "Name a hobby the family shares." -> Later: "According to your brother, what hobby do you all do?"
-- "Who is the worst driver?" -> Later: "Who got voted worst driver and why?"
+### TRIVIA CHALLENGE (Acts 2-3)
+Needs: Memorable questions with specific answers from each player
+- Ask questions with concrete, factual answers (names, places, preferences, stories)
+- Avoid yes/no or vague questions - need rich, quotable responses
+- Examples: "What's your go-to comfort food?" "Name a place you'd never go back to." "What habit drives the family crazy?"
+
+### PERSONALITY MATCH (Acts 2-3)
+Needs: Questions ABOUT specific players to build personality profiles
+- Ask questions targeting another player: "What word describes [Name]?" "What's [Name]'s most annoying habit?"
+- Use ask_player_vote to let players pick "most likely to" candidates
+- Build a picture of each player through others' eyes
+
+### HARD TRIVIA (Acts 2-3)
+Needs: Player interests, hobbies, and passions for personalized trivia
+- Ask about hobbies, interests, fandoms, favorite shows/music/sports
+- Examples: "What hobby could you talk about for hours?" "Name your favorite band/team/show."
+
+CRITICAL RULES:
+- Every question must serve one of these three mini-games
+- Focus on concrete, memorable answers (not feelings or abstract concepts)
+- Vary question types but always with mini-game data in mind
+- Use different players as subjects for Personality Match questions
 ` : `ACT ${currentAct} = MINI-GAMES ONLY (payoff).
 
 CRITICAL: You MUST use mini-game triggers ONLY. Regular question tools are DISABLED in this act.
@@ -82,14 +96,26 @@ CRITICAL: You MUST use mini-game triggers ONLY. Regular question tools are DISAB
 - If no eligible players, use Hard Trivia or Mad Libs/Cryptic Connection instead.
 `}
 
-${currentAct === 1 ? `## Tool Guidance (Act 1)
+${currentAct === 1 ? `## Tool Selection for Data Collection (Act 1)
 
-- ask_for_text: a specific incident or habit, not vague feelings
-- ask_for_list: 2-4 short items (nouns, places, names)
-- ask_binary_choice: two short options, 4-10 seconds
-- ask_word_selection: 4/9/16/25 words with real decoys
-- ask_rating: 0-10 with clear extremes
-- ask_player_vote: funny "most likely to" targeting
+Choose tools based on which mini-game you're feeding:
+
+**For TRIVIA CHALLENGE** (need memorable factual answers):
+- ask_for_text: specific stories, habits, incidents (e.g., "Describe your worst cooking disaster")
+- ask_for_list: concrete items (e.g., "List 3 foods you'd never eat", "Name 2 places you'd love to visit")
+- ask_binary_choice: memorable preferences (e.g., "Early bird or night owl?")
+- ask_rating: specific scales (e.g., "Rate your coffee addiction 0-10")
+
+**For PERSONALITY MATCH** (need descriptive data about players):
+- ask_word_selection: trait/adjective grids about another player (16/25 words work best)
+- ask_player_vote: "most likely to" questions (e.g., "Who's most likely to start a dance party?")
+- ask_for_text: "Describe [Name] in one sentence"
+
+**For HARD TRIVIA** (need interests/hobbies):
+- ask_for_text: "What hobby could you talk about for hours?"
+- ask_for_list: "List your top 3 favorite shows/bands/games"
+
+AVOID: Vague emotional questions, abstract concepts, or yes/no without follow-up
 ` : ''}
 
 ${currentAct >= 2 ? `## Mini-Game Options (Act ${currentAct})
@@ -120,15 +146,29 @@ The Filter (trigger_the_filter):
 - ALWAYS AVAILABLE
 ` : ''}` : ''}
 
-## Topic Rotator (Act 1)
+## Topic Categories for Data Collection (Act 1)
 
-- Petty grievances: small annoyances
-- Family mythology: repeat stories and legends
-- The expert files: who actually knows how to do stuff
-- Food and comfort: tastes, rituals, cravings
-- Social awkwardness: cringe moments and cover-ups
-- Real-world hypotheticals: low-stakes dilemmas
-- Self-delusion: the gap between self-image and reality
+All topics should feed mini-game data:
+
+**Concrete Facts** (→ Trivia Challenge):
+- Food preferences, comfort meals, worst cooking disasters
+- Specific places, trips, locations they'd never visit
+- Habits, rituals, daily routines
+- Stories with specific details (names, events, outcomes)
+
+**Player Traits & Dynamics** (→ Personality Match):
+- "Most likely to" scenarios (who would start a dance party, sleep through an alarm, etc.)
+- Annoying habits or quirks others notice
+- Strengths and weaknesses as seen by others
+- How players would describe each other
+
+**Interests & Passions** (→ Hard Trivia):
+- Hobbies they could talk about for hours
+- Favorite shows, bands, teams, games
+- Skills they're proud of
+- Fandoms and obsessions
+
+AVOID: Abstract feelings, vague opinions, philosophical questions
 
 ## Tone
 
@@ -136,7 +176,7 @@ The Filter (trigger_the_filter):
 - Light roast, never mean
 - Keep it playful, not heavy or dark
 
-Now choose one tool and proceed. Make it funny and set up a future payoff.`;
+${currentAct === 1 ? 'Now choose ONE tool that collects data for a specific mini-game. Ask a concrete question with a memorable answer.' : 'Now choose ONE mini-game trigger and proceed. Make it funny and challenging.'}`;
 }
 
 /**
