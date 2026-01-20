@@ -55,7 +55,7 @@ export const PAGES = {
 } as const;
 
 // Game Duration & Progression
-export const AVERAGE_TURNS_PER_PLAYER = 4; // Tunable: Adjust this to change game length
+export const AVERAGE_TURNS_PER_PLAYER = 3; // Tunable: Adjust this to change game length
 
 /**
  * Calculate total number of rounds based on player count

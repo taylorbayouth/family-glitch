@@ -133,11 +133,11 @@ function checkPersonalityMatchEligibility(context: EligibilityContext): Eligibil
 function checkMadLibsEligibility(context: EligibilityContext): EligibilityResult {
   const { currentAct } = context;
 
-  // Rule 1: Must be in Act 2 or 3
-  if (currentAct < 2) {
+  // Rule 1: Must be in Act 3
+  if (currentAct < 3) {
     return {
       eligible: false,
-      reason: 'Mad Libs unlocks in Act II',
+      reason: 'Mad Libs unlocks in Act III',
     };
   }
 
@@ -191,7 +191,7 @@ export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef>
     type: 'madlibs_challenge',
     name: 'Mad Libs Challenge',
     description: 'Fill in the blanks with words starting with specific letters - scored for creativity',
-    minAct: 2,
+    minAct: 3,
     checkEligibility: checkMadLibsEligibility,
   },
   cryptic_connection: {
