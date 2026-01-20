@@ -21,19 +21,16 @@ export function PassToPlayerScreen({
   isLoadingQuestion,
 }: PassToPlayerScreenProps) {
   return (
-    <div className="min-h-dvh bg-void relative">
+    <div
+      className="min-h-dvh bg-void flex flex-col relative"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       {/* Background effects */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
 
-      {/* Main content - centered in viewport minus button space */}
-      <div
-        className="flex items-center justify-center px-6"
-        style={{
-          minHeight: 'calc(100dvh - 120px)',
-          paddingTop: 'env(safe-area-inset-top, 0px)'
-        }}
-      >
+      {/* Main content - flex-1 pushes button to bottom when content is short */}
+      <div className="flex-1 flex items-center justify-center px-6 relative z-10">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -76,9 +73,9 @@ export function PassToPlayerScreen({
         </motion.div>
       </div>
 
-      {/* Fixed bottom button - always visible */}
+      {/* Bottom button - flex-shrink-0 keeps it from shrinking */}
       <div
-        className="fixed bottom-0 left-0 right-0 px-6 pb-6 bg-void/80 backdrop-blur-sm"
+        className="flex-shrink-0 px-6 pb-6 relative z-10"
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
       >
         {isLoadingQuestion ? (
