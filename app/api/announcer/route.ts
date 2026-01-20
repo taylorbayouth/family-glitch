@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // Call OpenAI for the analysis
     const response = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5.2',
       messages: [
         { role: 'system', content: systemPrompt },
         {
