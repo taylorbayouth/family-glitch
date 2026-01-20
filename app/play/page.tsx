@@ -7,8 +7,7 @@ import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
 import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
-import { GameProgressBar } from '@/components/GameProgressBar';
-import { Leaderboard } from '@/components/Leaderboard';
+import { GameHeader } from '@/components/GameHeader';
 import { EndGameResults } from '@/components/EndGameResults';
 // Import registry - this also triggers all mini-game registrations
 import {
@@ -421,13 +420,11 @@ CRITICAL RULES:
     const nextPlayer = players[nextPlayerIndex];
 
     return (
-      <div className="min-h-screen bg-void p-6">
-        {/* Leaderboard at top */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <Leaderboard currentPlayerId={currentPlayer.id} />
-        </div>
+      <div className="min-h-screen bg-void">
+        {/* Sticky Header */}
+        <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center p-4 pt-6">
           <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
             <div className="text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
@@ -469,35 +466,8 @@ CRITICAL RULES:
         <div className="scan-line" />
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
 
-        {/* Header */}
-        <div className="relative z-10 p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm space-y-4">
-          {/* Leaderboard */}
-          <div className="max-w-7xl mx-auto">
-            <Leaderboard currentPlayerId={currentPlayer.id} />
-          </div>
-
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div>
-              <p className="font-mono text-xs text-steel-500 uppercase tracking-wider">
-                Turn {turnNumber}
-              </p>
-              <h2 className="text-xl font-bold text-frost">{currentPlayer.name}</h2>
-            </div>
-            <div className="text-right">
-              <p className="font-mono text-xs text-steel-500 uppercase tracking-wider">
-                Your Score
-              </p>
-              <p className="text-2xl font-black text-glitch">
-                {scores[currentPlayer.id] || 0}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="max-w-7xl mx-auto">
-            <GameProgressBar />
-          </div>
-        </div>
+        {/* Sticky Header */}
+        <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} />
 
         {/* Template */}
         <div className="relative z-10">
@@ -528,23 +498,29 @@ CRITICAL RULES:
       const MiniGameComponent = miniGameDef.component;
 
       return (
-        <MiniGameComponent
-          targetPlayer={{
-            id: currentPlayer.id,
-            name: currentPlayer.name,
-            role: currentPlayer.role,
-            avatar: currentPlayer.avatar,
-          }}
-          allPlayers={players.map(p => ({
-            id: p.id,
-            name: p.name,
-            role: p.role,
-            avatar: p.avatar,
-          }))}
-          onComplete={handleMiniGameComplete}
-          onSkip={handleMiniGameSkip}
-          {...activeMiniGame.config}
-        />
+        <div className="min-h-screen bg-void">
+          {/* Fixed Header */}
+          <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
+
+          {/* Mini-game content */}
+          <MiniGameComponent
+            targetPlayer={{
+              id: currentPlayer.id,
+              name: currentPlayer.name,
+              role: currentPlayer.role,
+              avatar: currentPlayer.avatar,
+            }}
+            allPlayers={players.map(p => ({
+              id: p.id,
+              name: p.name,
+              role: p.role,
+              avatar: p.avatar,
+            }))}
+            onComplete={handleMiniGameComplete}
+            onSkip={handleMiniGameSkip}
+            {...activeMiniGame.config}
+          />
+        </div>
       );
     }
   }

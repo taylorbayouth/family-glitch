@@ -4,3 +4,5 @@ export { HamburgerMenu } from './HamburgerMenu';
 export { PassToPlayerScreen } from './PassToPlayerScreen';
 export { SlideToUnlock } from './SlideToUnlock';
 export { GameProgressBar } from './GameProgressBar';
+export { GameHeader } from './GameHeader';
+export { Leaderboard } from './Leaderboard';
