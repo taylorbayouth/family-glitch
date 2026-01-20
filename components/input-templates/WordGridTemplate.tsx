@@ -72,19 +72,19 @@ export function WordGridTemplate({
   };
 
   return (
-    <div className="min-h-screen bg-void flex items-center justify-center p-6">
+    <div className="flex-1 flex flex-col px-4 pt-1 pb-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl space-y-6"
+        className="w-full max-w-lg mx-auto space-y-3"
       >
         {/* Prompt */}
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl md:text-3xl font-black text-frost">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl md:text-2xl font-black text-frost">
             {prompt}
           </h2>
           {subtitle && (
-            <p className="text-steel-400 text-sm md:text-base font-mono">
+            <p className="text-steel-400 text-sm font-mono">
               {subtitle}
             </p>
           )}
@@ -103,7 +103,7 @@ export function WordGridTemplate({
 
         {/* Word Grid */}
         <div
-          className="grid gap-3"
+          className="grid gap-2"
           style={{
             gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
           }}
@@ -123,10 +123,10 @@ export function WordGridTemplate({
                 disabled={isDisabled}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: index * 0.03 }}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  aspect-square rounded-xl font-bold text-sm md:text-base
+                  aspect-square rounded-lg font-bold text-xs md:text-sm
                   transition-all duration-200 relative overflow-hidden
                   ${
                     isSelected
@@ -146,17 +146,17 @@ export function WordGridTemplate({
                 )}
 
                 {/* Word text */}
-                <span className="relative z-10 px-2">{word}</span>
+                <span className="relative z-10 px-1">{word}</span>
 
                 {/* Selection indicator */}
                 {isSelected && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full bg-void flex items-center justify-center"
+                    className="absolute top-1 right-1 w-4 h-4 rounded-full bg-void flex items-center justify-center"
                   >
                     <svg
-                      className="w-3 h-3 text-glitch"
+                      className="w-2.5 h-2.5 text-glitch"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -181,7 +181,7 @@ export function WordGridTemplate({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSubmit}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
+            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
           >
             Submit Selection
           </motion.button>

@@ -1,295 +1,85 @@
 # Mini-Games System
 
-Interactive challenge sequences that use information learned during gameplay.
+Mini-games are interactive challenge sequences triggered by AI tools. They run inside `/play` and have their own AI prompts and scoring logic.
 
-## Overview
+## How It Works
 
-Mini-games are **different from input templates**:
+1. The Game Master tool call returns a mini-game template type (e.g., `trivia_challenge`).
+2. `/play` checks `isMiniGame(templateType)` and loads the registry config.
+3. The mini-game UI component renders and handles its own AI calls.
+4. The mini-game calls `onComplete()` with a `MiniGameResult`.
 
-| Aspect | Input Templates | Mini-Games |
-|--------|-----------------|------------|
-| Purpose | Collect information | Challenge players |
-| Turns | Single turn | Multi-turn conversation |
-| AI Prompt | Main Game Master | Dedicated per-game prompt |
-| Scoring | Points for participation | Performance-based (0-5) |
-| Eligibility | Always available | Act/context restrictions |
+Important current behavior:
+- `/play` does not create `Turn` entries for mini-games.
+- Trivia, Personality Match, Mad Libs, and Cryptic Connection update scores internally with `useGameStore()`.
+- Hard Trivia returns a `MiniGameResult` but does not update scores inside the component.
 
-Mini-games count as a completed turn and advance round/progress.
+## Mini-Game Registry
 
-## Architecture
+- Registry: `lib/mini-games/registry.ts`
+- Each mini-game registers itself in `lib/mini-games/<game>/register.ts`
+- `lib/mini-games/index.ts` imports all registrations to self-register
+
+## Available Mini-Games
+
+### Trivia Challenge
+
+- Trigger: `trigger_trivia_challenge`
+- UI: `components/mini-games/TriviaChallengeUI.tsx`
+- Uses a past completed turn from another player
+- Scores 0 to 5, updates the target player's score
+
+### Personality Match
+
+- Trigger: `trigger_personality_match`
+- UI: `components/mini-games/PersonalityMatchUI.tsx`
+- Generates a word grid and scores based on past turns about the subject player
+- Scores 0 to 5, updates the target player's score
+
+### Mad Libs Challenge
+
+- Trigger: `trigger_madlibs_challenge`
+- UI: `components/mini-games/MadLibsUI.tsx`
+- Generates a fill-in-the-blank template and scores creativity
+- Scores 0 to 5, updates the target player's score
+
+### Cryptic Connection
+
+- Trigger: `trigger_cryptic_connection`
+- UI: `components/mini-games/CrypticConnectionUI.tsx`
+- Generates a cryptic clue and a 5x5 word grid
+- Scores 0 to 5 with fuzzy matching, updates the target player's score
+
+### Hard Trivia
+
+- Trigger: `trigger_hard_trivia`
+- UI: `components/mini-games/HardTriviaUI.tsx`
+- Multiple-choice trivia based on player interests
+- Returns a `MiniGameResult` (max score 5)
+
+## Eligibility
+
+Eligibility helpers live in `lib/mini-games/eligibility.ts`:
+
+- `getEligibleTurnsForPlayer()`
+- `MINI_GAME_ELIGIBILITY` (not currently used by `/play`)
+
+`/play` uses `getEligibleTurnsForPlayer()` to build trivia eligibility data for the Game Master prompt.
+
+## File Structure
 
 ```
 lib/mini-games/
-├── index.ts                    # Exports and registry
-├── types.ts                    # Type definitions
-├── eligibility.ts              # When mini-games can run
-├── trivia-challenge/
-│   ├── index.ts                # Core logic
-│   └── prompt.ts               # AI prompt for The Quizmaster
-├── personality-match/
-│   ├── index.ts                # Core logic
-│   └── prompt.ts               # AI prompt for The Analyst
-└── README.md                   # This file
-
-lib/store/
-└── facts-store.ts              # Unused (turns array is source of truth)
-
-components/mini-games/
-├── index.ts                    # Component exports
-├── TriviaChallengeUI.tsx       # Trivia challenge UI
-└── PersonalityMatchUI.tsx      # Personality match UI
+  registry.ts
+  eligibility.ts
+  types.ts
+  trivia-challenge/
+  personality-match/
+  madlibs-challenge/
+  cryptic-connection/
+  hard-trivia/
 ```
 
-## Learned Facts
+## No Facts Store
 
-**Note:** Current implementation uses the turns array directly. The Learned Facts store below is a planned/roadmap design.
-
-During Act I, the AI asks questions to collect information. This information is stored as "Learned Facts":
-
-```typescript
-interface LearnedFact {
-  factId: string;
-  sourcePlayerId: string;       // Who provided this
-  sourcePlayerName: string;
-  category: FactCategory;       // preference, memory, habit, etc.
-  originalQuestion: string;     // What was asked
-  answer: string;               // What they said
-  answerSummary?: string;       // AI-generated summary
-  learnedAt: string;            // When learned
-  turnId: string;               // Which turn
-  usedInChallenges: string[];   // Track usage
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  eligibleTargets: string[];    // Who can be challenged
-}
-```
-
-### Fact Categories
-
-- `preference` - "What's your favorite..."
-- `memory` - "Remember when..."
-- `habit` - "What do you always do..."
-- `opinion` - "What do you think about..."
-- `secret` - "What's something nobody knows..."
-- `prediction` - "What would X do if..."
-- `knowledge` - "What's X's favorite..."
-
-## Trivia Challenge
-
-The first mini-game: test players on facts learned from OTHER players.
-
-### Rules
-
-1. **Eligibility**: Only in Act II or Act III
-2. **Source Restriction**: Can't ask a player about their OWN answer
-3. **Scoring**: 0-5 points based on accuracy
-
-### Flow
-
-```
-1. [AI] Selects a fact from another player
-2. [AI] Generates question using The Quizmaster prompt
-3. [UI] Shows question to target player
-4. [Player] Types their answer
-5. [AI] Evaluates and scores (0-5)
-6. [UI] Shows score with commentary
-7. [Store] Updates player score in real-time
-```
-
-### The Quizmaster Prompt
-
-The Trivia Challenge uses a dedicated AI personality:
-
-```typescript
-buildTriviaChallengePrompt({
-  targetPlayer,    // Who's being challenged
-  sourcePlayer,    // Who provided the fact
-  fact,            // The learned fact
-  allPlayers,      // Game context
-  scores,          // Current scores
-})
-```
-
-**Quizmaster traits:**
-- Sharp and quick-witted
-- Playfully mocks low scores
-- Celebrates high scores with surprise
-- Keeps commentary to 10 words max
-
-### Scoring Guide
-
-| Score | Meaning |
-|-------|---------|
-| 5 | Exact match or impressively close |
-| 4 | Got the essence, minor details off |
-| 3 | Partially correct, knows the person |
-| 2 | In the ballpark, missing key elements |
-| 1 | Showed effort but way off |
-| 0 | Completely wrong or didn't try |
-
-## Personality Match
-
-The second mini-game: test how well players can describe each other with personality words.
-
-### Rules
-
-1. **Eligibility**: Only in Act II or Act III
-2. **Source Restriction**: Can't ask a player about their OWN personality
-3. **Scoring**: 0-5 points based on how well the words match
-
-### Flow
-
-1. Game Master triggers `trigger_personality_match`
-2. Player selects words for another player
-3. Analyst AI scores (0-5) with short commentary
-4. Store updates player score in real-time
-
-### Analyst Traits
-
-- Insightful and witty
-- Calls out obvious misses playfully
-- Keeps commentary to 10 words max
-
-## Usage Example
-
-```typescript
-import { useFactsStore } from '@/lib/store';
-import { selectFactForChallenge } from '@/lib/mini-games/trivia-challenge';
-import { TriviaChallengeUI } from '@/components/mini-games';
-
-// Check eligibility
-const { getFactsForChallenge } = useFactsStore();
-const eligibleFacts = getFactsForChallenge(currentPlayer.id);
-
-if (currentAct >= 2 && eligibleFacts.length >= 3) {
-  // Select best fact
-  const fact = selectFactForChallenge({
-    targetPlayer: currentPlayer,
-    allPlayers: players,
-    availableFacts: eligibleFacts,
-    scores,
-  });
-
-  // Render challenge
-  return (
-    <TriviaChallengeUI
-      targetPlayer={currentPlayer}
-      sourcePlayer={getPlayerById(fact.sourcePlayerId)}
-      fact={fact}
-      allPlayers={players}
-      onComplete={({ score, commentary }) => {
-        // Handle completion
-      }}
-    />
-  );
-}
-```
-
-## Adding New Mini-Games
-
-### 1. Define Types
-
-```typescript
-// In lib/mini-games/types.ts
-export type MiniGameType = 'trivia_challenge' | 'new_game';
-
-export interface NewGameSession extends BaseMiniGameSession {
-  gameType: 'new_game';
-  // Game-specific fields
-}
-```
-
-### 2. Add Eligibility
-
-```typescript
-// In lib/mini-games/eligibility.ts
-function checkNewGameEligibility(context: EligibilityContext): EligibilityResult {
-  // Your rules here
-}
-
-export const MINI_GAME_REGISTRY: Record<MiniGameType, MiniGameDefinition> = {
-  trivia_challenge: { ... },
-  new_game: {
-    type: 'new_game',
-    name: 'New Game',
-    description: '...',
-    minAct: 2,
-    requiresFacts: true,
-    checkEligibility: checkNewGameEligibility,
-  },
-};
-```
-
-### 3. Create Prompt
-
-```typescript
-// In lib/mini-games/new-game/prompt.ts
-export function buildNewGamePrompt(context: ...): string {
-  return `You are THE NEW CHARACTER...`;
-}
-```
-
-### 4. Create UI Component
-
-```typescript
-// In components/mini-games/NewGameUI.tsx
-export function NewGameUI({ ... }) {
-  // Multi-turn conversation UI
-}
-```
-
-### 5. Export
-
-```typescript
-// In lib/mini-games/index.ts
-export * from './new-game';
-
-// In components/mini-games/index.ts
-export { NewGameUI } from './NewGameUI';
-```
-
-## Integration with Game Master
-
-The main Game Master can trigger mini-games by:
-
-1. Checking eligibility based on current act
-2. Selecting appropriate mini-game
-3. Transitioning to mini-game phase
-4. Handling completion and returning to normal flow
-
-Example tool the Game Master could use:
-
-```typescript
-{
-  "tool": "start_mini_game",
-  "type": "trivia_challenge",
-  "targetPlayerId": "...",
-  "factId": "..."
-}
-```
-
-## Real-Time Score Updates
-
-Scores update immediately when a mini-game completes:
-
-```typescript
-// In TriviaChallengeUI.tsx
-const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
-
-// After AI scores
-updatePlayerScore(targetPlayer.id, scoreResult.score);
-```
-
-The GameProgressBar and any score displays will update automatically via Zustand reactivity.
-
-## Future Mini-Games (Ideas)
-
-- **Speed Round**: Rapid-fire questions, time-limited
-- **Lie Detector**: Guess which statement is false
-- **Family Feud**: Survey-style scoring
-- **Finish the Sentence**: Complete another player's thought
-- **Role Reversal**: Answer as if you were another player
-
----
-
-**Status:** ✅ Production Ready
-**Last Updated:** 2026-01-19
+`lib/store/facts-store.ts` is intentionally empty. Turns are the source of truth for trivia and personality scoring.

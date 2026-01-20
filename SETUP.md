@@ -1,119 +1,70 @@
-# Setup Implementation Summary
+# Setup and Roster Flow
 
-## What Was Built
+This document describes the current player setup flow and the related navigation/menu behavior.
 
-### 1. Hamburger Menu ✅
-**File:** `components/HamburgerMenu.tsx`
+## What Exists Today
 
-A global navigation menu that appears for logged-in users with:
-- Fixed position in top-right corner
-- Smooth slide-in animation
-- Glassmorphism design matching app aesthetic
-- Three menu options:
-  - **How to Play** - Modal with game instructions
-  - **Start a New Game** - Resets game data (keeps players) with confirmation
-  - **Log Out** - Signs out of Google auth
+### 1. Hamburger Menu
 
-### 2. Player Store ✅
-**File:** `lib/store/player-store.ts`
+File: `components/HamburgerMenu.tsx`
 
-Separate store for player roster that persists across games:
-- Stores: name, role, age, avatar (1-14)
-- Actions: addPlayer, updatePlayer, removePlayer, clearAllPlayers
+- Only renders when a NextAuth session exists.
+- Fixed button in the top-right with slide-in panel.
+- Menu items:
+  - How to Play modal
+  - Start a New Game (calls `useGameStore().startNewGame()`, keeps players)
+  - Log Out (NextAuth signOut)
+- Uses Framer Motion for transitions and the glassmorphism theme.
+
+### 2. Player Store
+
+File: `lib/store/player-store.ts`
+
 - localStorage key: `family-glitch-players`
-- **Never cleared** when starting a new game
+- Player fields: `id`, `name`, `role`, `age`, `avatar`
+- `hasHydrated` flag set on rehydrate
+- Avatars are PNGs `public/avatars/1.png` through `public/avatars/14.png`
 
-### 3. Enhanced Game Store ✅
-**File:** `lib/store/game-store.ts`
+### 3. Game Store and Start New Game
 
-Added `startNewGame()` action that:
-- Resets game progress (currentRound, gameStarted)
-- **Keeps player data intact**
-- Used by hamburger menu's "Start a New Game" option
+File: `lib/store/game-store.ts`
 
-### 4. Setup Page ✅
-**File:** `app/setup/page.tsx`
+- `startNewGame()` resets the current game session but keeps the player roster intact.
+- `resetGame()` wipes the game session and the legacy `players` list.
 
-Beautiful player configuration interface:
-- Default: 3 players, Max: 7 players
-- Collect per player:
+### 4. Setup Page
+
+File: `app/setup/page.tsx`
+
+- Requires hydration before rendering (`useHydration`).
+- Creates 3 default player forms if the store is empty.
+- Supports 3 to 7 players.
+- Each player form collects:
   - Name (required)
-  - Role (13 options: Dad, Mom, Son, Daughter, etc.)
-  - Age (required, 1-120)
-  - Avatar (select from 14 image options)
-- Features:
-  - Add/remove players dynamically
-  - Form validation with error messages
-  - Smooth animations (Framer Motion)
-  - Glassmorphism design
-  - Animated gradient "Continue" button
+  - Role (13 options)
+  - Age (1 to 120, required)
+  - Avatar (1 to 14 PNG image options)
+- Form validation expands the first invalid player.
+- On Continue:
+  - Updates existing players or adds new ones
+  - Removes players that were deleted in the UI
+  - Navigates to `/play`
 
-### 5. Store Architecture
+## Data Persistence
 
-Two separate localStorage keys:
-```
-family-glitch-players  → Player roster (persistent)
-family-glitch-game     → Game progress (resettable)
-```
+Two localStorage keys are used:
 
-This ensures:
-- Players are never lost when starting a new game
-- Game progress can be reset independently
-- Clean separation of concerns
+- `family-glitch-players` -> Player roster (persistent)
+- `family-glitch-game` -> Game session (resettable)
 
-## How It Works
+## User Flow Summary
 
-### User Flow
-1. User signs in with Google → Redirected to `/setup`
-2. Setup page loads player roster from `usePlayerStore`
-3. User configures 3-7 players (or edits existing)
-4. Click "Continue" → Validates and saves to localStorage
-5. During game, hamburger menu available in top-right
-6. "Start a New Game" resets game data but keeps players
+1. User signs in -> `/setup`
+2. Configure players (3 to 7)
+3. Continue -> `/play`
+4. Hamburger Menu is available during authenticated pages
 
-### Data Persistence
-- **Player data** persists forever (until manually cleared)
-- **Game data** persists until "Start a New Game" is clicked
-- Both use Zustand persist middleware with separate keys
+## Notes
 
-## Files Modified/Created
-
-### Created
-- `components/HamburgerMenu.tsx` - Navigation menu
-- `lib/store/player-store.ts` - Player roster store
-- `lib/store/index.ts` - Clean store exports
-- `app/setup/page.tsx` - Player setup interface
-- `components/index.ts` - Component exports
-- `SETUP.md` - This file
-
-### Modified
-- `app/layout.tsx` - Added HamburgerMenu
-- `app/page.tsx` - Redirect to `/setup` instead of `/chat`
-- `lib/store/game-store.ts` - Added `startNewGame()` action
-- `AGENTS.md` - Full documentation
-
-## Design System
-
-All components use the Digital Noir color palette:
-- **void** (#0A0A0F) - Background
-- **void-light** (#141419) - Elevated surfaces
-- **frost** (#F8F9FA) - Primary text
-- **glitch** (#6C5CE7) - Primary accent
-- **glitch-bright** (#A29BFE) - Highlighted accent
-- **steel-400 to steel-800** - Utility grays
-- **alert** (#FF3B5C) - Destructive actions
-- **mint** (#00FFA3) - Interactive elements
-
-## Next Steps
-
-The setup page redirects to `/play` after completion. If you change the gameplay route, update the redirect in `app/setup/page.tsx`.
-
-## Testing
-
-Build succeeds with no errors:
-```bash
-npm run build
-✓ Compiled successfully
-```
-
-All TypeScript types are correct and the hamburger menu only appears when logged in.
+- The setup screen uses expandable player cards, avatar image previews, and inline validation.
+- The roster persists across sessions unless players are manually removed.

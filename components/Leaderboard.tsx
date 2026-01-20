@@ -46,72 +46,66 @@ export function Leaderboard({ currentPlayerId }: LeaderboardProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full glass rounded-xl p-3 mb-4"
-    >
-      <LayoutGroup>
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <AnimatePresence mode="popLayout">
-            {rankedPlayers.map((player) => {
-              const isCurrent = player.id === currentPlayerId;
+    <LayoutGroup>
+      <div className="flex items-center justify-center gap-3 flex-wrap">
+        <AnimatePresence mode="popLayout">
+          {rankedPlayers.map((player) => {
+            const isCurrent = player.id === currentPlayerId;
 
-              return (
-                <motion.div
-                  key={player.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{
-                    layout: { type: 'spring', stiffness: 400, damping: 30 },
-                    opacity: { duration: 0.2 },
-                  }}
-                  className={`
-                    flex items-center gap-2 px-3 py-2 rounded-lg
-                    ${isCurrent
-                      ? 'bg-glitch/20 ring-2 ring-glitch shadow-glow'
-                      : 'bg-void-800/50'
-                    }
-                    transition-colors duration-300
-                  `}
+            return (
+              <motion.div
+                key={player.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{
+                  layout: { type: 'spring', stiffness: 400, damping: 30 },
+                  opacity: { duration: 0.2 },
+                }}
+                className={`
+                  flex items-center gap-1.5 px-2 py-1.5 rounded-lg border
+                  ${isCurrent
+                    ? 'bg-glitch/20 border-glitch shadow-glow'
+                    : 'bg-void-light/50 border-steel-700'
+                  }
+                  transition-colors duration-300
+                `}
+              >
+                {/* Rank */}
+                <span className={`text-[10px] font-bold ${getRankColor(player.rank)}`}>
+                  {getRankDisplay(player.rank)}
+                </span>
+
+                {/* Avatar */}
+                <div className="relative w-6 h-6 rounded-full overflow-hidden border border-steel-600">
+                  <Image
+                    src={`/avatars/${player.avatar}.png`}
+                    alt={player.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+
+                {/* Name */}
+                <span className={`text-xs font-medium ${isCurrent ? 'text-frost' : 'text-steel-400'}`}>
+                  {player.name}
+                </span>
+
+                {/* Score */}
+                <motion.span
+                  key={player.score}
+                  initial={{ scale: 1.3 }}
+                  animate={{ scale: 1 }}
+                  className="text-xs font-black text-glitch min-w-[1.5rem] text-right"
                 >
-                  {/* Rank */}
-                  <span className={`text-xs font-bold ${getRankColor(player.rank)}`}>
-                    {getRankDisplay(player.rank)}
-                  </span>
-
-                  {/* Avatar */}
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-void-700">
-                    <Image
-                      src={`/avatars/${player.avatar}.png`}
-                      alt={player.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-
-                  {/* Name */}
-                  <span className={`text-sm font-medium ${isCurrent ? 'text-frost' : 'text-steel-300'}`}>
-                    {player.name}
-                  </span>
-
-                  {/* Score */}
-                  <motion.span
-                    key={player.score}
-                    initial={{ scale: 1.3 }}
-                    animate={{ scale: 1 }}
-                    className="text-sm font-black text-glitch min-w-[2rem] text-right"
-                  >
-                    {player.score}
-                  </motion.span>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-      </LayoutGroup>
-    </motion.div>
+                  {player.score}
+                </motion.span>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    </LayoutGroup>
   );
 }

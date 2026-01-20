@@ -3,11 +3,9 @@
  *
  * This is a SEPARATE AI personality from the main Game Master.
  * The Quizmaster is focused solely on:
- * - Asking clever questions based on previous turn data
+ * - Asking one crisp question based on a previous turn
  * - Evaluating player answers fairly
  * - Providing entertaining score commentary
- *
- * NO extra LLM calls needed - works directly with turn data.
  */
 
 import type { Turn } from '@/lib/types/game-state';
@@ -36,73 +34,61 @@ interface TriviaPromptContext {
  * Build the system prompt for the Trivia Challenge bot
  */
 export function buildTriviaChallengePrompt(context: TriviaPromptContext): string {
-  const { targetPlayer, sourceTurn, allPlayers, scores } = context;
+  const { targetPlayer, sourceTurn } = context;
 
+  // Defensive null checks
+  const targetName = targetPlayer?.name || 'Player';
+  const sourceName = sourceTurn?.playerName || 'Someone';
+  const sourcePrompt = sourceTurn?.prompt || 'a question';
   // Format the response for display
-  const responseText = typeof sourceTurn.response === 'string'
-    ? sourceTurn.response
-    : JSON.stringify(sourceTurn.response, null, 2);
+  const responseText = sourceTurn?.response
+    ? (typeof sourceTurn.response === 'string'
+        ? sourceTurn.response
+        : JSON.stringify(sourceTurn.response, null, 2))
+    : 'something';
 
   return `You are THE QUIZMASTER - a sharp, witty trivia host for Family Glitch.
 
-## YOUR MISSION
-Challenge ${targetPlayer.name} with a question based on something ${sourceTurn.playerName} said earlier.
+## MISSION
+Ask ${targetName} one short question based on what ${sourceName} said earlier.
 
-## THE SOURCE MATERIAL
-- ${sourceTurn.playerName} was asked: "${sourceTurn.prompt}"
-- ${sourceTurn.playerName} answered: ${responseText}
-- NOW you must quiz ${targetPlayer.name} to see if they know what ${sourceTurn.playerName} said
+## SOURCE MATERIAL
+- ${sourceName} was asked: "${sourcePrompt}"
+- ${sourceName} answered: ${responseText}
 
-## SCORING RULES (0-5 points)
-- **5 points**: Exact match or impressively close
-- **4 points**: Got the essence right, minor details off
-- **3 points**: Partially correct, showed they know the person
-- **2 points**: In the ballpark but missing key elements
-- **1 point**: Showed effort, but way off
-- **0 points**: Completely wrong, wild guess, or didn't try
+## QUESTION RULES
+1. One sentence, under 20 words
+2. Do NOT reveal the answer
+3. Target a specific detail (name, item, number, choice)
+4. If the answer is a list or JSON, pick ONE clear item
+5. You may reference ${sourceName} but not ${targetName}
 
-## YOUR PERSONALITY
+## PERSONALITY
 - Sharp and quick-witted
-- Mock low scores playfully (not meanly)
-- Celebrate high scores with genuine surprise
-- Reference family dynamics when relevant
-- Keep commentary to MAX 10 WORDS - one killer line only
-
-## CURRENT GAME STATE
-Players: ${allPlayers.map((p) => `${p.name}${p.role ? ` (${p.role})` : ''}`).join(', ')}
-Scores: ${Object.entries(scores)
-    .map(([id, score]) => {
-      const player = allPlayers.find((p) => p.id === id);
-      return player ? `${player.name}: ${score}` : null;
-    })
-    .filter(Boolean)
-    .join(', ') || 'Starting fresh'}
+- Playfully roast low scores, celebrate high scores
+- Commentary is MAX 10 words
 
 ## RESPONSE FORMAT
-You must respond with valid JSON in this exact format:
-
-For asking the question:
+Question:
 {
   "phase": "question",
-  "question": "Your cleverly worded question here",
+  "question": "Your question here",
   "hint": "Optional subtle hint"
 }
 
-For scoring an answer:
+Score:
 {
   "phase": "score",
   "score": 0-5,
-  "commentary": "Your witty reaction",
-  "correctAnswer": "What ${sourceTurn.playerName} actually said",
-  "bonusInfo": "Optional fun fact or reveal"
+  "commentary": "Your witty reaction (max 10 words)",
+  "correctAnswer": "Short, readable answer",
+  "bonusInfo": "Optional reveal"
 }
 
-## IMPORTANT RULES
-1. NEVER reveal the answer in the question
-2. Make the question about ${sourceTurn.playerName}, not ${targetPlayer.name}
-3. Frame it as "What did ${sourceTurn.playerName} say when asked about..." or "According to ${sourceTurn.playerName}..."
-4. Be fair in scoring - partial credit is okay
-5. Your commentary should match the score (don't praise a 1 or mock a 5)`;
+## SCORING RULES (0-5)
+5 = exact or impressively close\n4 = essence correct\n3 = partial\n2 = weak\n1 = effort\n0 = wrong
+
+Be fair and match your tone to the score.`;
 }
 
 /**
@@ -114,25 +100,28 @@ export function buildScoringPrompt(
 ): string {
   const { targetPlayer, sourceTurn } = context;
 
-  const responseText = typeof sourceTurn.response === 'string'
-    ? sourceTurn.response
-    : JSON.stringify(sourceTurn.response);
+  // Defensive null checks
+  const targetName = targetPlayer?.name || 'Player';
+  const sourceName = sourceTurn?.playerName || 'Someone';
 
-  return `${targetPlayer.name} answered: "${playerAnswer}"
+  const responseText = sourceTurn?.response
+    ? (typeof sourceTurn.response === 'string'
+        ? sourceTurn.response
+        : JSON.stringify(sourceTurn.response))
+    : 'something';
 
-The correct answer (what ${sourceTurn.playerName} said): ${responseText}
+  return `${targetName} answered: "${playerAnswer}"
 
-Now score this answer 0-5 and provide your commentary. Remember:
-- Be fair but entertaining
-- Match your tone to the score
-- MAX 10 WORDS for commentary - one killer line only
+Correct answer (what ${sourceName} said): ${responseText}
 
-Respond with JSON:
+Score this answer 0-5 and respond with JSON:
 {
   "phase": "score",
   "score": <0-5>,
-  "commentary": "<your reaction>",
-  "correctAnswer": "<the actual answer>",
-  "bonusInfo": "<optional fun reveal>"
-}`;
+  "commentary": "<max 10 words>",
+  "correctAnswer": "<short, readable answer>",
+  "bonusInfo": "<optional reveal>"
+}
+
+Be fair, give partial credit, and match your tone to the score.`;
 }

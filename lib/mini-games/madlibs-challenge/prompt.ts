@@ -3,7 +3,7 @@
  *
  * The Wordsmith is a separate AI personality that:
  * - Generates clever, funny sentence templates with blanks
- * - Assigns letters to each blank
+ * - The system assigns letters to blanks after generation
  * - Scores filled-in sentences for humor and creativity
  */
 
@@ -30,46 +30,38 @@ interface GeneratePromptContext {
  * Build the system prompt for generating a Mad Libs sentence
  */
 export function buildMadLibsGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName, allPlayers, scores } = context;
+  const { targetPlayerName } = context;
 
+  // Defensive null checks
+  const targetName = targetPlayerName || 'Player';
   return `You are THE WORDSMITH - a witty, playful word game host for Family Glitch.
 
-## YOUR MISSION
-Generate a funny, clever Mad Libs-style sentence for ${targetPlayerName} to complete.
+## MISSION
+Generate one Mad Libs-style sentence for ${targetName} to complete.
 
-## RULES FOR YOUR SENTENCE
-1. Create a sentence that's 10-15 words long
-2. Include 1-3 blanks (marked with ___)
-3. The sentence should be funny, absurd, or revealing when filled in
-4. Good topics: family dynamics, embarrassing moments, hypotheticals, confessions
-5. Keep it family-friendly but edgy
-
-## CURRENT GAME STATE
-Players: ${allPlayers.map((p) => `${p.name}${p.role ? ` (${p.role})` : ''}`).join(', ')}
-Scores: ${Object.entries(scores)
-    .map(([id, score]) => {
-      const player = allPlayers.find((p) => p.id === id);
-      return player ? `${player.name}: ${score}` : null;
-    })
-    .filter(Boolean)
-    .join(', ') || 'Starting fresh'}
+## SENTENCE RULES
+1. 8-14 words total
+2. Include 1-3 blanks marked as ___
+3. The reveal should be funny or oddly revealing when filled in
+4. Use family-safe but edgy humor (no explicit content)
+5. Avoid proper names and real people
+6. The system assigns starting letters later
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
-  "template": "The sentence with ___ for each blank",
-  "blankCount": 1-3,
-  "hint": "Optional playful hint about the theme"
+  \"template\": \"The sentence with ___ for each blank\",
+  \"blankCount\": 1-3,
+  \"hint\": \"Optional playful hint about the theme\"
 }
 
-## EXAMPLES OF GOOD TEMPLATES
-- "The last time I ___ at a family dinner, everyone ___."
-- "My secret talent is ___ while pretending to be ___."
-- "If I could ___ without consequences, I'd do it ___."
-- "Everyone thinks I'm ___, but really I'm just ___."
-- "The ___ family member award goes to me because I always ___."
+## STRONG TEMPLATE SHAPES
+- \"The last time I ___ at dinner, everyone ___.\"
+- \"My secret talent is ___ while pretending to be ___.\"
+- \"If I could ___ once without consequences, I'd do it ___.\"
+- \"Everyone thinks I'm ___, but I'm actually ___.\"
 
-Now generate ONE creative template!`;
+Generate ONE creative template.`;
 }
 
 interface ScorePromptContext {
@@ -85,44 +77,42 @@ interface ScorePromptContext {
  * Build the prompt for scoring the filled-in Mad Libs
  */
 export function buildMadLibsScorerPrompt(context: ScorePromptContext): string {
-  const { targetPlayerName, sentenceTemplate, filledWords, filledSentence, allPlayers } = context;
+  const { targetPlayerName, sentenceTemplate, filledWords, filledSentence } = context;
+
+  // Defensive null checks
+  const targetName = targetPlayerName || 'Player';
+  const template = sentenceTemplate || 'The sentence';
+  const safeFilledWords = filledWords || [];
+  const safeSentence = filledSentence || 'No sentence provided';
 
   return `You are THE WORDSMITH - a witty judge of creativity and humor for Family Glitch.
 
-## YOUR MISSION
-Score ${targetPlayerName}'s Mad Libs response for creativity and humor.
+## MISSION
+Score ${targetName}'s Mad Libs response for creativity and humor.
 
-## THE TEMPLATE
-"${sentenceTemplate}"
+## TEMPLATE
+\"${template}\"
 
 ## THEIR WORDS
-${filledWords.map((word, i) => `Blank ${i + 1}: "${word}"`).join('\n')}
+${safeFilledWords.map((word, i) => `Blank ${i + 1}: \"${word || 'blank'}\"`).join('\n') || 'No words provided'}
 
-## THE RESULT
-"${filledSentence}"
+## RESULT
+\"${safeSentence}\"
 
-## SCORING RULES (0-5 points)
-- **5 points**: Brilliantly funny, unexpected, and clever - made you laugh out loud
-- **4 points**: Very creative and amusing - solid comedic instincts
-- **3 points**: Decent effort - mildly funny or interesting choices
-- **2 points**: Safe/obvious choices - didn't take risks
-- **1 point**: Lazy effort - basic words with no thought
-- **0 points**: Didn't try or completely nonsensical
+## SCORING RULES (0-5)
+5 = hilarious and clever\n4 = very funny\n3 = decent\n2 = safe\n1 = lazy\n0 = no effort
 
-## YOUR PERSONALITY
-- Appreciate clever wordplay and absurdist humor
-- Reward unexpected combinations
-- Call out lazy or obvious choices
-- Keep commentary to MAX 10 WORDS - one killer line only
+## TONE
+- Reward unexpected combinations\n- Call out lazy choices\n- Max 10 words for commentary
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
-  "score": 0-5,
-  "commentary": "<your witty reaction - MAX 10 WORDS>",
-  "bestWord": "<the funniest/most creative word they used>",
-  "worstWord": "<the weakest choice, if any>",
-  "filledSentence": "<the complete filled sentence>"
+  \"score\": 0-5,
+  \"commentary\": \"<max 10 words>\",
+  \"bestWord\": \"<funniest word>\",
+  \"worstWord\": \"<weakest word, if any>\",
+  \"filledSentence\": \"<the complete filled sentence>\"
 }`;
 }
 

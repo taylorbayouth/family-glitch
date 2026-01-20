@@ -26,10 +26,14 @@ export interface ScorePromptContext {
  * Build prompt for generating hard trivia questions
  */
 export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayer, allPlayers, turns } = context;
+  const { targetPlayer, turns } = context;
+
+  // Defensive null checks
+  const targetName = targetPlayer?.name || 'Player';
 
   // Extract family interests from turns
-  const interestTurns = turns.filter(t =>
+  const interestTurns = (turns || []).filter(t =>
+    t &&
     t.status === 'completed' &&
     t.response &&
     (t.prompt?.toLowerCase().includes('interest') ||
@@ -40,43 +44,32 @@ export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): 
   );
 
   const interestSummary = interestTurns.length > 0
-    ? interestTurns.slice(-10).map(t => `${t.playerName}: ${JSON.stringify(t.response)}`).join('\n')
+    ? interestTurns.slice(-10).map(t => `${t.playerName || 'Someone'}: ${JSON.stringify(t.response)}`).join('\n')
     : 'No specific interests identified yet - use general pop culture topics';
 
   return `You are THE QUIZMASTER for Family Glitch's Hard Trivia Challenge.
 
-## YOUR MISSION
-Generate a challenging trivia question for ${targetPlayer.name} based on topics this family is interested in.
+## MISSION
+Generate one challenging multiple-choice trivia question for ${targetName}.
 
-## FAMILY INTERESTS & HOBBIES
+## FAMILY INTERESTS AND HOBBIES
 ${interestSummary}
 
-## TRIVIA QUESTION RULES
-1. **Pick a topic** from the family's interests above (movies, sports, music, games, cooking, etc.)
-2. **Make it HARD** - not trivial, but not impossible
-3. **Create 4 multiple choice options** - one correct, three plausible wrong answers
-4. **Shuffle the options** - correct answer should NOT always be in the same position
-
-## DIFFICULTY GUIDELINES
-- **Good**: "Which actor played Jack in Titanic?" (if family loves movies)
-- **Good**: "What year did the Beatles release Abbey Road?" (if family loves classic rock)
-- **Good**: "How many rings does Saturn have?" (if family loves science)
-- **Too Easy**: "What color is the sky?"
-- **Too Hard**: "What was Beethoven's middle name?"
+## QUESTION RULES
+1. Use the interests above if possible. If none, use general pop culture.\n2. Make it hard but fair (not trivial, not obscure).\n3. Provide 4 options: one correct, three plausible wrong.\n4. Keep the question to 1-2 short sentences.\n5. Avoid trick wording.
 
 ## OUTPUT FORMAT
-You MUST respond with ONLY valid JSON in this exact format:
-
+Respond with ONLY valid JSON:
 {
-  "category": "Movies",
-  "question": "Which actor played Jack Dawson in Titanic?",
-  "options": ["Leonardo DiCaprio", "Brad Pitt", "Tom Cruise", "Matt Damon"],
-  "correct_answer": "Leonardo DiCaprio"
+  \"category\": \"Movies\",
+  \"question\": \"Which actor played Jack Dawson in Titanic?\",
+  \"options\": [\"Leonardo DiCaprio\", \"Brad Pitt\", \"Tom Cruise\", \"Matt Damon\"],
+  \"correct_answer\": \"Leonardo DiCaprio\"
 }
 
-CRITICAL: The "correct_answer" must be an EXACT MATCH to one of the options.
+CRITICAL: correct_answer must EXACTLY match one option.
 
-Generate the trivia question now as JSON:`;
+Generate the trivia question now.`;
 }
 
 /**
@@ -85,42 +78,42 @@ Generate the trivia question now as JSON:`;
 export function buildHardTriviaScorerPrompt(context: ScorePromptContext): string {
   const { targetPlayer, question, correctAnswer, playerAnswer, options } = context;
 
-  return `You are scoring ${targetPlayer.name}'s answer to a Hard Trivia question.
+  // Defensive null checks
+  const targetName = targetPlayer?.name || 'Player';
+  const safeQuestion = question || 'The trivia question';
+  const safeOptions = options || [];
 
-## THE QUESTION
-${question}
+  return `You are scoring ${targetName}'s answer to a Hard Trivia question.
 
-## THE OPTIONS
-${options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}
+## QUESTION
+${safeQuestion}
+
+## OPTIONS
+${safeOptions.map((opt, i) => `${i + 1}. ${opt || 'Option'}`).join('\n') || 'No options provided'}
 
 ## CORRECT ANSWER
-${correctAnswer}
+${correctAnswer || 'Not provided'}
 
-## PLAYER'S ANSWER
-${playerAnswer}
+## PLAYER ANSWER
+${playerAnswer || 'No answer given'}
 
-## SCORING RULES
-- If the player's answer matches the correct answer → they got it RIGHT → 5 points
-- If the player's answer does NOT match the correct answer → they got it WRONG → 0 points
+## SCORING
+- Exact match = 5 points\n- Otherwise = 0 points
 
 ## OUTPUT FORMAT
-Respond with ONLY valid JSON in this exact format:
-
+Respond with ONLY valid JSON:
 {
-  "correct": true,
-  "points": 5,
-  "commentary": "Nice! You nailed it."
+  \"correct\": true,
+  \"points\": 5,
+  \"commentary\": \"Nice! You nailed it.\"
 }
 
 OR
-
 {
-  "correct": false,
-  "points": 0,
-  "commentary": "Ouch, it was actually [correct answer]."
+  \"correct\": false,
+  \"points\": 0,
+  \"commentary\": \"Ouch, it was actually [correct answer].\"
 }
 
-Keep commentary to ONE SHORT SENTENCE (max 12 words).
-
-Score the answer now as JSON:`;
+Keep commentary to one short sentence (max 12 words).`;
 }

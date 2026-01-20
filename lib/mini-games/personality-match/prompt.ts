@@ -8,33 +8,89 @@
  */
 
 import type { Turn } from '@/lib/types/game-state';
-import type { PersonalityMatchContext, MiniGameResult } from '../types';
+import type { MiniGameResult } from '../types';
 
-// Default personality words - can be expanded or customized
-export const DEFAULT_PERSONALITY_WORDS = [
-  'Adventurous', 'Anxious', 'Calm', 'Chaotic',
-  'Creative', 'Cautious', 'Direct', 'Dramatic',
-  'Easygoing', 'Energetic', 'Funny', 'Grumpy',
-  'Helpful', 'Honest', 'Impulsive', 'Independent',
-  'Introverted', 'Kind', 'Loud', 'Moody',
-  'Organized', 'Outgoing', 'Patient', 'Perfectionist',
-  'Practical', 'Sarcastic', 'Sensitive', 'Stubborn',
-  'Thoughtful', 'Unpredictable', 'Witty', 'Worrier',
-];
+interface WordGeneratorContext {
+  subjectPlayerName: string;
+  subjectPlayerRole?: string;
+  relevantTurns: Turn[];
+  allPlayers: Array<{ id: string; name: string; role?: string }>;
+}
 
 /**
- * Select a random subset of words for the grid
+ * Build prompt for AI to generate personality words for the grid
  */
-export function selectWordsForGrid(count: number = 16): string[] {
-  const shuffled = [...DEFAULT_PERSONALITY_WORDS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+export function buildPersonalityWordGeneratorPrompt(context: WordGeneratorContext): string {
+  const { subjectPlayerName, subjectPlayerRole, relevantTurns } = context;
+
+  // Defensive null checks
+  const subjectName = subjectPlayerName || 'Player';
+  const safeTurns = (relevantTurns || []).filter(t => t && t.playerName);
+  const turnsSummary = safeTurns.slice(-5).map((t, i) => {
+    const responseStr = typeof t.response === 'string'
+      ? t.response
+      : JSON.stringify(t.response, null, 2);
+    return `${i + 1}. ${t.playerName || 'Someone'} was asked: "${t.prompt || 'a question'}"
+   Response: ${responseStr}`;
+  }).join('\n\n');
+
+  return `You are THE ANALYST - generating personality words for a Family Glitch challenge.
+
+## MISSION
+Generate exactly 16 personality words for a 4x4 grid about ${subjectName}${subjectPlayerRole ? ` (${subjectPlayerRole})` : ''}.
+
+## WHAT WE KNOW ABOUT ${subjectName.toUpperCase()}
+${turnsSummary || 'No specific game data yet - use general personality words.'}
+
+## WORD RULES
+1. EXACTLY 16 words, single-word traits only
+2. Mix positive, negative, and neutral
+3. Include at least 4 strong fits based on evidence
+4. Include 4 clear decoys that do NOT fit
+5. The rest should be plausible but debatable
+6. No names, no phrases, no repeats
+
+## RESPONSE FORMAT
+Respond with valid JSON:
+{
+  "words": ["word1", "word2", ... exactly 16 words]
+}
+
+Make the choices fun and arguable so the table debates.`;
+}
+
+export interface PersonalityWordGeneratorResponse {
+  words: string[];
+}
+
+/**
+ * Parse AI response for generated words
+ */
+export function parsePersonalityWordGeneratorResponse(text: string): PersonalityWordGeneratorResponse | null {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    if (!Array.isArray(parsed.words) || parsed.words.length < 16) {
+      return null;
+    }
+
+    // Ensure we have exactly 16 words
+    return {
+      words: parsed.words.slice(0, 16).map((w: string) => String(w).trim()),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Get turns related to a specific player (turns about them or by them)
  */
 export function getTurnsAboutPlayer(turns: Turn[], playerId: string, playerName: string): Turn[] {
-  return turns.filter(t => {
+  return (turns || []).filter(t => {
     // Turns where this player responded
     if (t.playerId === playerId && t.status === 'completed') return true;
 
@@ -61,62 +117,46 @@ interface ScoringPromptContext {
  * Build the system prompt for the Personality Match scorer
  */
 export function buildPersonalityMatchPrompt(context: ScoringPromptContext): string {
-  const { subjectPlayerName, selectedWords, relevantTurns, allPlayers, scores } = context;
+  const { subjectPlayerName, selectedWords, relevantTurns } = context;
 
+  // Defensive null checks
+  const subjectName = subjectPlayerName || 'Player';
+  const safeSelectedWords = selectedWords || [];
+  const safeTurns = (relevantTurns || []).filter(t => t && t.playerName);
   // Format relevant turns for AI context
-  const turnsSummary = relevantTurns.slice(-5).map((t, i) => {
+  const turnsSummary = safeTurns.slice(-5).map((t, i) => {
     const responseStr = typeof t.response === 'string'
       ? t.response
       : JSON.stringify(t.response, null, 2);
-    return `${i + 1}. ${t.playerName} was asked: "${t.prompt}"
+    return `${i + 1}. ${t.playerName || 'Someone'} was asked: "${t.prompt || 'a question'}"
    Response: ${responseStr}`;
   }).join('\n\n');
 
   return `You are THE ANALYST - a perceptive, witty personality judge for Family Glitch.
 
-## YOUR MISSION
-Score how well the selected personality words match ${subjectPlayerName} based on what you've learned from the game.
+## MISSION
+Score how well the selected words match ${subjectName} based on game evidence.
 
 ## WHAT WAS SELECTED
-The player chose these words to describe ${subjectPlayerName}:
-${selectedWords.map(w => `- ${w}`).join('\n')}
+${safeSelectedWords.map(w => `- ${w || 'word'}`).join('\n') || '- No words selected'}
 
-## EVIDENCE FROM THE GAME
-Here's what we know about ${subjectPlayerName} from previous turns:
-${turnsSummary || 'No specific data yet - judge based on general impression.'}
+## EVIDENCE
+${turnsSummary || 'No specific data yet - use a cautious, general read.'}
 
-## CURRENT GAME STATE
-Players: ${allPlayers.map((p) => `${p.name}${p.role ? ` (${p.role})` : ''}`).join(', ')}
-Scores: ${Object.entries(scores)
-    .map(([id, score]) => {
-      const player = allPlayers.find((p) => p.id === id);
-      return player ? `${player.name}: ${score}` : null;
-    })
-    .filter(Boolean)
-    .join(', ') || 'Starting fresh'}
+## SCORING RULES (0-5)
+5 = nails it\n4 = strong\n3 = mixed\n2 = weak\n1 = mostly wrong\n0 = random
 
-## SCORING RULES (0-5 points)
-- **5 points**: Exceptional match - words perfectly capture their personality with insight
-- **4 points**: Strong match - most words are spot-on, shows they know the person
-- **3 points**: Decent match - some good picks, some misses
-- **2 points**: Weak match - only a couple words fit
-- **1 point**: Poor match - mostly wrong but showed effort
-- **0 points**: Complete miss or random guessing
-
-## YOUR PERSONALITY
-- Insightful and analytical
-- Playfully call out obvious misses
-- Praise genuinely good reads
-- Keep commentary to MAX 10 WORDS - one killer observation only
+## TONE
+- Insightful and witty\n- Call out obvious misses\n- Max 10 words for commentary
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
   "score": <0-5>,
-  "commentary": "<your witty reaction - MAX 10 WORDS>",
-  "bestPick": "<the most accurate word they chose>",
-  "worstPick": "<the least accurate word, if any>",
-  "insight": "<optional one-line insight about the subject>"
+  "commentary": "<max 10 words>",
+  "bestPick": "<most accurate word>",
+  "worstPick": "<least accurate word, if any>",
+  "insight": "<optional one-line insight>"
 }`;
 }
 

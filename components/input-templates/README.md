@@ -1,234 +1,162 @@
 # Input Templates
 
-A collection of dynamic, reusable input templates for the Family Glitch game. These templates are designed to be selected and configured by the AI based on the type of interaction needed.
+A collection of reusable input templates for Family Glitch. The AI selects a template tool, the server returns a template config, and the client renders the matching component.
 
 ## Overview
 
-Each template is a self-contained React component that handles its own state and validation. Templates are purely HTML/CSS/TypeScript with no external dependencies beyond Framer Motion for animations.
+- Each template is a self-contained React component with its own validation.
+- Templates use Tailwind + Framer Motion.
+- Responses are structured objects stored in the game turn.
 
 ## Available Templates
 
 ### 1. Text Area (`tpl_text_area`)
-**Purpose:** Deep, specific questions requiring paragraph-length answers.
 
-**Parameters:**
-- `prompt` (required): The main question
-- `subtitle`: Additional instructions
-- `maxLength`: Character limit (default: 500)
-- `minLength`: Minimum characters required (default: 1)
-- `placeholder`: Input placeholder text
-- `onSubmit`: Callback function
+Purpose: Paragraph-length answers.
 
-**Response Format:**
+Parameters:
+- `prompt` (required)
+- `subtitle`
+- `maxLength` (default 500)
+- `minLength` (default 1)
+- `placeholder` (default "Type your answer...")
+- `onSubmit`
+
+Response:
 ```json
-{
-  "text": "user's answer here..."
-}
+{ "text": "user response" }
 ```
 
+Notes:
+- Submit button is always visible but disabled until valid.
+- Cmd/Ctrl + Enter submits.
+
 ### 2. Text Input (`tpl_text_input`)
-**Purpose:** Rapid-fire short answers (lists, multiple items).
 
-**Parameters:**
-- `prompt` (required): The main question
-- `fieldCount` (required): Number of fields (1-5)
-- `fieldLabels`: Array of labels for each field
-- `fieldPlaceholders`: Array of placeholders
-- `maxLength`: Max length per field (default: 100)
-- `requireAll`: Whether all fields must be filled (default: true)
-- `onSubmit`: Callback function
+Purpose: Multiple short items.
 
-**Response Format:**
+Parameters:
+- `prompt` (required)
+- `fieldCount` (required, 1 to 5)
+- `fieldLabels`
+- `fieldPlaceholders`
+- `maxLength` (default 100)
+- `requireAll` (default true)
+- `onSubmit`
+
+Response:
 ```json
 {
   "responses": [
-    {"field": "Field 1", "value": "answer 1"},
-    {"field": "Field 2", "value": "answer 2"}
+    { "field": "Field 1", "value": "Answer" }
   ]
 }
 ```
 
 ### 3. Timed Binary (`tpl_timed_binary`)
-**Purpose:** High-pressure "This or That" decisions with a countdown timer.
 
-**Parameters:**
-- `prompt` (required): The question
-- `leftText` (required): Left option text
-- `rightText` (required): Right option text
-- `seconds` (required): Time limit in seconds
-- `orientation`: Layout direction ("horizontal" | "vertical", default: "vertical")
-- `onSubmit`: Callback function
-- `onTimeout`: Optional callback when timer expires
+Purpose: High-pressure binary choices.
 
-**Response Format:**
+Parameters:
+- `prompt` (required)
+- `leftText` (required)
+- `rightText` (required)
+- `seconds` (required)
+- `orientation` (default "vertical")
+- `onSubmit`
+- `onTimeout` (optional)
+
+Response (chosen):
 ```json
 {
-  "choice": "left" | "right" | null,
+  "choice": "left",
   "selectedText": "Pizza",
-  "timeRemaining": 3.2,
+  "timeRemaining": 2.1,
   "timedOut": false
 }
 ```
 
-### 4. Word Grid (`tpl_word_grid`)
-**Purpose:** Selecting words/attributes from a grid.
-
-**Parameters:**
-- `prompt` (required): The question
-- `words` (required): Array of words to display
-- `gridSize` (required): 4 (2x2), 9 (3x3), or 16 (4x4)
-- `selectionMode` (required): "single" or "multiple"
-- `minSelections`: Minimum required selections (default: 1)
-- `maxSelections`: Maximum allowed selections
-- `instructions`: Custom instruction text
-- `onSubmit`: Callback function
-
-**Response Format:**
+Response (timeout):
 ```json
-{
-  "selectedWords": ["word1", "word2", "word3"],
-  "selectionCount": 3
-}
+{ "choice": null, "timedOut": true }
+```
+
+### 4. Word Grid (`tpl_word_grid`)
+
+Purpose: Select words from a grid.
+
+Parameters:
+- `prompt` (required)
+- `words` (required)
+- `gridSize` (required: 4, 9, 16, or 25)
+- `selectionMode` (required: "single" or "multiple")
+- `minSelections` (default 1)
+- `maxSelections`
+- `instructions`
+- `onSubmit`
+
+Response:
+```json
+{ "selectedWords": ["word1"], "selectionCount": 1 }
 ```
 
 ### 5. Slider (`tpl_slider`)
-**Purpose:** Nuanced ratings on a continuous scale.
 
-**Parameters:**
-- `prompt` (required): The question
-- `min` (required): Minimum value
-- `max` (required): Maximum value
-- `step`: Increment value (default: 1)
-- `defaultValue`: Starting value
-- `minLabel`: Label for minimum end
-- `maxLabel`: Label for maximum end
-- `valueEmojis`: Object mapping values to emojis/icons
-- `showValue`: Display numeric value (default: true)
-- `onSubmit`: Callback function
+Purpose: Numeric ratings.
 
-**Response Format:**
+Parameters:
+- `prompt` (required)
+- `min` (required)
+- `max` (required)
+- `step` (default 1)
+- `defaultValue`
+- `minLabel`, `maxLabel`
+- `valueEmojis` (optional)
+- `showValue` (default true)
+- `onSubmit`
+
+Response:
 ```json
-{
-  "value": 7,
-  "min": 0,
-  "max": 10,
-  "label": "😊"
-}
+{ "value": 7, "min": 0, "max": 10, "label": "7" }
 ```
+
+If `valueEmojis` contains a key for the value, `label` is the emoji.
 
 ### 6. Player Selector (`tpl_player_selector`)
-**Purpose:** Voting, accusing, or selecting other players.
 
-**Parameters:**
-- `prompt` (required): The question
-- `players` (required): Array of player objects `{id, name, avatar}`
-- `currentPlayerId` (required): ID of current player (excluded from selection)
-- `allowMultiple`: Allow selecting multiple players (default: false)
-- `maxSelections`: Max selections if allowMultiple (default: 1)
-- `instructions`: Custom instruction text
-- `onSubmit`: Callback function
+Purpose: Vote for or target players.
 
-**Response Format:**
+Parameters:
+- `prompt` (required)
+- `players` (required)
+- `currentPlayerId` (required, excluded from selection)
+- `allowMultiple` (default false)
+- `maxSelections` (default 1)
+- `instructions`
+- `onSubmit`
+
+Response:
 ```json
 {
-  "selectedPlayerIds": ["player-123"],
-  "selectedPlayers": [
-    {"id": "player-123", "name": "John"}
-  ]
+  "selectedPlayerIds": ["player-id"],
+  "selectedPlayers": [{ "id": "player-id", "name": "Taylor" }]
 }
 ```
 
-## Usage
+## Template Renderer
 
-### Basic Usage
+Use `TemplateRenderer` from `components/input-templates/index.tsx`:
 
 ```tsx
-import { TemplateRenderer } from '@/components/input-templates';
-
-function GameTurn() {
-  const handleSubmit = (response: any) => {
-    console.log('User response:', response);
-    // Store in game state
-  };
-
-  return (
-    <TemplateRenderer
-      templateType="tpl_text_area"
-      params={{
-        prompt: "What's your biggest fear?",
-        subtitle: "Be honest... we won't judge (much)",
-        maxLength: 200,
-        onSubmit: handleSubmit,
-      }}
-    />
-  );
-}
+<TemplateRenderer
+  templateType="tpl_text_area"
+  params={{
+    prompt: "Tell a story",
+    onSubmit: handleSubmit,
+  }}
+/>
 ```
 
-### Dynamic Template Selection (AI-Driven)
+## Validation Helper
 
-```tsx
-import { TemplateRenderer } from '@/components/input-templates';
-import type { TemplateType, TemplateParams } from '@/components/input-templates';
-
-function AIDrivenTurn({ turnData }: { turnData: Turn }) {
-  const handleSubmit = (response: any) => {
-    // Store response in game state
-    storeTurnResponse(turnData.turnId, response);
-  };
-
-  // AI has already determined the template type and params
-  return (
-    <TemplateRenderer
-      templateType={turnData.templateType as TemplateType}
-      params={{
-        ...turnData.templateParams,
-        onSubmit: handleSubmit,
-      }}
-    />
-  );
-}
-```
-
-### Validation
-
-```tsx
-import { validateTemplateParams } from '@/components/input-templates';
-
-// Validate AI-provided parameters before rendering
-const validation = validateTemplateParams(templateType, params);
-if (!validation.valid) {
-  console.error('Invalid template params:', validation.errors);
-}
-```
-
-## Design System
-
-All templates follow the **Digital Noir** design system:
-
-- **Colors:** `frost`, `glitch`, `glitch-bright`, `alert`, `steel-*`, `void`
-- **Fonts:** Sans-serif for content, monospace for meta/technical info
-- **Animations:** Framer Motion for smooth transitions
-- **Styling:** Tailwind CSS with custom theme tokens
-
-## Adding New Templates
-
-1. Create component in `components/input-templates/YourTemplate.tsx`
-2. Define parameter interface in `lib/types/template-params.ts`
-3. Add to registry in `components/input-templates/index.tsx`
-4. Update this README with documentation
-
-## Integration with Game State
-
-Templates are designed to work seamlessly with the game state structure defined in `lib/types/game-state.ts`. Each turn stores:
-
-```typescript
-{
-  turnId: string;
-  templateType: 'tpl_text_area' | 'tpl_text_input' | ...,
-  templateParams: { /* original params sent by AI */ },
-  response: { /* user's response from onSubmit */ }
-}
-```
-
-This ensures a complete audit trail of every interaction during the game.
+`validateTemplateParams()` exists in `components/input-templates/index.tsx` but is not wired into `/play` yet.

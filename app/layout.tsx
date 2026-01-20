@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     description: 'A snarky AI host analyzes your dinner table dynamics in real-time.',
     type: 'website',
   },
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export const viewport: Viewport = {

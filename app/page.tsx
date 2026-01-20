@@ -31,11 +31,10 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col justify-between px-6 py-12 max-w-md mx-auto w-full relative z-10">
-        {/* Top section */}
-        <div className="flex-1 flex flex-col justify-center">
+        <section className="flex-1 flex flex-col justify-center space-y-8">
           {/* Logo animation */}
           <motion.div
-            className="text-center mb-8"
+            className="text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -72,7 +71,7 @@ export default function Home() {
 
           {/* Description */}
           <motion.div
-            className="glass rounded-2xl p-6 mb-8"
+            className="glass rounded-2xl p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
@@ -87,7 +86,68 @@ export default function Home() {
               <span className="text-glitch-bright">Black Mirror</span>
             </p>
           </motion.div>
-        </div>
+
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono text-steel-500">
+              <span className="px-2.5 py-1 rounded-full bg-void-light/80 border border-steel-800">
+                3-7 players
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-void-light/80 border border-steel-800">
+                15 minutes
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-void-light/80 border border-steel-800">
+                one phone
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { step: '01', title: 'Setup', detail: 'Roster' },
+                { step: '02', title: 'Pass', detail: 'Question' },
+                { step: '03', title: 'Reveal', detail: 'Commentary' },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className="rounded-xl border border-steel-800/70 bg-void-light/50 px-3 py-2 text-center"
+                >
+                  <div className="text-[10px] font-mono text-steel-500">
+                    {item.step}
+                  </div>
+                  <div className="text-xs font-semibold text-frost">
+                    {item.title}
+                  </div>
+                  <div className="text-[10px] text-steel-500">
+                    {item.detail}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="relative overflow-hidden rounded-2xl border border-steel-800/70 bg-void-light/60 p-4">
+              <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-glitch/20 blur-2xl" />
+              <div className="text-[10px] font-mono text-steel-500 uppercase tracking-[0.3em]">
+                Live Preview
+              </div>
+              <p className="mt-2 text-sm text-frost">Quick: Pizza or Tacos?</p>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-bold">
+                <div className="rounded-lg border border-glitch/50 bg-glitch/20 px-2 py-2 text-center text-frost">
+                  Pizza
+                </div>
+                <div className="rounded-lg border border-steel-700 bg-void px-2 py-2 text-center text-steel-300">
+                  Tacos
+                </div>
+              </div>
+              <p className="mt-3 text-[11px] text-steel-400">
+                The Glitch: &quot;You chose chaos. Respect.&quot;
+              </p>
+            </div>
+          </motion.div>
+        </section>
 
         {/* Bottom section - CTA */}
         <motion.div

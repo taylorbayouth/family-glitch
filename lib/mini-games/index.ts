@@ -36,14 +36,14 @@ export * from './trivia-challenge';
 
 // Explicit exports to avoid name conflicts with toMiniGameResult
 export {
-  DEFAULT_PERSONALITY_WORDS,
-  selectWordsForGrid,
   getTurnsAboutPlayer,
+  buildPersonalityWordGeneratorPrompt,
+  parsePersonalityWordGeneratorResponse,
   buildPersonalityMatchPrompt,
   parsePersonalityMatchResponse,
   toMiniGameResult as personalityMatchToResult,
 } from './personality-match';
-export type { PersonalityMatchScoreResponse } from './personality-match';
+export type { PersonalityWordGeneratorResponse, PersonalityMatchScoreResponse } from './personality-match';
 
 export {
   COMMON_LETTERS,

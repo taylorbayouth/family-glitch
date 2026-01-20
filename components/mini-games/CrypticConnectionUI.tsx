@@ -106,18 +106,7 @@ export function CrypticConnectionUI({
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate puzzle:', err);
-      // Fallback puzzle
-      setClue('Things that disappear');
-      setWords([
-        'shadow', 'memory', 'smoke', 'trust', 'youth',
-        'bread', 'chair', 'echo', 'dream', 'hope',
-        'brick', 'cloud', 'stone', 'mist', 'faith',
-        'table', 'time', 'fog', 'love', 'light',
-        'door', 'snow', 'car', 'book', 'soap',
-      ]);
-      setCorrectWords(['shadow', 'memory', 'smoke', 'echo', 'dream', 'mist', 'fog', 'snow']);
-      setExplanation('Things that fade, vanish, or are temporary');
-      setPhase('intro');
+      setError('Failed to generate puzzle from AI');
     }
   };
 
@@ -171,23 +160,8 @@ export function CrypticConnectionUI({
       setPhase('result');
     } catch (err) {
       console.error('Failed to score puzzle:', err);
-      // Fallback scoring
-      const exactMatches = selectedWords.filter((w) => correctWords.includes(w));
-      const fallbackScore = Math.min(5, Math.round((exactMatches.length / correctWords.length) * 5));
-      const fallbackResult: MiniGameResult = {
-        score: fallbackScore,
-        maxScore: 5,
-        commentary: 'The Riddler ponders in silence...',
-        correctAnswer: explanation,
-      };
-      updatePlayerScore(targetPlayer.id, fallbackScore);
-      setResult(fallbackResult);
-      setScoreDetails({
-        exactMatches,
-        creativeMatches: [],
-        misses: selectedWords.filter((w) => !correctWords.includes(w)),
-      });
-      setPhase('result');
+      setError('Failed to score puzzle. Please try again.');
+      setPhase('playing');
     }
   };
 
@@ -211,15 +185,15 @@ export function CrypticConnectionUI({
   };
 
   return (
-    <div className="min-h-screen bg-void flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
+    <div className="flex-1 bg-void flex flex-col overflow-hidden">
+      {/* Mini-header */}
+      <div className="shrink-0 p-4 border-b border-steel-800">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-xs text-violet-400 uppercase tracking-wider">
               Cryptic Connection
             </p>
-            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
+            <h2 className="text-lg font-bold text-frost">{targetPlayer.name}</h2>
           </div>
           <div className="text-right">
             <p className="font-mono text-xs text-steel-500">Find the pattern</p>
@@ -228,7 +202,7 @@ export function CrypticConnectionUI({
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
         <AnimatePresence mode="wait">
           {/* Loading Phase */}
           {phase === 'loading' && (
@@ -577,10 +551,39 @@ export function CrypticConnectionUI({
         </AnimatePresence>
 
         {/* Error State */}
-        {error && (
-          <div className="fixed bottom-6 left-6 right-6 glass rounded-xl p-4 border border-alert">
-            <p className="text-alert text-sm">{error}</p>
-          </div>
+        {error && phase === 'loading' && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full max-w-md space-y-4"
+          >
+            <div className="glass rounded-xl p-6 border border-alert">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h3 className="text-alert font-bold mb-1">Generation Failed</h3>
+                  <p className="text-steel-400 text-sm">{error}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <button
+                  onClick={generatePuzzle}
+                  className="w-full bg-violet-500 hover:bg-violet-400 text-frost font-bold py-3 px-6 rounded-xl transition-all"
+                >
+                  Try Again
+                </button>
+                {onSkip && (
+                  <button
+                    onClick={onSkip}
+                    className="w-full bg-steel-800 hover:bg-steel-700 text-frost font-bold py-3 px-6 rounded-xl transition-all"
+                  >
+                    Skip Challenge
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>

@@ -23,7 +23,7 @@ export interface HardTriviaConfig extends MiniGameConfig {
 
 interface HardTriviaUIProps {
   config: HardTriviaConfig;
-  currentPlayer: Player;
+  targetPlayer: Player;
   allPlayers: Player[];
   turns: Turn[];
   onComplete: (result: MiniGameResult) => void;
@@ -33,7 +33,7 @@ type HardTriviaPhase = 'loading' | 'intro' | 'question' | 'scoring' | 'result';
 
 export function HardTriviaUI({
   config,
-  currentPlayer,
+  targetPlayer,
   allPlayers,
   turns,
   onComplete,
@@ -54,7 +54,7 @@ export function HardTriviaUI({
   const generateTriviaQuestion = async () => {
     try {
       const prompt = buildHardTriviaGeneratorPrompt({
-        targetPlayer: currentPlayer,
+        targetPlayer,
         allPlayers,
         turns,
       });
@@ -83,7 +83,7 @@ export function HardTriviaUI({
 
     try {
       const prompt = buildHardTriviaScorerPrompt({
-        targetPlayer: currentPlayer,
+        targetPlayer,
         question: triviaData.question,
         correctAnswer: triviaData.correct_answer,
         playerAnswer: selectedAnswer,
@@ -115,17 +115,39 @@ export function HardTriviaUI({
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
-        <div className="glass rounded-xl p-6 border border-alert max-w-md">
-          <h2 className="text-alert font-bold text-xl mb-2">Error</h2>
-          <p className="text-frost mb-4">{error}</p>
-          <button
-            onClick={() => onComplete({ score: 0, maxScore: 5, commentary: 'Error occurred' })}
-            className="w-full bg-steel-700 hover:bg-steel-600 text-frost font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            Continue
-          </button>
-        </div>
+      <div className="flex-1 flex items-center justify-center overflow-y-auto p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full max-w-md space-y-4"
+        >
+          <div className="glass rounded-xl p-6 border border-alert">
+            <div className="flex items-start gap-3 mb-4">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <h3 className="text-alert font-bold mb-1">Generation Failed</h3>
+                <p className="text-steel-400 text-sm">{error}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setError(null);
+                  setPhase('loading');
+                }}
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-void font-bold py-3 px-6 rounded-xl transition-all"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => onComplete({ score: 0, maxScore: 5, commentary: 'Skipped due to error' })}
+                className="w-full bg-steel-800 hover:bg-steel-700 text-frost font-bold py-3 px-6 rounded-xl transition-all"
+              >
+                Skip Challenge
+              </button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -133,7 +155,7 @@ export function HardTriviaUI({
   // Loading state
   if (phase === 'loading' || !triviaData) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -149,7 +171,7 @@ export function HardTriviaUI({
   // Intro phase
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto p-4">
         <div className="scan-line" />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -180,7 +202,7 @@ export function HardTriviaUI({
             transition={{ delay: 0.4 }}
             className="text-frost text-center mb-2"
           >
-            {config.intro || `Time to test your knowledge, ${currentPlayer.name}!`}
+            {config.intro || `Time to test your knowledge, ${targetPlayer.name}!`}
           </motion.p>
 
           <motion.p
@@ -220,7 +242,7 @@ export function HardTriviaUI({
   // Question phase
   if (phase === 'question') {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto p-4">
         <div className="scan-line" />
         <motion.div
           initial={{ opacity: 0 }}
@@ -297,7 +319,7 @@ export function HardTriviaUI({
   // Scoring phase
   if (phase === 'scoring') {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -315,7 +337,7 @@ export function HardTriviaUI({
     const isCorrect = scoreData.correct;
 
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto p-4">
         <div className="scan-line" />
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

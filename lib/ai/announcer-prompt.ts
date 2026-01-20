@@ -169,6 +169,7 @@ Respond with valid JSON in this EXACT format:
 - Compare to other players when relevant
 - Be playful, not mean
 - Max 3 sentences, punchy and memorable
+ - If the turn history is sparse, keep it general and do NOT invent details
 
 ## IMPORTANT RULES
 1. MUST include ALL players in rankings array

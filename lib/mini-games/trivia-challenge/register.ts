@@ -27,7 +27,7 @@ registerMiniGame<TriviaConfig>({
 
     // Get eligible turns for trivia (completed turns from other players)
     const eligibleTurns = getEligibleTurnsForPlayer(
-      turns.filter(t => t.status === 'completed'),
+      (turns || []).filter(t => t.status === 'completed'),
       currentPlayerId
     );
 

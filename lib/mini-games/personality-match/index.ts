@@ -6,11 +6,12 @@
  */
 
 export {
-  DEFAULT_PERSONALITY_WORDS,
-  selectWordsForGrid,
   getTurnsAboutPlayer,
+  buildPersonalityWordGeneratorPrompt,
+  parsePersonalityWordGeneratorResponse,
   buildPersonalityMatchPrompt,
   parsePersonalityMatchResponse,
   toMiniGameResult,
+  type PersonalityWordGeneratorResponse,
   type PersonalityMatchScoreResponse,
 } from './prompt';

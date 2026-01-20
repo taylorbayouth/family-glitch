@@ -1,350 +1,103 @@
 # Quick Start: Game Master Integration
 
-Get the AI Game Master up and running in 5 minutes.
+This is a minimal guide for integrating the Game Master tool flow with templates.
 
 ## Prerequisites
 
-✅ Player data setup (player-store with Zustand)
-✅ Game state setup (game-store with Zustand)
-✅ Input templates created (components/input-templates)
-✅ OpenAI API key in `.env.local`
+- Player roster in `usePlayerStore`
+- Game state in `useGameStore`
+- OpenAI API key in `.env.local`
 
-## Step 1: Import Dependencies
+## Core Flow
 
-```typescript
-'use client';
+1. Build the system prompt with `buildGameMasterPrompt()`.
+2. Ask GPT-5.2 for a question using `toolChoice: 'required'`.
+3. Parse `response.text` as JSON to get the template config.
+4. Render `TemplateRenderer` with the config.
+5. Store the response in the game store and request commentary (`toolChoice: 'none'`).
 
-import { useState } from 'react';
-import { usePlayerStore, useGameStore } from '@/lib/store';
-import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
-import { sendChatRequest } from '@/lib/ai/client';
-import { TemplateRenderer } from '@/components/input-templates';
-import type { ChatMessage } from '@/lib/ai/types';
-```
-
-## Step 2: Create Game Component
-
-```typescript
-export default function GamePage() {
-  const { players } = usePlayerStore();
-  const { gameId, turns, scores, addTurn, completeTurn } = useGameStore();
-
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentTemplate, setCurrentTemplate] = useState<any>(null);
-  const [aiCommentary, setAiCommentary] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Initialize system prompt on mount
-  useState(() => {
-    const systemPrompt = buildGameMasterPrompt(players, {
-      gameId,
-      turns,
-      scores,
-      status: 'playing'
-    });
-
-    setMessages([{ role: 'system', content: systemPrompt }]);
-  });
-
-  return (
-    <div className="min-h-screen bg-void p-6">
-      {/* Your UI here */}
-    </div>
-  );
-}
-```
-
-## Step 3: Get First Question
-
-```typescript
-const startGame = async () => {
-  setIsLoading(true);
-
-  const newMessages = [
-    ...messages,
-    { role: 'user', content: 'Start the game and ask the first player a question.' }
-  ];
-
-  try {
-    const response = await sendChatRequest(newMessages, { toolChoice: 'required' });
-
-    // Response contains template configuration
-    const templateConfig = JSON.parse(response.text);
-
-    setCurrentTemplate(templateConfig);
-    setMessages([...newMessages, { role: 'assistant', content: response.text }]);
-  } catch (error) {
-    console.error('Failed to start game:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
-```
-
-## Step 4: Render Template
+## Minimal Example
 
 ```tsx
-{currentTemplate && (
-  <TemplateRenderer
-    templateType={currentTemplate.templateType}
-    params={{
-      prompt: currentTemplate.prompt,
-      ...currentTemplate.params,
-      onSubmit: handlePlayerResponse
-    }}
-  />
-)}
-```
-
-## Step 5: Handle Player Response
-
-```typescript
-const handlePlayerResponse = async (response: any) => {
-  setIsLoading(true);
-
-  // Store in game state
-  const currentPlayer = players[0]; // Get actual current player
-
-  addTurn({
-    playerId: currentPlayer.id,
-    playerName: currentPlayer.name,
-    templateType: currentTemplate.templateType,
-    prompt: currentTemplate.prompt,
-    templateParams: currentTemplate.params,
-  });
-
-  completeTurn(currentTurnId, response);
-
-  // Send response to AI for commentary (no tools)
-  const newMessages = [
-    ...messages,
-    {
-      role: 'user',
-      content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`
-    }
-  ];
-
-  try {
-    const aiResponse = await sendChatRequest(newMessages, { toolChoice: 'none' });
-
-    setAiCommentary(aiResponse.text);
-    setMessages([...newMessages, { role: 'assistant', content: aiResponse.text }]);
-    // Request the next question separately (toolChoice: 'required') after advancing players
-  } catch (error) {
-    console.error('Failed to submit response:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
-```
-
-## Step 6: Display Commentary
-
-```tsx
-{aiCommentary && (
-  <div className="glass rounded-xl p-6 mb-6">
-    <p className="text-frost">{aiCommentary}</p>
-  </div>
-)}
-```
-
-## Complete Minimal Example
-
-```typescript
 'use client';
 
 import { useState, useEffect } from 'react';
 import { usePlayerStore, useGameStore } from '@/lib/store';
-import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
 import { sendChatRequest } from '@/lib/ai/client';
+import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
 import { TemplateRenderer } from '@/components/input-templates';
 import type { ChatMessage } from '@/lib/ai/types';
 
-export default function GamePage() {
+export default function MinimalGame() {
   const { players } = usePlayerStore();
   const { gameId, turns, scores, addTurn, completeTurn } = useGameStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentTemplate, setCurrentTemplate] = useState<any>(null);
-  const [aiCommentary, setAiCommentary] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [template, setTemplate] = useState<any>(null);
 
-  // Initialize
   useEffect(() => {
     const systemPrompt = buildGameMasterPrompt(players, {
       gameId,
       turns,
       scores,
-      status: 'playing'
+      status: 'playing',
     });
-
     setMessages([{ role: 'system', content: systemPrompt }]);
-  }, []);
+  }, [players, gameId, turns, scores]);
 
-  const loadQuestion = async (playerIndex: number) => {
-    const newMessages = [
+  const loadQuestion = async () => {
+    const newMessages: ChatMessage[] = [
       ...messages,
-      {
-        role: 'user',
-        content: `It's ${players[playerIndex]?.name}'s turn. Ask them ONE short, direct question.`
-      }
+      { role: 'user', content: 'Ask one short question for the current player.' },
     ];
 
     const response = await sendChatRequest(newMessages, { toolChoice: 'required' });
-    const templateConfig = JSON.parse(response.text);
+    const config = JSON.parse(response.text);
 
-    setCurrentTemplate(templateConfig);
+    setTemplate(config);
     setMessages([...newMessages, { role: 'assistant', content: response.text }]);
   };
 
-  const startGame = async () => {
-    setIsLoading(true);
-    await loadQuestion(currentPlayerIndex);
-    setIsLoading(false);
-  };
+  const handleSubmit = async (response: any) => {
+    const turnId = addTurn({
+      playerId: players[0].id,
+      playerName: players[0].name,
+      templateType: template.templateType,
+      prompt: template.prompt,
+      templateParams: template.params,
+    });
 
-  const handlePlayerResponse = async (response: any) => {
-    setIsLoading(true);
+    completeTurn(turnId, response);
 
-    const currentPlayer = players[currentPlayerIndex];
-
-    // Store turn
-    completeTurn('current-turn-id', response);
-
-    // Get AI commentary
-    const newMessages = [
+    const followUp: ChatMessage[] = [
       ...messages,
       {
         role: 'user',
-        content: `${currentPlayer.name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS. One killer line only.`
-      }
+        content: `${players[0].name} responded: ${JSON.stringify(response)}. React in MAX 10 WORDS.`,
+      },
     ];
 
-    const aiResponse = await sendChatRequest(newMessages, { toolChoice: 'none' });
-    setAiCommentary(aiResponse.text);
-
-    // Next player
-    const nextIndex = (currentPlayerIndex + 1) % players.length;
-    setCurrentPlayerIndex(nextIndex);
-
-    // Get next question separately (tool call required)
-    await loadQuestion(nextIndex);
-
-    setMessages([...newMessages, { role: 'assistant', content: aiResponse.text }]);
-    setIsLoading(false);
+    await sendChatRequest(followUp, { toolChoice: 'none' });
   };
 
-  if (!currentTemplate) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
-        <button
-          onClick={startGame}
-          disabled={isLoading}
-          className="px-6 py-3 bg-glitch text-frost rounded-xl font-bold"
-        >
-          {isLoading ? 'Loading...' : 'Start Game'}
-        </button>
-      </div>
-    );
+  if (!template) {
+    return <button onClick={loadQuestion}>Start</button>;
   }
 
   return (
-    <div className="min-h-screen bg-void p-6">
-      {/* Current Player */}
-      <div className="text-center mb-4">
-        <p className="text-glitch-bright font-mono">
-          {players[currentPlayerIndex]?.name}'s Turn
-        </p>
-      </div>
-
-      {/* AI Commentary */}
-      {aiCommentary && (
-        <div className="glass rounded-xl p-6 mb-6 max-w-2xl mx-auto">
-          <p className="text-frost">{aiCommentary}</p>
-        </div>
-      )}
-
-      {/* Template */}
-      <TemplateRenderer
-        templateType={currentTemplate.templateType}
-        params={{
-          prompt: currentTemplate.prompt,
-          ...currentTemplate.params,
-          onSubmit: handlePlayerResponse,
-        }}
-      />
-
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-void/80 flex items-center justify-center">
-          <p className="text-frost font-mono">AI is thinking...</p>
-        </div>
-      )}
-    </div>
+    <TemplateRenderer
+      templateType={template.templateType}
+      params={{
+        prompt: template.prompt,
+        ...template.params,
+        onSubmit: handleSubmit,
+      }}
+    />
   );
 }
 ```
 
-## Testing
+## Notes
 
-1. **Start dev server:**
-   ```bash
-   npm run dev
-   ```
-
-2. **Navigate to game page:**
-   ```
-   http://localhost:3000/play
-   ```
-
-3. **Click "Start Game"**
-
-4. **Answer the AI's question**
-
-5. **See commentary, then load the next question**
-
-## What's Happening Behind the Scenes
-
-1. **System prompt** is built with player data
-2. **AI receives** "Start the game" message
-3. **AI calls** one of 6 template tools (e.g., `ask_binary_choice`)
-4. **Tool returns** template configuration JSON
-5. **React renders** the appropriate template component
-6. **Player submits** their answer
-7. **Response stored** in game state
-8. **AI receives** player response (commentary only, no tools)
-9. **AI generates** 10-word max commentary
-10. **Player taps** to continue to the next turn
-11. **App requests** the next question (tool calls required)
-12. **AI calls** next template tool
-13. **Repeat** steps 5-12
-
-## Next Steps
-
-- Add turn rotation logic
-- Implement scoring system
-- Show leaderboard
-- Add end-game summary
-- Style with Digital Noir theme
-
-## Troubleshooting
-
-**Issue:** "OpenAI client not initialized"
-- Check `.env.local` has `OPENAI_API_KEY`
-- Restart dev server
-
-**Issue:** Template won't render
-- Check console for validation errors
-- Verify `templateType` matches registry
-
-**Issue:** AI doesn't call tools
-- Check system prompt isn't too prescriptive
-- Verify tools are registered in `tools.ts`
-
-## Full Documentation
-
-- [Game Master Setup Guide](./GAME_MASTER_SETUP.md)
-- [Input Templates System](./INPUT_TEMPLATES_SYSTEM.md)
-- [AI Template Guide](./AI_TEMPLATE_GUIDE.md)
-- [Integration Examples](../lib/ai/game-integration-example.ts)
+- `tpl_player_selector` requires `players` and `currentPlayerId`. `/play` injects these at render time.
+- Mini-game template types require registry handling (see `/play`).

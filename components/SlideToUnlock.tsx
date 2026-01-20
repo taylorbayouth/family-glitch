@@ -21,7 +21,7 @@ export function SlideToUnlock({ onUnlock, playerName }: SlideToUnlockProps) {
 
   // Track dimensions
   const [trackWidth, setTrackWidth] = useState(0);
-  const thumbWidth = 80;
+  const thumbWidth = 64;
   const maxDrag = trackWidth - thumbWidth;
 
   // Calculate progress (0 to 1)
@@ -58,19 +58,11 @@ export function SlideToUnlock({ onUnlock, playerName }: SlideToUnlockProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-6">
-      {/* Instructions */}
-      <motion.p
-        style={{ opacity: textOpacity }}
-        className="text-center text-frost font-mono text-sm mb-4"
-      >
-        Slide to reveal your question
-      </motion.p>
-
+    <div className="w-full max-w-md mx-auto">
       {/* Track */}
       <div
         ref={constraintsRef}
-        className="relative h-16 bg-void-light border-2 border-steel-800 rounded-full overflow-hidden"
+        className="relative h-14 bg-void-light border-2 border-steel-800 rounded-full overflow-hidden"
       >
         {/* Progress fill */}
         <motion.div
@@ -84,10 +76,10 @@ export function SlideToUnlock({ onUnlock, playerName }: SlideToUnlockProps) {
         {/* Instruction text on track */}
         <motion.div
           style={{ opacity: textOpacity }}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none pl-16"
         >
-          <p className="font-bold text-frost/50 text-sm">
-            Swipe to unlock →
+          <p className="font-bold text-frost/40 text-sm">
+            Slide to unlock →
           </p>
         </motion.div>
 
@@ -103,11 +95,11 @@ export function SlideToUnlock({ onUnlock, playerName }: SlideToUnlockProps) {
             width: thumbWidth,
           }}
           animate={isUnlocked ? { scale: 1.1, opacity: 0 } : {}}
-          className="absolute top-1 left-1 h-14 rounded-full bg-glitch flex items-center justify-center shadow-glow cursor-grab active:cursor-grabbing"
+          className="absolute top-1 left-1 h-12 rounded-full bg-glitch flex items-center justify-center shadow-glow cursor-grab active:cursor-grabbing"
           whileTap={{ scale: 0.95 }}
         >
           <svg
-            className="w-6 h-6 text-void"
+            className="w-5 h-5 text-void"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -125,11 +117,11 @@ export function SlideToUnlock({ onUnlock, playerName }: SlideToUnlockProps) {
       {/* Unlocked state */}
       {isUnlocked && (
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center text-glitch-bright font-bold mt-4"
+          className="text-center text-glitch-bright font-bold text-sm mt-3"
         >
-          Unlocked! Loading your question...
+          Unlocked!
         </motion.p>
       )}
     </div>

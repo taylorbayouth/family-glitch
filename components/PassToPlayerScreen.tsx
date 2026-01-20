@@ -1,14 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { SlideToUnlock } from './SlideToUnlock';
 import type { Player } from '@/lib/store/player-store';
 
 /**
  * Pass to Player Screen
  *
- * Shown between turns. Gives players privacy and time to pass the device.
- * Also used to preload the next question from the AI while showing this screen.
+ * Shown between turns. Full-screen display with big text
+ * that scales dynamically to fill available space.
  */
 interface PassToPlayerScreenProps {
   player: Player;
@@ -23,135 +22,137 @@ export function PassToPlayerScreen({
   isLoadingQuestion,
   turnNumber,
 }: PassToPlayerScreenProps) {
-  // Get avatar image path
-  const getAvatarPath = (index: number) => `/avatars/${index}.png`;
-
   return (
-    <div className="min-h-screen bg-void flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-screen bg-void flex flex-col overflow-hidden relative">
       {/* Background effects */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
-      <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-glitch/10 rounded-full blur-[120px]" />
 
-      <div className="relative z-10 w-full max-w-md space-y-8">
-        {/* Turn indicator */}
-        {turnNumber && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <p className="font-mono text-xs text-steel-500 uppercase tracking-wider">
-              Turn {turnNumber}
-            </p>
-          </motion.div>
-        )}
+      {/* Header - Turn badge */}
+      {turnNumber && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="pt-4 px-4 flex justify-center"
+        >
+          <span className="font-mono text-xs text-steel-500 uppercase tracking-widest bg-void-light px-4 py-1.5 rounded-full border border-steel-700">
+            Turn {turnNumber}
+          </span>
+        </motion.div>
+      )}
 
-        {/* Player avatar and name */}
+      {/* Main content - fills remaining space */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-4">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col items-center space-y-4"
+          className="text-center w-full"
         >
-          <div className="w-36 h-36 rounded-full bg-void-light border-4 border-glitch overflow-hidden shadow-glow">
-            <img
-              src={getAvatarPath(player.avatar)}
-              alt={`${player.name}'s avatar`}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="text-center space-y-1">
-            <h1 className="text-4xl font-black text-frost">
-              {player.name}
-            </h1>
-            <p className="text-steel-400 font-mono text-sm">
-              {player.role} · Age {player.age}
-            </p>
-          </div>
-        </motion.div>
+          {isLoadingQuestion ? (
+            <>
+              <p
+                className="text-steel-400 font-mono uppercase tracking-widest mb-4"
+                style={{ fontSize: 'clamp(0.7rem, 2vw, 1rem)' }}
+              >
+                Preparing question...
+              </p>
+              <div className="flex justify-center space-x-3">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-4 h-4 rounded-full bg-glitch"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* "Pass to" label */}
+              <p
+                className="text-steel-400 font-mono uppercase tracking-widest mb-2"
+                style={{ fontSize: 'clamp(0.8rem, 3vw, 1.2rem)' }}
+              >
+                Pass to
+              </p>
 
-        {/* Instructions */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="glass rounded-xl p-6 border border-steel-800"
-        >
-          <p className="text-frost text-center leading-relaxed">
-            {isLoadingQuestion ? (
-              <>
-                The AI is preparing your question...
-                <br />
-                <span className="text-glitch-bright font-mono text-sm">
-                  Hold tight
-                </span>
-              </>
-            ) : (
-              <>
-                Pass the phone to <span className="text-glitch-bright font-bold">{player.name}</span>
-                <br />
-                <span className="text-steel-500 text-sm">
-                  Make sure nobody else can see the screen!
-                </span>
-              </>
-            )}
-          </p>
-        </motion.div>
+              {/* Player name - big and dynamic */}
+              <h1
+                className="font-black text-frost leading-none"
+                style={{
+                  fontSize: 'clamp(3rem, 15vw, 8rem)',
+                  textShadow: '0 0 40px rgba(178, 102, 255, 0.3)',
+                }}
+              >
+                {player.name}
+              </h1>
 
-        {/* Slide to unlock */}
+              {/* Role subtitle */}
+              <p
+                className="text-steel-500 font-mono mt-3"
+                style={{ fontSize: 'clamp(0.7rem, 2.5vw, 1rem)' }}
+              >
+                {player.role}
+              </p>
+            </>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Bottom button area */}
+      <div className="px-6 pb-8">
         {!isLoadingQuestion && (
-          <motion.div
+          <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
+            onClick={onUnlock}
+            className="w-full bg-glitch text-frost font-bold py-4 px-8 rounded-xl transition-all shadow-glow-strong relative overflow-hidden"
+            style={{
+              fontSize: 'clamp(1rem, 3vw, 1.25rem)',
+            }}
           >
-            <SlideToUnlock
-              onUnlock={onUnlock}
-              playerName={player.name}
+            {/* Pulse animation overlay */}
+            <motion.div
+              className="absolute inset-0 bg-glitch-bright rounded-xl"
+              animate={{
+                opacity: [0, 0.3, 0],
+                scale: [1, 1.02, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
             />
-          </motion.div>
+
+            {/* Button text */}
+            <span className="relative z-10">
+              I'm {player.name} — Let's Go
+            </span>
+          </motion.button>
         )}
 
-        {/* Loading indicator */}
         {isLoadingQuestion && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center"
+            className="w-full bg-steel-800 text-steel-500 font-bold py-4 px-8 rounded-xl text-center"
+            style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}
           >
-            <div className="flex space-x-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="w-3 h-3 rounded-full bg-glitch"
-                  animate={{
-                    scale: [1, 1.5, 1],
-                    opacity: [0.5, 1, 0.5],
-                  }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    delay: i * 0.2,
-                  }}
-                />
-              ))}
-            </div>
+            Hold tight...
           </motion.div>
         )}
       </div>
-
-      {/* Warning at bottom */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="absolute bottom-8 left-0 right-0 text-center"
-      >
-        <p className="text-steel-600 font-mono text-xs uppercase tracking-wider">
-          Privacy Mode Active
-        </p>
-      </motion.div>
     </div>
   );
 }

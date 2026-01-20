@@ -52,6 +52,7 @@ export default function PlayPage() {
     completeTurn,
     updatePlayerScore,
     startGame,
+    resetGame,
     isGameComplete,
   } = useGameStore();
 
@@ -69,6 +70,7 @@ export default function PlayPage() {
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Current turn tracking
   const [currentTurnId, setCurrentTurnId] = useState<string>('');
@@ -185,14 +187,24 @@ CRITICAL RULES:
           });
 
           if (config) {
-            // Valid mini-game config - set it up
+            // Valid mini-game config - create a turn for it
+            const turnId = addTurn({
+              playerId: targetPlayer.id,
+              playerName: targetPlayer.name,
+              templateType: templateConfig.templateType,
+              prompt: templateConfig.prompt || `${templateConfig.templateType} challenge`,
+              templateParams: templateConfig.params,
+            });
+
+            setCurrentTurnId(turnId);
             setActiveMiniGame({
               type: templateConfig.templateType,
               config,
             });
             setCurrentTemplate(templateConfig);
             setMessages([...newMessages, { role: 'assistant', content: response.text }]);
-            return; // Don't create a regular turn for mini-games
+            setIsLoadingQuestion(false);
+            return;
           }
         }
         // If config extraction failed, fall through to regular question
@@ -250,6 +262,18 @@ CRITICAL RULES:
   const handleMiniGameComplete = (result: MiniGameResult | { score: number; commentary: string }) => {
     setPhase('loading');
     setAiCommentary(result.commentary);
+
+    // Apply score to the player
+    if (result.score > 0) {
+      updatePlayerScore(currentPlayer.id, result.score);
+    }
+
+    // Calculate turn duration
+    const duration = (Date.now() - turnStartTime) / 1000;
+
+    // Complete the turn in game state
+    completeTurn(currentTurnId, { miniGameResult: result }, duration);
+
     setActiveMiniGame(null);
     setCurrentTemplate(null);
   };
@@ -275,9 +299,8 @@ CRITICAL RULES:
     // Store response in game state
     completeTurn(currentTurnId, response, duration);
 
-    // Award points (can be AI-driven later)
-    const basePoints = 10;
-    updatePlayerScore(currentPlayer.id, basePoints);
+    // Note: Points are only awarded through mini-games (AI-scored)
+    // Regular question responses don't award points
 
     // Send response to AI for commentary
     try {
@@ -333,11 +356,9 @@ CRITICAL RULES:
 
   // Error state
   if (error) {
-    const [showDetails, setShowDetails] = useState(false);
-
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center p-6">
-        <div className="glass rounded-xl p-6 border border-alert max-w-2xl w-full">
+      <div className="h-screen bg-void flex items-center justify-center p-4">
+        <div className="glass rounded-xl p-6 border border-alert max-w-md w-full">
           <h2 className="text-alert font-bold text-xl mb-4">Error</h2>
           <p className="text-frost mb-6">{error}</p>
 
@@ -396,7 +417,7 @@ CRITICAL RULES:
   // Initial loading
   if (phase === 'loading' && !currentTemplate && !aiCommentary) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="h-screen bg-void flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="flex justify-center space-x-2">
             {[0, 1, 2].map((i) => (
@@ -420,25 +441,24 @@ CRITICAL RULES:
     const nextPlayer = players[nextPlayerIndex];
 
     return (
-      <div className="min-h-screen bg-void">
-        {/* Sticky Header */}
+      <div className="h-screen bg-void flex flex-col overflow-hidden">
+        {/* Header */}
         <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 
-        <div className="flex items-center justify-center p-4 pt-6">
-          <div className="glass rounded-xl p-8 border border-glitch max-w-2xl">
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
-                <span className="text-3xl">🤖</span>
+        {/* Content */}
+        <div className="flex-1 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="glass rounded-xl p-6 border border-glitch max-w-md w-full">
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 rounded-full bg-glitch/20 border-2 border-glitch mx-auto flex items-center justify-center">
+                <span className="text-2xl">🤖</span>
               </div>
-              <p className="text-frost text-lg leading-relaxed">{aiCommentary}</p>
-              <div className="pt-4">
-                <button
-                  onClick={handleContinueToNext}
-                  className="bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  Pass to {nextPlayer.name}
-                </button>
-              </div>
+              <p className="text-frost text-base leading-relaxed">{aiCommentary}</p>
+              <button
+                onClick={handleContinueToNext}
+                className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl transition-all duration-200"
+              >
+                Pass to {nextPlayer.name}
+              </button>
             </div>
           </div>
         </div>
@@ -461,31 +481,29 @@ CRITICAL RULES:
   // Question screen (regular templates)
   if (phase === 'question' && currentTemplate) {
     return (
-      <div className="min-h-screen bg-void relative">
-        {/* Background */}
+      <div className="h-screen bg-void flex flex-col overflow-hidden">
+        {/* Background effects */}
         <div className="scan-line" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
 
-        {/* Sticky Header */}
+        {/* Header */}
         <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} />
 
-        {/* Template */}
-        <div className="relative z-10">
-          <TemplateRenderer
-            templateType={currentTemplate.templateType}
-            params={{
-              prompt: currentTemplate.prompt,
-              subtitle: currentTemplate.subtitle,
-              ...currentTemplate.params,
-              // Inject player data for player selector template
-              ...(currentTemplate.templateType === 'tpl_player_selector' && {
-                players: players,
-                currentPlayerId: currentPlayer.id,
-              }),
-              onSubmit: handleResponse,
-            }}
-          />
-        </div>
+        {/* Template - fills remaining space */}
+        <TemplateRenderer
+          templateType={currentTemplate.templateType}
+          params={{
+            prompt: currentTemplate.prompt,
+            subtitle: currentTemplate.subtitle,
+            ...currentTemplate.params,
+            // Inject player data for player selector template
+            ...(currentTemplate.templateType === 'tpl_player_selector' && {
+              players: players,
+              currentPlayerId: currentPlayer.id,
+            }),
+            onSubmit: handleResponse,
+          }}
+        />
       </div>
     );
   }
@@ -498,28 +516,31 @@ CRITICAL RULES:
       const MiniGameComponent = miniGameDef.component;
 
       return (
-        <div className="min-h-screen bg-void">
-          {/* Fixed Header */}
+        <div className="h-screen bg-void flex flex-col overflow-hidden">
+          {/* Header */}
           <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 
-          {/* Mini-game content */}
-          <MiniGameComponent
-            targetPlayer={{
-              id: currentPlayer.id,
-              name: currentPlayer.name,
-              role: currentPlayer.role,
-              avatar: currentPlayer.avatar,
-            }}
-            allPlayers={players.map(p => ({
-              id: p.id,
-              name: p.name,
-              role: p.role,
-              avatar: p.avatar,
-            }))}
-            onComplete={handleMiniGameComplete}
-            onSkip={handleMiniGameSkip}
-            {...activeMiniGame.config}
-          />
+          {/* Mini-game content - fills remaining space */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <MiniGameComponent
+              targetPlayer={{
+                id: currentPlayer.id,
+                name: currentPlayer.name,
+                role: currentPlayer.role,
+                avatar: currentPlayer.avatar,
+              }}
+              allPlayers={players.map(p => ({
+                id: p.id,
+                name: p.name,
+                role: p.role,
+                avatar: p.avatar,
+              }))}
+              turns={turns}
+              onComplete={handleMiniGameComplete}
+              onSkip={handleMiniGameSkip}
+              {...activeMiniGame.config}
+            />
+          </div>
         </div>
       );
     }
@@ -531,6 +552,7 @@ CRITICAL RULES:
       <EndGameResults
         onPlayAgain={() => {
           // Reset game state and go to setup
+          resetGame();
           router.push('/setup');
         }}
       />

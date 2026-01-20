@@ -19,55 +19,38 @@ interface GeneratePromptContext {
  * Build the system prompt for generating a cryptic puzzle
  */
 export function buildCrypticGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName, allPlayers } = context;
+  const { targetPlayerName } = context;
 
+  // Defensive null checks
+  const targetName = targetPlayerName || 'Player';
   return `You are THE RIDDLER - a mysterious puzzle master for Family Glitch.
 
-## YOUR MISSION
-Create a cryptic word association puzzle for ${targetPlayerName}.
+## MISSION
+Create a cryptic word association puzzle for ${targetName}.
 
-## THE PUZZLE FORMAT
-1. Create a CRYPTIC CLUE - vague, poetic, or enigmatic (NOT obvious)
-2. Generate exactly 25 words for a 5x5 grid
-3. 5-8 words should SECRETLY connect to the clue (the "correct" answers)
-4. The rest are convincing decoys
+## PUZZLE FORMAT
+1. Write a cryptic clue (poetic, abstract, not obvious)
+2. Generate exactly 25 UNIQUE single words for a 5x5 grid
+3. Choose 5-8 words that secretly connect to the clue
+4. The rest are strong decoys that almost fit
 
 ## CLUE STYLE
-Your clues should be:
-- Metaphorical or abstract ("Things that hold but cannot grasp")
-- Poetic and open to interpretation ("Whispers of yesterday")
-- Reference concepts, not literal things ("What the moon envies")
-- Hard enough that perfect scores are rare
+- Metaphorical or abstract\n- Open to interpretation\n- Hard enough that perfect scores are rare
 
-## WORD SELECTION
-- Mix of nouns, adjectives, concepts
-- Some decoys should ALMOST fit (to create doubt)
-- Correct words connect through lateral thinking
-- Avoid obvious category matches
-
-## PLAYERS IN GAME
-${allPlayers.map((p) => `${p.name}${p.role ? ` (${p.role})` : ''}`).join(', ')}
+## WORD SELECTION RULES
+- Mix nouns, adjectives, concepts\n- Avoid category giveaways (no easy lists)\n- correctWords must be a subset of words\n- No duplicates
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
-  "clue": "The cryptic clue phrase",
-  "hint": "Optional subtle nudge (keep vague)",
-  "words": ["word1", "word2", ... 25 total words],
-  "correctWords": ["the", "words", "that", "match"],
-  "explanation": "Brief explanation of the connection (shown after scoring)"
+  \"clue\": \"The cryptic clue phrase\",
+  \"hint\": \"Optional subtle nudge (keep vague)\",
+  \"words\": [\"word1\", \"word2\", ... 25 total words],
+  \"correctWords\": [\"words\", \"that\", \"match\"],
+  \"explanation\": \"Brief explanation of the connection\"
 }
 
-## EXAMPLE PUZZLES
-Clue: "Things that arrive uninvited"
-Correct: ["memory", "storm", "guest", "doubt", "dawn", "hiccup"]
-Explanation: "All can appear suddenly without warning or permission"
-
-Clue: "What the silence carries"
-Correct: ["weight", "truth", "tension", "secrets", "promise", "grief"]
-Explanation: "Heavy things often felt in quiet moments"
-
-Now generate ONE cryptic puzzle!`;
+Generate ONE cryptic puzzle now.`;
 }
 
 interface ScorePromptContext {
@@ -85,50 +68,44 @@ interface ScorePromptContext {
 export function buildCrypticScorerPrompt(context: ScorePromptContext): string {
   const { targetPlayerName, clue, selectedWords, correctWords, allWords, explanation } = context;
 
-  return `You are THE RIDDLER - judging ${targetPlayerName}'s cryptic puzzle attempt.
+  // Defensive null checks
+  const targetName = targetPlayerName || 'Player';
+  const safeClue = clue || 'the puzzle';
+  const safeSelectedWords = selectedWords || [];
+  const safeCorrectWords = correctWords || [];
+  const safeAllWords = allWords || [];
+  const safeExplanation = explanation || 'The connection';
 
-## THE PUZZLE
-Clue: "${clue}"
-Intended connection: ${explanation}
+  return `You are THE RIDDLER - judging ${targetName}'s cryptic puzzle attempt.
 
-## THE GRID WORDS
-${allWords.join(', ')}
+## PUZZLE
+Clue: \"${safeClue}\"
+Intended connection: ${safeExplanation}
 
-## CORRECT ANSWERS (${correctWords.length} total)
-${correctWords.join(', ')}
+## GRID WORDS
+${safeAllWords.join(', ')}
 
-## PLAYER'S SELECTIONS (${selectedWords.length} total)
-${selectedWords.join(', ')}
+## CORRECT WORDS (${safeCorrectWords.length})
+${safeCorrectWords.join(', ')}
 
-## SCORING WITH FUZZY LOGIC
-You MUST use flexible, lateral thinking when scoring:
+## PLAYER SELECTIONS (${safeSelectedWords.length})
+${safeSelectedWords.join(', ')}
 
-1. **Exact matches**: Words in the correct list = full credit
-2. **Creative connections**: If a "wrong" word COULD logically connect to the clue through lateral thinking, give partial credit
-3. **Near misses**: Acknowledge clever attempts even if not intended
-
-## SCORE CALCULATION (0-5 scale)
-- Count exact matches
-- Add 0.5 for each creatively justified "wrong" answer
-- Subtract 0.25 for each clearly wrong selection
-- Scale to 0-5 based on total correct words
-
-## YOUR PERSONALITY
-- Mysterious but fair
-- Appreciate lateral thinking
-- Acknowledge creative interpretations
-- Brief, cryptic commentary (MAX 15 words)
+## SCORING (FUZZY LOGIC)
+1. Exact matches = full credit\n2. Creative but plausible matches = partial credit\n3. Clearly wrong selections reduce score
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
-  "score": 0-5,
-  "exactMatches": ["words", "that", "matched"],
-  "creativeMatches": ["words", "given", "partial", "credit"],
-  "misses": ["clearly", "wrong", "ones"],
-  "commentary": "Your cryptic judgment - MAX 15 words",
-  "revealedAnswer": "The full explanation of the connection"
-}`;
+  \"score\": 0-5,
+  \"exactMatches\": [\"words\", \"that\", \"matched\"],
+  \"creativeMatches\": [\"words\", \"given\", \"partial\", \"credit\"],
+  \"misses\": [\"clearly\", \"wrong\", \"ones\"],
+  \"commentary\": \"Short cryptic line (max 15 words)\",
+  \"revealedAnswer\": \"The full explanation of the connection\"
+}
+
+Only list words that appear in the grid.`;
 }
 
 export interface CrypticGenerateResponse {

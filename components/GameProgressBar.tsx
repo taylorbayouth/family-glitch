@@ -23,22 +23,22 @@ export function GameProgressBar() {
 
   // Act definitions with complete Tailwind classes (no dynamic generation)
   const acts = [
-    { num: 1, label: 'ACT I', activeClass: 'text-mint bg-mint/10 border-mint/30', gradientClass: 'from-mint/80 to-mint' },
-    { num: 2, label: 'ACT II', activeClass: 'text-glitch bg-glitch/10 border-glitch/30', gradientClass: 'from-glitch/80 to-glitch' },
-    { num: 3, label: 'ACT III', activeClass: 'text-alert bg-alert/10 border-alert/30', gradientClass: 'from-alert/80 to-alert' },
+    { num: 1, label: 'ACT I', activeClass: 'text-mint bg-mint/20 border-mint/50', gradientClass: 'from-mint to-mint' },
+    { num: 2, label: 'ACT II', activeClass: 'text-glitch bg-glitch/20 border-glitch/50', gradientClass: 'from-glitch to-glitch-bright' },
+    { num: 3, label: 'ACT III', activeClass: 'text-alert bg-alert/20 border-alert/50', gradientClass: 'from-alert to-alert' },
   ] as const;
 
   const currentActInfo = acts.find(a => a.num === currentAct)!;
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-2.5">
       {/* Act Labels - Always show all three */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           {acts.map((act, idx) => (
             <div key={act.num} className="flex items-center">
               <span
-                className={`text-xs font-mono font-bold uppercase tracking-wider px-2 py-1 rounded transition-all border ${
+                className={`text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded transition-all border ${
                   currentAct === act.num
                     ? act.activeClass
                     : currentAct > act.num
@@ -49,34 +49,34 @@ export function GameProgressBar() {
                 {act.label}
               </span>
               {idx < acts.length - 1 && (
-                <span className="text-steel-700 mx-1">→</span>
+                <span className="text-steel-700 mx-0.5 text-[10px]">→</span>
               )}
             </div>
           ))}
         </div>
-        <span className="text-xs font-mono text-frost">
-          Round <span className="font-bold text-glitch">{currentRound}</span> of {totalRounds}
+        <span className="text-[10px] font-mono text-frost">
+          <span className="font-bold text-glitch">{currentRound}</span>/{totalRounds}
         </span>
       </div>
 
-      {/* Progress Bar */}
-      <div className="relative h-2 bg-void-light rounded-full overflow-hidden border border-steel-800">
+      {/* Progress Bar - Prominent */}
+      <div className="relative h-5 bg-void-light rounded-full overflow-hidden border border-steel-600">
         {/* Background sections for each act */}
         <div className="absolute inset-0 flex">
-          <div className="flex-1 bg-mint/5" />
-          <div className="flex-1 bg-glitch/5" />
-          <div className="flex-1 bg-alert/5" />
+          <div className="flex-1 bg-mint/20" />
+          <div className="flex-1 bg-glitch/20" />
+          <div className="flex-1 bg-alert/20" />
         </div>
 
         {/* Fill */}
         <div
-          className={`relative h-full bg-gradient-to-r transition-all duration-500 ease-out ${currentActInfo.gradientClass}`}
+          className={`relative h-full bg-gradient-to-r transition-all duration-500 ease-out shadow-glow-strong ${currentActInfo.gradientClass}`}
           style={{ width: `${progressPercentage}%` }}
         />
 
         {/* Act dividers (at 33% and 66%) */}
-        <div className="absolute top-0 left-[33.33%] w-0.5 h-full bg-steel-700" />
-        <div className="absolute top-0 left-[66.66%] w-0.5 h-full bg-steel-700" />
+        <div className="absolute top-0 left-[33.33%] w-0.5 h-full bg-steel-600" />
+        <div className="absolute top-0 left-[66.66%] w-0.5 h-full bg-steel-600" />
       </div>
     </div>
   );

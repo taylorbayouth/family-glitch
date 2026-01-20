@@ -28,7 +28,7 @@ export function getEligibleTurnsForPlayer(
   turns: Turn[],
   targetPlayerId: string
 ): Turn[] {
-  return turns.filter((turn) => {
+  return (turns || []).filter((turn) => {
     // Must be completed
     if (turn.status !== 'completed') return false;
 
@@ -185,7 +185,7 @@ function checkHardTriviaEligibility(context: EligibilityContext): EligibilityRes
 
   // Rule 2: Should have some turns about interests/hobbies (but not strictly required)
   // Hard Trivia can work with general topics if no specific interests collected
-  const interestTurns = turns.filter(t =>
+  const interestTurns = (turns || []).filter(t =>
     t.status === 'completed' &&
     t.response &&
     (t.prompt?.toLowerCase().includes('interest') ||

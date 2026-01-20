@@ -10,9 +10,10 @@ import { TimedBinaryParams } from '@/lib/types/template-params';
  * Purpose: High-pressure "This or That" decisions (e.g., "Pizza or Tacos?")
  *
  * Features:
- * - Two massive buttons (left/right or top/bottom)
+ * - Two massive buttons filling available space
  * - Progress bar timer at the top
  * - Instant submit on tap (no confirmation)
+ * - NEVER scrolls - fixed viewport height
  */
 export function TimedBinaryTemplate({
   prompt,
@@ -47,7 +48,6 @@ export function TimedBinaryTemplate({
   // Handle timeout separately to avoid setState during render
   useEffect(() => {
     if (!hasSelected && timeLeft <= 0) {
-      // Use setTimeout to defer submission to next tick
       const timeoutId = setTimeout(() => {
         setHasSelected(true);
         onTimeout?.();
@@ -70,11 +70,17 @@ export function TimedBinaryTemplate({
   };
 
   const progressPercent = (timeLeft / seconds) * 100;
+  const timerColor =
+    progressPercent > 50
+      ? 'var(--glitch)'
+      : progressPercent > 25
+      ? 'var(--glitch-bright)'
+      : 'var(--alert)';
 
   return (
-    <div className="min-h-screen bg-void flex flex-col">
-      {/* Timer Bar - "The Fuse" */}
-      <div className="w-full h-2 bg-steel-900 relative overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Timer Bar */}
+      <div className="w-full h-2 bg-steel-900 relative overflow-hidden flex-shrink-0">
         <motion.div
           initial={{ width: '100%' }}
           animate={{ width: `${progressPercent}%` }}
@@ -89,54 +95,52 @@ export function TimedBinaryTemplate({
         />
       </div>
 
-      {/* Timer Display */}
-      <div className="px-6 py-4 text-center">
-        <motion.div
+      {/* Header: Timer + Prompt - compact */}
+      <div className="flex-shrink-0 px-4 pt-2 pb-1 text-center">
+        <motion.span
           key={Math.floor(timeLeft)}
-          initial={{ scale: 1.2 }}
+          initial={{ scale: 1.3 }}
           animate={{ scale: 1 }}
-          className="font-mono text-4xl font-black"
-          style={{
-            color:
-              progressPercent > 50
-                ? 'var(--glitch)'
-                : progressPercent > 25
-                ? 'var(--glitch-bright)'
-                : 'var(--alert)',
-          }}
+          className="font-mono text-2xl font-black inline-block"
+          style={{ color: timerColor }}
         >
           {Math.ceil(timeLeft)}
-        </motion.div>
-      </div>
-
-      {/* Prompt */}
-      <div className="px-6 py-4 text-center space-y-2">
-        <h2 className="text-2xl md:text-3xl font-black text-frost">
+        </motion.span>
+        <h2
+          className="font-black text-frost leading-tight mt-1"
+          style={{ fontSize: 'clamp(1rem, 4vw, 1.5rem)' }}
+        >
           {prompt}
         </h2>
         {subtitle && (
-          <p className="text-steel-400 text-sm font-mono">{subtitle}</p>
+          <p
+            className="text-steel-400 font-mono mt-0.5"
+            style={{ fontSize: 'clamp(0.65rem, 2vw, 0.75rem)' }}
+          >
+            {subtitle}
+          </p>
         )}
       </div>
 
-      {/* Choice Buttons */}
+      {/* Choice Buttons - fill ALL remaining space */}
       <div
         className={`flex-1 flex ${
           orientation === 'horizontal' ? 'flex-row' : 'flex-col'
-        } gap-4 p-4`}
+        } gap-3 p-3 min-h-0 overflow-hidden`}
       >
         {/* Left/Top Option */}
         <motion.button
           onClick={() => handleChoice('left')}
           disabled={hasSelected}
-          whileTap={{ scale: 0.95 }}
-          className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-glitch/20 to-glitch/5 border-2 border-glitch hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+          whileTap={{ scale: 0.97 }}
+          className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-glitch/30 to-glitch/10 border-3 border-glitch hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
-          {/* Glow effect on hover */}
           <div className="absolute inset-0 bg-glitch/0 group-hover:bg-glitch/10 transition-all" />
-
-          <div className="relative z-10 h-full flex items-center justify-center p-8">
-            <span className="text-2xl md:text-4xl font-black text-frost text-center">
+          <div className="relative z-10 h-full flex items-center justify-center p-3">
+            <span
+              className="font-black text-frost text-center leading-tight"
+              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+            >
               {leftText}
             </span>
           </div>
@@ -146,25 +150,19 @@ export function TimedBinaryTemplate({
         <motion.button
           onClick={() => handleChoice('right')}
           disabled={hasSelected}
-          whileTap={{ scale: 0.95 }}
-          className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-frost/20 to-frost/5 border-2 border-frost hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+          whileTap={{ scale: 0.97 }}
+          className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-frost/30 to-frost/10 border-3 border-frost hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
-          {/* Glow effect on hover */}
           <div className="absolute inset-0 bg-frost/0 group-hover:bg-frost/10 transition-all" />
-
-          <div className="relative z-10 h-full flex items-center justify-center p-8">
-            <span className="text-2xl md:text-4xl font-black text-frost text-center">
+          <div className="relative z-10 h-full flex items-center justify-center p-3">
+            <span
+              className="font-black text-frost text-center leading-tight"
+              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+            >
               {rightText}
             </span>
           </div>
         </motion.button>
-      </div>
-
-      {/* Hint */}
-      <div className="px-6 pb-6 text-center">
-        <p className="text-steel-600 text-xs font-mono">
-          Choose quickly! Timer is running...
-        </p>
       </div>
     </div>
   );
