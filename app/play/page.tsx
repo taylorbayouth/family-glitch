@@ -50,7 +50,6 @@ export default function PlayPage() {
     scores,
     addTurn,
     completeTurn,
-    updatePlayerScore,
     startGame,
     isGameComplete,
   } = useGameStore();
@@ -275,9 +274,7 @@ CRITICAL RULES:
     // Store response in game state
     completeTurn(currentTurnId, response, duration);
 
-    // Award points (can be AI-driven later)
-    const basePoints = 10;
-    updatePlayerScore(currentPlayer.id, basePoints);
+    // Note: Points are only awarded through mini-games (0-5 scoring system)
 
     // Send response to AI for commentary
     try {
