@@ -69,6 +69,7 @@ export default function PlayPage() {
   // Loading states
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   // Current turn tracking
   const [currentTurnId, setCurrentTurnId] = useState<string>('');
@@ -222,7 +223,11 @@ CRITICAL RULES:
       setMessages([...newMessages, { role: 'assistant', content: response.text }]);
     } catch (err) {
       console.error('Failed to load question:', err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : undefined;
+
       setError('Failed to load question. Please try again.');
+      setErrorDetails(`Error: ${errorMessage}\n\nPlayers: ${players.length}\nTurns: ${turns.length}\nStack: ${errorStack || 'N/A'}`);
     } finally {
       setIsLoadingQuestion(false);
     }
@@ -329,20 +334,61 @@ CRITICAL RULES:
 
   // Error state
   if (error) {
+    const [showDetails, setShowDetails] = useState(false);
+
     return (
       <div className="min-h-screen bg-void flex items-center justify-center p-6">
-        <div className="glass rounded-xl p-6 border border-alert max-w-md">
+        <div className="glass rounded-xl p-6 border border-alert max-w-2xl w-full">
           <h2 className="text-alert font-bold text-xl mb-4">Error</h2>
           <p className="text-frost mb-6">{error}</p>
-          <button
-            onClick={() => {
-              setError(null);
-              loadQuestion();
-            }}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl"
-          >
-            Try Again
-          </button>
+
+          {errorDetails && (
+            <div className="mb-6">
+              <button
+                onClick={() => setShowDetails(!showDetails)}
+                className="text-steel-400 hover:text-frost text-sm underline mb-2"
+              >
+                {showDetails ? 'Hide' : 'Show'} error details
+              </button>
+
+              {showDetails && (
+                <div className="mt-2 p-4 bg-void-light rounded-lg border border-steel-800">
+                  <pre className="text-xs text-steel-400 whitespace-pre-wrap break-words font-mono">
+                    {errorDetails}
+                  </pre>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(errorDetails);
+                      alert('Error details copied to clipboard');
+                    }}
+                    className="mt-3 text-xs text-glitch hover:text-glitch-bright underline"
+                  >
+                    Copy error details
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setError(null);
+                setErrorDetails(null);
+                loadQuestion();
+              }}
+              className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl"
+            >
+              Try Again
+            </button>
+
+            <button
+              onClick={() => router.push('/setup')}
+              className="w-full bg-steel-800 hover:bg-steel-700 text-frost font-bold py-3 px-6 rounded-xl"
+            >
+              Back to Setup
+            </button>
+          </div>
         </div>
       </div>
     );
