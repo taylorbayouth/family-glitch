@@ -21,13 +21,13 @@ export function PassToPlayerScreen({
   isLoadingQuestion,
 }: PassToPlayerScreenProps) {
   return (
-    <div className="min-h-dvh bg-void flex flex-col safe-y">
+    <div className="h-dvh bg-void flex flex-col overflow-hidden">
       {/* Background effects */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
 
       {/* Main content - centered */}
-      <div className="flex-1 flex items-center justify-center px-6">
+      <div className="flex-1 flex items-center justify-center px-6 min-h-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -71,7 +71,7 @@ export function PassToPlayerScreen({
       </div>
 
       {/* Bottom button area - always visible */}
-      <div className="px-6 pb-8 safe-bottom">
+      <div className="px-6 pb-8 flex-shrink-0" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px))' }}>
         {isLoadingQuestion ? (
           <div className="w-full bg-steel-800 text-steel-500 font-bold py-4 px-8 rounded-xl text-center text-lg">
             Hold tight...
