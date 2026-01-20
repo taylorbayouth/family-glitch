@@ -69,85 +69,89 @@ export function TextInputTemplate({
   }, []);
 
   return (
-    <div className="min-h-screen bg-void flex items-center justify-center p-6 safe-y">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl space-y-8"
-      >
-        {/* Prompt */}
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl md:text-3xl font-black text-frost">
-            {prompt}
-          </h2>
-          {subtitle && (
-            <p className="text-steel-400 text-sm md:text-base font-mono">
-              {subtitle}
-            </p>
-          )}
-        </div>
+    <div className="min-h-screen bg-void flex flex-col safe-y">
+      {/* Content - centered */}
+      <div className="flex-1 flex items-center justify-center px-6 pt-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-xl space-y-8"
+        >
+          {/* Prompt */}
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-3xl font-black text-frost">
+              {prompt}
+            </h2>
+            {subtitle && (
+              <p className="text-steel-400 text-sm md:text-base font-mono">
+                {subtitle}
+              </p>
+            )}
+          </div>
 
-        {/* Input Fields */}
-        <div className="space-y-4">
-          {Array.from({ length: fieldCount }).map((_, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="space-y-2"
-            >
-              {/* Field Label */}
-              {fieldLabels?.[index] && (
-                <label className="block text-xs text-steel-500 uppercase tracking-wider font-mono">
-                  {fieldLabels[index]}
-                </label>
-              )}
+          {/* Input Fields */}
+          <div className="space-y-4">
+            {Array.from({ length: fieldCount }).map((_, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="space-y-2"
+              >
+                {/* Field Label */}
+                {fieldLabels?.[index] && (
+                  <label className="block text-xs text-steel-500 uppercase tracking-wider font-mono">
+                    {fieldLabels[index]}
+                  </label>
+                )}
 
-              {/* Input Field */}
-              <div className="relative">
-                <input
-                  ref={(el) => { inputRefs.current[index] = el; }}
-                  type="text"
-                  value={values[index]}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  placeholder={
-                    fieldPlaceholders?.[index] ||
-                    `${fieldLabels?.[index] || `Item ${index + 1}`}...`
-                  }
-                  className="w-full px-4 py-4 bg-void-light border-b-2 border-steel-800 text-frost placeholder:text-steel-600 focus:outline-none focus:border-glitch transition-colors font-mono"
-                  maxLength={maxLength}
-                />
+                {/* Input Field */}
+                <div className="relative">
+                  <input
+                    ref={(el) => { inputRefs.current[index] = el; }}
+                    type="text"
+                    value={values[index]}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    placeholder={
+                      fieldPlaceholders?.[index] ||
+                      `${fieldLabels?.[index] || `Item ${index + 1}`}...`
+                    }
+                    className="w-full px-4 py-4 bg-void-light border-b-2 border-steel-800 text-frost placeholder:text-steel-600 focus:outline-none focus:border-glitch transition-colors font-mono"
+                    maxLength={maxLength}
+                  />
 
-                {/* Field Number Indicator */}
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-steel-800/50 flex items-center justify-center">
-                  <span className="text-xs font-mono text-steel-500">
-                    {index + 1}
-                  </span>
+                  {/* Field Number Indicator */}
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-steel-800/50 flex items-center justify-center">
+                    <span className="text-xs font-mono text-steel-500">
+                      {index + 1}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
 
-        {/* Submit Button */}
-        {isValid && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleSubmit}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
-          >
-            Submit All
-          </motion.button>
-        )}
-
-        {/* Hint */}
-        <p className="text-center text-steel-600 text-xs font-mono">
+      {/* Button - fixed at bottom */}
+      <div className="px-6 pb-6 safe-bottom">
+        <button
+          onClick={handleSubmit}
+          disabled={!isValid}
+          className={`w-full font-bold py-4 px-6 rounded-xl transition-all duration-200 ${
+            isValid
+              ? 'bg-glitch hover:bg-glitch-bright text-frost shadow-glow active:scale-[0.98]'
+              : 'bg-steel-800 text-steel-500 cursor-not-allowed'
+          }`}
+        >
+          Submit All
+        </button>
+        <p className="text-center text-steel-600 text-xs font-mono mt-3">
           Press Enter to move to next field
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
