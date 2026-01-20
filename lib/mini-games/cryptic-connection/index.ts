@@ -17,4 +17,5 @@ export {
   toMiniGameResult,
   type CrypticGenerateResponse,
   type CrypticScoreResponse,
+  type WordScore,
 } from './prompt';

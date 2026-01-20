@@ -131,8 +131,6 @@ export interface WordScore {
   reason: string;
 }
 
-export type { WordScore };
-
 export interface CrypticScoreResponse {
   breakdown: WordScore[];
   totalScore: number;

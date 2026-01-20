@@ -221,6 +221,27 @@ function checkHardTriviaEligibility(context: EligibilityContext): EligibilityRes
 }
 
 // ============================================================================
+// THE FILTER ELIGIBILITY
+// ============================================================================
+
+function checkTheFilterEligibility(context: EligibilityContext): EligibilityResult {
+  const { currentAct } = context;
+
+  // Rule 1: Must be in Act 2 or later
+  if (currentAct < 2) {
+    return {
+      eligible: false,
+      reason: 'The Filter unlocks in Act II',
+    };
+  }
+
+  // The Filter doesn't require other players' turns - it's standalone
+  return {
+    eligible: true,
+  };
+}
+
+// ============================================================================
 // MINI-GAME REGISTRY
 // ============================================================================
 
@@ -259,6 +280,13 @@ export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef>
     description: 'Answer challenging trivia questions based on the family\'s interests and hobbies',
     minAct: 2,
     checkEligibility: checkHardTriviaEligibility,
+  },
+  the_filter: {
+    type: 'the_filter',
+    name: 'The Filter',
+    description: 'Select items that match a hidden pattern - pattern recognition and deduction',
+    minAct: 2,
+    checkEligibility: checkTheFilterEligibility,
   },
 };
 

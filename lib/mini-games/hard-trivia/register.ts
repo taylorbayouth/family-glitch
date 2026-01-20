@@ -11,5 +11,10 @@ registerMiniGame<HardTriviaConfig>({
   type: 'hard_trivia',
   name: 'Hard Trivia',
   component: HardTriviaUI as ComponentType<BaseMiniGameProps & HardTriviaConfig>,
-  extractConfig: () => ({}), // Always works - no special setup needed
+  extractConfig: (templateConfig, context) => {
+    // Hard Trivia can use turns for context but doesn't strictly require them
+    return {
+      turns: context.turns || [],
+    };
+  },
 });

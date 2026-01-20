@@ -6,16 +6,16 @@
  */
 
 import type { Turn } from '@/lib/types/game-state';
-import type { Player } from '@/lib/store/player-store';
+import type { MiniGamePlayer } from '../registry';
 
 export interface GeneratePromptContext {
-  targetPlayer: Player;
-  allPlayers: Player[];
+  targetPlayer: MiniGamePlayer;
+  allPlayers: MiniGamePlayer[];
   turns: Turn[];
 }
 
 export interface ScorePromptContext {
-  targetPlayer: Player;
+  targetPlayer: MiniGamePlayer;
   question: string;
   correctAnswer: string;
   playerAnswer: string;

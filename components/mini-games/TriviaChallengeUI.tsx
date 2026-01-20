@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
+import type { MiniGameResult } from '@/lib/mini-games/types';
 import {
   buildTriviaChallengePrompt,
   buildScoringPrompt,
@@ -31,7 +32,7 @@ interface TriviaChallengeUIProps {
   allPlayers: Player[];
 
   /** Called when challenge completes */
-  onComplete: (result: { score: number; commentary: string }) => void;
+  onComplete: (result: MiniGameResult) => void;
 
   /** Called if user wants to skip */
   onSkip?: () => void;
@@ -167,6 +168,7 @@ export function TriviaChallengeUI({
     if (scoreResult) {
       onComplete({
         score: scoreResult.score,
+        maxScore: 5,
         commentary: scoreResult.commentary,
       });
     }

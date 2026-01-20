@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Player } from '@/lib/store/player-store';
 import type { Turn } from '@/lib/types/game-state';
 import type { MiniGameResult } from '@/lib/mini-games/types';
+import type { MiniGamePlayer } from '@/lib/mini-games/registry';
 import {
   buildHardTriviaGeneratorPrompt,
   buildHardTriviaScorerPrompt,
@@ -19,23 +19,22 @@ import type { MiniGameConfig } from '@/lib/mini-games/registry';
 
 export interface HardTriviaConfig extends MiniGameConfig {
   intro?: string;
+  turns?: Turn[];
 }
 
 interface HardTriviaUIProps {
-  config: HardTriviaConfig;
-  currentPlayer: Player;
-  allPlayers: Player[];
-  turns: Turn[];
+  targetPlayer: MiniGamePlayer;
+  allPlayers: MiniGamePlayer[];
+  turns?: Turn[];
   onComplete: (result: MiniGameResult) => void;
 }
 
 type HardTriviaPhase = 'loading' | 'intro' | 'question' | 'scoring' | 'result';
 
 export function HardTriviaUI({
-  config,
-  currentPlayer,
+  targetPlayer,
   allPlayers,
-  turns,
+  turns = [],
   onComplete,
 }: HardTriviaUIProps) {
   const [phase, setPhase] = useState<HardTriviaPhase>('loading');
@@ -54,7 +53,7 @@ export function HardTriviaUI({
   const generateTriviaQuestion = async () => {
     try {
       const prompt = buildHardTriviaGeneratorPrompt({
-        targetPlayer: currentPlayer,
+        targetPlayer,
         allPlayers,
         turns,
       });
@@ -83,7 +82,7 @@ export function HardTriviaUI({
 
     try {
       const prompt = buildHardTriviaScorerPrompt({
-        targetPlayer: currentPlayer,
+        targetPlayer,
         question: triviaData.question,
         correctAnswer: triviaData.correct_answer,
         playerAnswer: selectedAnswer,
@@ -210,7 +209,7 @@ export function HardTriviaUI({
             className="glass rounded-xl p-6 border border-cyan-400/30 space-y-3"
           >
             <p className="text-steel-300 text-lg">
-              {config.intro || `Time to test your knowledge, ${currentPlayer.name}!`}
+              Time to test your knowledge, {targetPlayer.name}!
             </p>
             <p className="text-cyan-400 text-sm font-medium">
               Category: <span className="font-bold">{triviaData.category}</span>
