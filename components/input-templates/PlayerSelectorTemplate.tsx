@@ -10,9 +10,9 @@ import { PlayerSelectorParams } from '@/lib/types/template-params';
  * Purpose: Voting, accusing, or selecting a target (e.g., "Who is the worst driver?")
  *
  * Features:
- * - Large circular avatar buttons in 2-column grid
+ * - Grid of other players' avatars (current player hidden)
  * - Single or multiple selection
- * - Dynamic text scaling to fill space
+ * - Confirm button to lock in vote
  */
 export function PlayerSelectorTemplate({
   prompt,
@@ -28,7 +28,6 @@ export function PlayerSelectorTemplate({
 
   // Filter out current player
   const selectablePlayers = players.filter((p) => p.id !== currentPlayerId);
-  const playerCount = selectablePlayers.length;
 
   // Get avatar image path
   const getAvatarPath = (index: number) => `/avatars/${index}.png`;
@@ -40,13 +39,16 @@ export function PlayerSelectorTemplate({
   const handlePlayerClick = (playerId: string) => {
     if (allowMultiple) {
       if (selectedPlayerIds.includes(playerId)) {
+        // Deselect
         setSelectedPlayerIds(selectedPlayerIds.filter((id) => id !== playerId));
       } else {
+        // Select (if not at max)
         if (selectedPlayerIds.length < maxSelections) {
           setSelectedPlayerIds([...selectedPlayerIds, playerId]);
         }
       }
     } else {
+      // Single selection
       setSelectedPlayerIds([playerId]);
     }
   };
@@ -67,37 +69,46 @@ export function PlayerSelectorTemplate({
     }
   };
 
-  // Only allow scroll if more than 4 players (2 rows of 2)
-  const needsScroll = playerCount > 4;
-
   return (
-    <div className={`flex-1 flex flex-col ${needsScroll ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-      {/* Prompt - scales to fill space */}
-      <div className="px-5 pt-1 pb-2 text-center">
-        <h2
-          className="font-black text-frost leading-tight"
-          style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)' }}
-        >
-          {prompt}
-        </h2>
-        {subtitle && (
-          <p
-            className="text-steel-400 font-mono mt-1"
-            style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
-          >
-            {subtitle}
-          </p>
-        )}
-      </div>
+    <div className="min-h-screen bg-void flex items-center justify-center p-6 safe-y">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-2xl space-y-6"
+      >
+        {/* Prompt */}
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl md:text-3xl font-black text-frost">
+            {prompt}
+          </h2>
+          {subtitle && (
+            <p className="text-steel-400 text-sm md:text-base font-mono">
+              {subtitle}
+            </p>
+          )}
+        </div>
 
-      {/* Player Grid - 2 columns with 20px gaps */}
-      <div className="flex-1 px-5">
-        <div
-          className="grid grid-cols-2 w-full max-w-md mx-auto"
-          style={{ gap: '20px' }}
-        >
+        {/* Instructions */}
+        <div className="text-center">
+          <p className="text-glitch-bright font-mono text-sm">
+            {instructions ||
+              (allowMultiple
+                ? `Select up to ${maxSelections} player${maxSelections > 1 ? 's' : ''}`
+                : 'Select one player')}
+          </p>
+          {allowMultiple && (
+            <p className="text-steel-600 text-xs font-mono mt-1">
+              {selectedPlayerIds.length} selected
+              {maxSelections > 1 ? ` / ${maxSelections} max` : ''}
+            </p>
+          )}
+        </div>
+
+        {/* Player Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {selectablePlayers.map((player, index) => {
             const isSelected = selectedPlayerIds.includes(player.id);
+            // Only disable in multi-select mode when max is reached
             const isMaxReached =
               allowMultiple &&
               !isSelected &&
@@ -113,98 +124,87 @@ export function PlayerSelectorTemplate({
                 transition={{ delay: index * 0.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  flex flex-col items-center justify-center py-3
-                  ${isMaxReached ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+                  relative rounded-xl p-6 transition-all duration-200
+                  ${
+                    isSelected
+                      ? 'bg-glitch border-2 border-glitch shadow-glow'
+                      : 'bg-void-light border-2 border-steel-800 hover:border-glitch/50'
+                  }
+                  ${
+                    isMaxReached
+                      ? 'opacity-30 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  }
                 `}
               >
-                {/* Circular Avatar with fat border */}
-                <div
-                  className={`
-                    relative rounded-full p-1 transition-all duration-200
-                    ${isSelected
-                      ? 'bg-glitch shadow-glow-strong'
-                      : 'bg-steel-700'
-                    }
-                  `}
-                  style={{ padding: '4px' }}
-                >
-                  <div
-                    className="rounded-full overflow-hidden bg-void-light"
-                    style={{
-                      width: 'clamp(70px, 20vw, 100px)',
-                      height: 'clamp(70px, 20vw, 100px)',
-                    }}
+                {/* Selection indicator */}
+                {isSelected && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute top-3 right-3 w-6 h-6 rounded-full bg-void flex items-center justify-center"
                   >
-                    <img
-                      src={getAvatarPath(player.avatar)}
-                      alt={`${player.name}'s avatar`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Checkmark overlay for selected */}
-                  {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-glitch border-2 border-void flex items-center justify-center"
+                    <svg
+                      className="w-4 h-4 text-glitch"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <svg
-                        className="w-4 h-4 text-frost"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </motion.div>
-                  )}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </motion.div>
+                )}
+
+                {/* Avatar */}
+                <div
+                  className={`w-20 h-20 mx-auto rounded-full border-2 overflow-hidden mb-3 ${
+                    isSelected
+                      ? 'border-void bg-void/20'
+                      : 'border-steel-800 bg-void-light'
+                  }`}
+                >
+                  <img
+                    src={getAvatarPath(player.avatar)}
+                    alt={`${player.name}'s avatar`}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
 
                 {/* Player Name */}
-                <span
-                  className={`mt-2 font-bold text-center transition-colors ${
-                    isSelected ? 'text-glitch' : 'text-frost'
+                <div
+                  className={`text-center font-bold ${
+                    isSelected ? 'text-void' : 'text-frost'
                   }`}
-                  style={{ fontSize: 'clamp(0.875rem, 3vw, 1.125rem)' }}
                 >
                   {player.name}
-                </span>
+                </div>
               </motion.button>
             );
           })}
         </div>
-      </div>
 
-      {/* Bottom area - button and hint */}
-      <div className="px-5 pb-4 pt-2">
-        {isValid ? (
+        {/* Submit Button */}
+        {isValid && (
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSubmit}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
-            style={{ fontSize: 'clamp(0.875rem, 3vw, 1rem)' }}
+            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
           >
             Confirm Selection
           </motion.button>
-        ) : (
-          <p
-            className="text-center text-steel-500 font-mono"
-            style={{ fontSize: 'clamp(0.7rem, 2vw, 0.875rem)' }}
-          >
-            {instructions ||
-              (allowMultiple
-                ? `Select up to ${maxSelections} player${maxSelections > 1 ? 's' : ''}`
-                : 'Tap a player to select')}
-          </p>
         )}
-      </div>
+
+        {/* Hint */}
+        <p className="text-center text-steel-600 text-xs font-mono">
+          Tap a player to select them
+        </p>
+      </motion.div>
     </div>
   );
 }

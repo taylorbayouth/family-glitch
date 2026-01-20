@@ -6,9 +6,8 @@ import Image from 'next/image';
 import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
+  selectWordsForGrid,
   getTurnsAboutPlayer,
-  buildPersonalityWordGeneratorPrompt,
-  parsePersonalityWordGeneratorResponse,
   buildPersonalityMatchPrompt,
   parsePersonalityMatchResponse,
   toMiniGameResult,
@@ -39,17 +38,16 @@ interface PersonalityMatchUIProps {
   onSkip?: () => void;
 }
 
-type MatchPhase = 'loading' | 'intro' | 'selecting' | 'scoring' | 'result';
+type MatchPhase = 'intro' | 'selecting' | 'scoring' | 'result';
 
 /**
  * Personality Match UI Component
  *
  * Flow:
- * 1. Loading - AI generates personality words
- * 2. Intro - Show the challenge
- * 3. Selecting - Player picks ALL words that match
- * 4. Scoring - AI evaluates based on previous turns
- * 5. Result - Show score with commentary
+ * 1. Intro - Show the challenge
+ * 2. Selecting - Player picks ALL words that match
+ * 3. Scoring - AI evaluates based on previous turns
+ * 4. Result - Show score with commentary
  */
 export function PersonalityMatchUI({
   targetPlayer,
@@ -58,7 +56,7 @@ export function PersonalityMatchUI({
   onComplete,
   onSkip,
 }: PersonalityMatchUIProps) {
-  const [phase, setPhase] = useState<MatchPhase>('loading');
+  const [phase, setPhase] = useState<MatchPhase>('intro');
   const [words, setWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
@@ -70,48 +68,8 @@ export function PersonalityMatchUI({
 
   // Generate word grid on mount
   useEffect(() => {
-    generateWords();
+    setWords(selectWordsForGrid(16)); // 4x4 grid
   }, []);
-
-  const generateWords = async () => {
-    setPhase('loading');
-    setError(null);
-
-    try {
-      // Get relevant turns about the subject player
-      const relevantTurns = getTurnsAboutPlayer(
-        (turns || []).filter((t) => t.status === 'completed'),
-        subjectPlayer.id,
-        subjectPlayer.name
-      );
-
-      const prompt = buildPersonalityWordGeneratorPrompt({
-        subjectPlayerName: subjectPlayer.name,
-        subjectPlayerRole: subjectPlayer.role,
-        relevantTurns,
-        allPlayers,
-      });
-
-      const response = await sendChatRequest([
-        { role: 'system', content: prompt },
-        { role: 'user', content: 'Generate personality words now.' },
-      ], {
-        toolChoice: 'none',
-      });
-
-      const parsed = parsePersonalityWordGeneratorResponse(response.text);
-
-      if (!parsed) {
-        throw new Error('Invalid word response from AI');
-      }
-
-      setWords(parsed.words);
-      setPhase('intro');
-    } catch (err) {
-      console.error('Failed to generate words:', err);
-      setError('Failed to generate personality words from AI');
-    }
-  };
 
   const handleWordClick = (word: string) => {
     if (selectedWords.includes(word)) {
@@ -130,7 +88,7 @@ export function PersonalityMatchUI({
     try {
       // Get relevant turns about the subject player
       const relevantTurns = getTurnsAboutPlayer(
-        (turns || []).filter((t) => t.status === 'completed'),
+        turns.filter((t) => t.status === 'completed'),
         subjectPlayer.id,
         subjectPlayer.name
       );
@@ -164,8 +122,15 @@ export function PersonalityMatchUI({
       setPhase('result');
     } catch (err) {
       console.error('Failed to score personality match:', err);
-      setError('Failed to score selections. Please try again.');
-      setPhase('selecting');
+      // Fallback scoring
+      const fallbackResult: MiniGameResult = {
+        score: 2,
+        maxScore: 5,
+        commentary: 'Technical difficulties! Points for trying.',
+      };
+      updatePlayerScore(targetPlayer.id, 2);
+      setResult(fallbackResult);
+      setPhase('result');
     }
   };
 
@@ -189,48 +154,26 @@ export function PersonalityMatchUI({
   };
 
   return (
-    <div className="flex-1 bg-void flex flex-col overflow-hidden">
-      {/* Mini-header */}
-      <div className="shrink-0 p-4 border-b border-steel-800">
+    <div className="min-h-screen bg-void flex flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-xs text-mint uppercase tracking-wider">
               Personality Match
             </p>
-            <h2 className="text-lg font-bold text-frost">{targetPlayer.name}</h2>
+            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
           </div>
           <div className="text-right">
             <p className="font-mono text-xs text-steel-500">Matching</p>
-            <p className="text-frost text-sm font-bold">{subjectPlayer.name}</p>
+            <p className="text-frost font-bold">{subjectPlayer.name}</p>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
-          {/* Loading Phase */}
-          {phase === 'loading' && !error && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center space-y-4"
-            >
-              <div className="flex justify-center space-x-2">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="w-4 h-4 rounded-full bg-mint animate-pulse"
-                    style={{ animationDelay: `${i * 200}ms` }}
-                  />
-                ))}
-              </div>
-              <p className="text-frost font-mono">The Analyst is preparing...</p>
-            </motion.div>
-          )}
-
           {/* Intro Phase - Dramatic Full Screen */}
           {phase === 'intro' && (
             <motion.div
@@ -582,39 +525,10 @@ export function PersonalityMatchUI({
         </AnimatePresence>
 
         {/* Error State */}
-        {error && phase === 'loading' && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="w-full max-w-md space-y-4"
-          >
-            <div className="glass rounded-xl p-6 border border-alert">
-              <div className="flex items-start gap-3 mb-4">
-                <span className="text-2xl">⚠️</span>
-                <div>
-                  <h3 className="text-alert font-bold mb-1">Generation Failed</h3>
-                  <p className="text-steel-400 text-sm">{error}</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <button
-                  onClick={generateWords}
-                  className="w-full bg-mint hover:bg-mint/90 text-void font-bold py-3 px-6 rounded-xl transition-all"
-                >
-                  Try Again
-                </button>
-                {onSkip && (
-                  <button
-                    onClick={onSkip}
-                    className="w-full bg-steel-800 hover:bg-steel-700 text-frost font-bold py-3 px-6 rounded-xl transition-all"
-                  >
-                    Skip Challenge
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
+        {error && (
+          <div className="fixed bottom-6 left-6 right-6 glass rounded-xl p-4 border border-alert">
+            <p className="text-alert text-sm">{error}</p>
+          </div>
         )}
       </div>
     </div>

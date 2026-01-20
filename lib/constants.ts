@@ -72,7 +72,7 @@ export function calculateTotalRounds(numberOfPlayers: number): number {
 export function calculateCurrentAct(currentRound: number, totalRounds: number): 1 | 2 | 3 {
   if (totalRounds === 0) return 1;
   const progress = currentRound / totalRounds;
-  if (progress < 0.25) return 1;
+  if (progress < 0.20) return 1;
   if (progress < 0.65) return 2;
   return 3;
 }

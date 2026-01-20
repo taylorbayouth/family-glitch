@@ -40,19 +40,19 @@ export function TextAreaTemplate({
   };
 
   return (
-    <div className="flex-1 flex flex-col px-4 pt-1 pb-4 overflow-y-auto">
+    <div className="min-h-screen bg-void flex items-center justify-center p-6 safe-y">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl mx-auto space-y-4"
+        className="w-full max-w-2xl space-y-6"
       >
         {/* Prompt */}
-        <div className="text-center space-y-1">
-          <h2 className="text-xl md:text-2xl font-black text-frost">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl md:text-3xl font-black text-frost">
             {prompt}
           </h2>
           {subtitle && (
-            <p className="text-steel-400 text-sm font-mono">
+            <p className="text-steel-400 text-sm md:text-base font-mono">
               {subtitle}
             </p>
           )}
@@ -65,12 +65,12 @@ export function TextAreaTemplate({
             onChange={(e) => setValue(e.target.value.slice(0, maxLength))}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full h-40 px-4 py-3 bg-void-light border border-steel-800 rounded-xl text-frost placeholder:text-steel-600 focus:outline-none focus:border-glitch transition-colors resize-none font-sans text-base"
+            className="w-full h-64 px-6 py-4 bg-void-light border border-steel-800 rounded-xl text-frost placeholder:text-steel-600 focus:outline-none focus:border-glitch transition-colors resize-none font-sans"
             autoFocus
           />
 
           {/* Character Count */}
-          <div className="absolute bottom-3 right-3 font-mono text-xs text-steel-500">
+          <div className="absolute bottom-4 right-4 font-mono text-xs text-steel-500">
             <span className={characterCount >= maxLength ? 'text-alert' : ''}>
               {characterCount}
             </span>
@@ -82,7 +82,7 @@ export function TextAreaTemplate({
         <button
           onClick={handleSubmit}
           disabled={!hasContent}
-          className={`w-full font-bold py-3 px-6 rounded-xl transition-all duration-200 ${
+          className={`w-full font-bold py-4 px-6 rounded-xl transition-all duration-200 ${
             hasContent
               ? 'bg-glitch hover:bg-glitch-bright text-frost shadow-glow hover:shadow-glow-strong active:scale-[0.98] cursor-pointer'
               : 'bg-steel-800 text-steel-500 cursor-not-allowed'

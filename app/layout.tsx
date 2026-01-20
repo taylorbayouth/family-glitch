@@ -8,15 +8,16 @@ export const metadata: Metadata = {
   description: 'A 15-minute asymmetric party game run by a snarky AI host. Cards Against Humanity meets Black Mirror.',
   keywords: ['party game', 'AI game', 'family game', 'dinner table game', 'mobile game'],
   authors: [{ name: 'Family Glitch' }],
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Family Glitch',
+  },
   openGraph: {
     title: 'Family Glitch',
     description: 'A snarky AI host analyzes your dinner table dynamics in real-time.',
     type: 'website',
-  },
-  icons: {
-    icon: '/icon.png',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
   },
 };
 
@@ -26,6 +27,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#0A0A0F',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({

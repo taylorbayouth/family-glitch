@@ -49,19 +49,19 @@ export function SliderTemplate({
   };
 
   return (
-    <div className="flex-1 flex flex-col px-4 pt-1 pb-4 overflow-y-auto">
+    <div className="min-h-screen bg-void flex items-center justify-center p-6 safe-y">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl mx-auto space-y-4"
+        className="w-full max-w-xl space-y-8"
       >
         {/* Prompt */}
-        <div className="text-center space-y-1">
-          <h2 className="text-xl md:text-2xl font-black text-frost">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl md:text-3xl font-black text-frost">
             {prompt}
           </h2>
           {subtitle && (
-            <p className="text-steel-400 text-sm font-mono">
+            <p className="text-steel-400 text-sm md:text-base font-mono">
               {subtitle}
             </p>
           )}
@@ -80,9 +80,9 @@ export function SliderTemplate({
             className="inline-block"
           >
             {currentEmoji ? (
-              <div className="text-5xl md:text-6xl">{currentEmoji}</div>
+              <div className="text-6xl md:text-8xl">{currentEmoji}</div>
             ) : showValue ? (
-              <div className="text-5xl md:text-6xl font-black text-glitch">
+              <div className="text-6xl md:text-8xl font-black text-glitch">
                 {value}
               </div>
             ) : null}
@@ -90,10 +90,10 @@ export function SliderTemplate({
         </div>
 
         {/* Slider Track */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="relative px-4">
             {/* Track Background */}
-            <div className="h-3 bg-steel-900 rounded-full relative overflow-hidden">
+            <div className="h-4 bg-steel-900 rounded-full relative overflow-hidden">
               {/* Filled portion */}
               <motion.div
                 className="absolute left-0 top-0 h-full bg-gradient-to-r from-glitch/50 to-glitch rounded-full"
@@ -121,8 +121,8 @@ export function SliderTemplate({
 
             {/* Thumb */}
             <motion.div
-              className="absolute top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-glitch border-4 border-void shadow-glow pointer-events-none"
-              style={{ left: `calc(${percentage}% - 16px)` }}
+              className="absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-glitch border-4 border-void shadow-glow pointer-events-none"
+              style={{ left: `calc(${percentage}% - 20px)` }}
               animate={{
                 scale: isDragging ? 1.3 : 1,
               }}
@@ -146,7 +146,7 @@ export function SliderTemplate({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSubmit}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
+            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
           >
             Confirm
           </motion.button>

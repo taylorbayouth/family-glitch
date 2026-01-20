@@ -163,21 +163,21 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="h-screen bg-void relative overflow-hidden">
+    <div className="min-h-screen bg-void relative">
       {/* Background */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
       <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-glitch/15 rounded-full blur-[120px]" />
 
-      <div className="relative z-10 h-full flex flex-col max-w-lg mx-auto">
+      <div className="relative z-10 min-h-screen flex flex-col max-w-lg mx-auto">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 pt-6 pb-4 flex-shrink-0"
+          className="px-6 pt-8 pb-6"
         >
-          <h1 className="text-2xl font-black text-frost mb-1">Player Setup</h1>
-          <p className="text-steel-500 text-xs font-mono">
+          <h1 className="text-3xl font-black text-frost mb-1">Player Setup</h1>
+          <p className="text-steel-500 text-sm font-mono">
             Add 3-7 players to begin
           </p>
         </motion.header>
@@ -226,9 +226,9 @@ export default function SetupPage() {
                   </button>
                 ) : (
                   /* Expanded view */
-                  <div className="glass rounded-xl p-4 border-glitch/30">
+                  <div className="glass rounded-xl p-5 border-glitch/30">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-glitch/20 border border-glitch flex items-center justify-center">
                           <span className="font-mono text-sm text-glitch-bright font-bold">
@@ -262,11 +262,11 @@ export default function SetupPage() {
                     </div>
 
                     {/* Avatar Selection */}
-                    <div className="mb-4">
-                      <label className="block text-xs text-steel-500 uppercase tracking-wider mb-2 font-mono">
+                    <div className="mb-5">
+                      <label className="block text-xs text-steel-500 uppercase tracking-wider mb-3 font-mono">
                         Avatar
                       </label>
-                      <div className="grid grid-cols-7 gap-2">
+                      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-3">
                         {Array.from({ length: AVATAR_COUNT }, (_, i) => (
                           <button
                             key={i + 1}
@@ -359,14 +359,14 @@ export default function SetupPage() {
         </div>
 
         {/* Footer */}
-        <div className="px-4 pb-4 pt-2 flex-shrink-0 bg-gradient-to-t from-void via-void to-transparent">
+        <div className="px-4 pb-6 pt-2 bg-gradient-to-t from-void via-void to-transparent">
           <button
             onClick={validateAndSave}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
+            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
           >
             Continue
           </button>
-          <p className="text-center mt-2 text-xs text-steel-600 font-mono">
+          <p className="text-center mt-3 text-xs text-steel-600 font-mono">
             {playerForms.length} of 7 players
           </p>
         </div>

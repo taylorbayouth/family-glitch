@@ -106,7 +106,14 @@ export function MadLibsUI({
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate template:', err);
-      setError('Failed to generate template from AI');
+      // Fallback template
+      const fallbackTemplate = "The best thing about ___ is that it makes me feel ___.";
+      const fallbackBlanks = createBlanksFromTemplate(fallbackTemplate);
+      setTemplate(fallbackTemplate);
+      setBlanks(fallbackBlanks);
+      setFilledWords(new Array(fallbackBlanks.length).fill(''));
+      setValidationErrors(new Array(fallbackBlanks.length).fill(false));
+      setPhase('intro');
     }
   };
 
@@ -175,8 +182,17 @@ export function MadLibsUI({
       setPhase('result');
     } catch (err) {
       console.error('Failed to score Mad Libs:', err);
-      setError('Failed to score response. Please try again.');
-      setPhase('filling');
+      // Fallback scoring
+      const filled = fillTemplate(template, filledWords);
+      const fallbackResult: MiniGameResult = {
+        score: 2,
+        maxScore: 5,
+        commentary: 'Technical difficulties! Points for creativity.',
+      };
+      updatePlayerScore(targetPlayer.id, 2);
+      setResult(fallbackResult);
+      setFilledSentence(filled);
+      setPhase('result');
     }
   };
 
@@ -223,15 +239,15 @@ export function MadLibsUI({
   };
 
   return (
-    <div className="flex-1 bg-void flex flex-col overflow-hidden">
-      {/* Mini-header */}
-      <div className="shrink-0 p-4 border-b border-steel-800">
+    <div className="min-h-screen bg-void flex flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-xs text-amber-400 uppercase tracking-wider">
               Mad Libs Challenge
             </p>
-            <h2 className="text-lg font-bold text-frost">{targetPlayer.name}</h2>
+            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
           </div>
           <div className="text-right">
             <p className="font-mono text-xs text-steel-500">Fill the blanks!</p>
@@ -240,7 +256,7 @@ export function MadLibsUI({
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
           {/* Loading Phase */}
           {phase === 'loading' && (
@@ -589,39 +605,10 @@ export function MadLibsUI({
         </AnimatePresence>
 
         {/* Error State */}
-        {error && phase === 'loading' && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="w-full max-w-md space-y-4"
-          >
-            <div className="glass rounded-xl p-6 border border-alert">
-              <div className="flex items-start gap-3 mb-4">
-                <span className="text-2xl">⚠️</span>
-                <div>
-                  <h3 className="text-alert font-bold mb-1">Generation Failed</h3>
-                  <p className="text-steel-400 text-sm">{error}</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <button
-                  onClick={generateTemplate}
-                  className="w-full bg-amber-400 hover:bg-amber-300 text-void font-bold py-3 px-6 rounded-xl transition-all"
-                >
-                  Try Again
-                </button>
-                {onSkip && (
-                  <button
-                    onClick={onSkip}
-                    className="w-full bg-steel-800 hover:bg-steel-700 text-frost font-bold py-3 px-6 rounded-xl transition-all"
-                  >
-                    Skip Challenge
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
+        {error && (
+          <div className="fixed bottom-6 left-6 right-6 glass rounded-xl p-4 border border-alert">
+            <p className="text-alert text-sm">{error}</p>
+          </div>
         )}
       </div>
     </div>

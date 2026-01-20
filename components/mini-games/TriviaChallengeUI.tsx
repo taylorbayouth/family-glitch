@@ -150,8 +150,16 @@ export function TriviaChallengeUI({
       setPhase('result');
     } catch (err) {
       console.error('Failed to score answer:', err);
-      setError('Failed to score answer. Please try again.');
-      setPhase('answering');
+      // Fallback scoring
+      const fallbackResult: TriviaScoreResponse = {
+        phase: 'score',
+        score: 2,
+        commentary: 'Technical difficulties! Have some points anyway.',
+        correctAnswer: JSON.stringify(sourceTurn.response),
+      };
+      updatePlayerScore(targetPlayer.id, 2);
+      setScoreResult(fallbackResult);
+      setPhase('result');
     }
   };
 
@@ -184,7 +192,7 @@ export function TriviaChallengeUI({
   // Intro screen (before loading)
   if (phase === 'intro') {
     return (
-      <div className="flex-1 bg-gradient-to-br from-glitch/20 via-void to-glitch/10 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-glitch/20 via-void to-glitch/10 flex flex-col items-center justify-center p-6 relative overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
@@ -311,25 +319,25 @@ export function TriviaChallengeUI({
   }
 
   return (
-    <div className="flex-1 bg-void flex flex-col overflow-hidden">
-      {/* Mini-header */}
-      <div className="shrink-0 p-4 border-b border-steel-800">
+    <div className="min-h-screen bg-void flex flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-xs text-glitch uppercase tracking-wider">
               Trivia Challenge
             </p>
-            <h2 className="text-lg font-bold text-frost">{targetPlayer.name}</h2>
+            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
           </div>
           <div className="text-right">
             <p className="font-mono text-xs text-steel-500">About</p>
-            <p className="text-frost text-sm">{sourceTurn.playerName}</p>
+            <p className="text-frost">{sourceTurn.playerName}</p>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
           {/* Loading Phase */}
           {phase === 'loading' && (

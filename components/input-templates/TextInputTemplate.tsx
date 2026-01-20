@@ -69,33 +69,33 @@ export function TextInputTemplate({
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col px-4 pt-1 pb-4 overflow-y-auto">
+    <div className="min-h-screen bg-void flex items-center justify-center p-6 safe-y">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl mx-auto space-y-4"
+        className="w-full max-w-xl space-y-8"
       >
         {/* Prompt */}
-        <div className="text-center space-y-1">
-          <h2 className="text-xl md:text-2xl font-black text-frost">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl md:text-3xl font-black text-frost">
             {prompt}
           </h2>
           {subtitle && (
-            <p className="text-steel-400 text-sm font-mono">
+            <p className="text-steel-400 text-sm md:text-base font-mono">
               {subtitle}
             </p>
           )}
         </div>
 
         {/* Input Fields */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {Array.from({ length: fieldCount }).map((_, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="space-y-1"
+              className="space-y-2"
             >
               {/* Field Label */}
               {fieldLabels?.[index] && (
@@ -116,7 +116,7 @@ export function TextInputTemplate({
                     fieldPlaceholders?.[index] ||
                     `${fieldLabels?.[index] || `Item ${index + 1}`}...`
                   }
-                  className="w-full px-4 py-3 bg-void-light border-b-2 border-steel-800 text-frost placeholder:text-steel-600 focus:outline-none focus:border-glitch transition-colors font-mono"
+                  className="w-full px-4 py-4 bg-void-light border-b-2 border-steel-800 text-frost placeholder:text-steel-600 focus:outline-none focus:border-glitch transition-colors font-mono"
                   maxLength={maxLength}
                 />
 
@@ -137,7 +137,7 @@ export function TextInputTemplate({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSubmit}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
+            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-glow hover:shadow-glow-strong active:scale-[0.98]"
           >
             Submit All
           </motion.button>

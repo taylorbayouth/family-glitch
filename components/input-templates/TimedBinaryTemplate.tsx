@@ -126,7 +126,7 @@ export function TimedBinaryTemplate({
       <div
         className={`flex-1 flex ${
           orientation === 'horizontal' ? 'flex-row' : 'flex-col'
-        } gap-3 p-3 min-h-0 overflow-hidden`}
+        } gap-3 p-3 min-h-0 overflow-hidden safe-bottom`}
       >
         {/* Left/Top Option */}
         <motion.button
