@@ -196,34 +196,58 @@ export default function SetupPage() {
               >
                 {/* Collapsed view */}
                 {!form.isExpanded ? (
-                  <button
+                  <motion.button
                     onClick={() => toggleExpanded(form.id)}
-                    className="w-full glass rounded-xl p-4 flex items-center gap-4 text-left hover:border-glitch/50 transition-colors"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full glass rounded-xl p-4 flex items-center gap-4 text-left hover:border-glitch/50 transition-all hover:shadow-glow group"
                   >
-                    <div className="w-14 h-14 rounded-full bg-void-light border-2 border-steel-700 overflow-hidden flex-shrink-0">
+                    <motion.div
+                      className="w-14 h-14 rounded-full bg-void-light border-2 border-steel-700 overflow-hidden flex-shrink-0 group-hover:border-glitch/50 transition-colors"
+                      whileHover={{ rotate: [0, -5, 5, 0] }}
+                      transition={{ duration: 0.3 }}
+                    >
                       <img
                         src={getAvatarPath(form.avatar)}
                         alt="Avatar"
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                    </motion.div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-mono text-glitch-bright">
                           #{index + 1}
                         </span>
                         {(errors[`${form.id}-name`] || errors[`${form.id}-age`]) && (
-                          <span className="text-xs text-alert">Incomplete</span>
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="text-xs text-alert"
+                          >
+                            Incomplete
+                          </motion.span>
                         )}
                       </div>
-                      <p className="text-frost font-medium truncate">
+                      <p className="text-frost font-medium truncate mb-0.5">
                         {getPlayerSummary(form)}
                       </p>
+                      {form.age && (
+                        <p className="text-steel-500 text-xs font-mono">
+                          Age {form.age}
+                        </p>
+                      )}
                     </div>
-                    <svg className="w-5 h-5 text-steel-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.svg
+                      className="w-5 h-5 text-steel-600 group-hover:text-glitch transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      animate={{ y: [0, 2, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                    </motion.svg>
+                  </motion.button>
                 ) : (
                   /* Expanded view */
                   <div className="glass rounded-xl p-5 border-glitch/30">
