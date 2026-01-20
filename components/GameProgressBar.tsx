@@ -23,9 +23,9 @@ export function GameProgressBar() {
 
   // Act definitions with complete Tailwind classes (no dynamic generation)
   const acts = [
-    { num: 1, label: 'ACT I', activeClass: 'text-mint bg-mint/10 border-mint/30', gradientClass: 'from-mint/80 to-mint' },
-    { num: 2, label: 'ACT II', activeClass: 'text-glitch bg-glitch/10 border-glitch/30', gradientClass: 'from-glitch/80 to-glitch' },
-    { num: 3, label: 'ACT III', activeClass: 'text-alert bg-alert/10 border-alert/30', gradientClass: 'from-alert/80 to-alert' },
+    { num: 1, label: 'ACT I', activeClass: 'text-mint bg-mint/20 border-mint/50', gradientClass: 'from-mint to-mint-bright' },
+    { num: 2, label: 'ACT II', activeClass: 'text-glitch-bright bg-glitch/20 border-glitch/50', gradientClass: 'from-glitch to-glitch-bright' },
+    { num: 3, label: 'ACT III', activeClass: 'text-alert bg-alert/20 border-alert/50', gradientClass: 'from-alert to-red-500' },
   ] as const;
 
   const currentActInfo = acts.find(a => a.num === currentAct)!;
@@ -38,7 +38,7 @@ export function GameProgressBar() {
           {acts.map((act, idx) => (
             <div key={act.num} className="flex items-center">
               <span
-                className={`text-xs font-mono font-bold uppercase tracking-wider px-2 py-1 rounded transition-all border ${
+                className={`text-sm font-mono font-bold uppercase tracking-wider px-2 py-1 rounded transition-all border ${
                   currentAct === act.num
                     ? act.activeClass
                     : currentAct > act.num
@@ -54,18 +54,18 @@ export function GameProgressBar() {
             </div>
           ))}
         </div>
-        <span className="text-xs font-mono text-frost">
-          Round <span className="font-bold text-glitch">{currentRound}</span> of {totalRounds}
+        <span className="text-sm font-mono text-frost">
+          Round <span className="font-bold text-glitch-bright">{currentRound}</span> of {totalRounds}
         </span>
       </div>
 
       {/* Progress Bar */}
-      <div className="relative h-2 bg-void-light rounded-full overflow-hidden border border-steel-800">
+      <div className="relative h-3 bg-void-light rounded-full overflow-hidden border border-steel-800">
         {/* Background sections for each act */}
         <div className="absolute inset-0 flex">
-          <div className="flex-1 bg-mint/5" />
-          <div className="flex-1 bg-glitch/5" />
-          <div className="flex-1 bg-alert/5" />
+          <div className="flex-1 bg-mint/10" />
+          <div className="flex-1 bg-glitch/10" />
+          <div className="flex-1 bg-alert/10" />
         </div>
 
         {/* Fill */}

@@ -63,7 +63,23 @@ export function PassToPlayerScreen({
       timerRef.current = null;
     }
     setIsHolding(false);
-    setHoldProgress(0);
+
+    // Animate progress back to 0 instead of instant reset
+    const currentProgress = holdProgress;
+    const steps = 10;
+    const decrement = currentProgress / steps;
+    let step = 0;
+
+    const resetInterval = setInterval(() => {
+      step++;
+      const newProgress = Math.max(0, currentProgress - (decrement * step));
+      setHoldProgress(newProgress);
+
+      if (step >= steps) {
+        clearInterval(resetInterval);
+        setHoldProgress(0);
+      }
+    }, 20);
   };
   return (
     <div

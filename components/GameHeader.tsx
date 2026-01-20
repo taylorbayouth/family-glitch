@@ -24,7 +24,7 @@ export function GameHeader({ currentPlayerId, turnNumber, compact = false }: Gam
 
   return (
     <div
-      className="w-full bg-void border-b border-steel-800 mb-6"
+      className="w-full bg-void"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className={`${compact ? 'p-3' : 'p-4'} space-y-2`}>

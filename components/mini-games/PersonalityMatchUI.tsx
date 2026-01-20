@@ -203,7 +203,7 @@ export function PersonalityMatchUI({
   };
 
   return (
-    <div className="min-h-dvh bg-void flex flex-col">
+    <div className="bg-void flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
