@@ -193,11 +193,17 @@ CRITICAL RULES:
             return; // Don't create a regular turn for mini-games
           }
         }
-        // If config extraction failed, fall through to regular question
-        console.warn(`Mini-game "${templateConfig.templateType}" config extraction failed`);
+        // If config extraction failed, skip this turn and load a new question
+        console.warn(`Mini-game "${templateConfig.templateType}" config extraction failed, retrying with new question`);
+        return loadQuestion(playerIndex);
       }
 
       // Regular question - sanitize prompt
+      if (!templateConfig.prompt) {
+        console.error('No prompt in template config');
+        return loadQuestion(playerIndex);
+      }
+
       let sanitizedPrompt = templateConfig.prompt;
       players.forEach(player => {
         // Remove "PlayerName:" or "PlayerName (Role):" patterns at the start
