@@ -21,13 +21,19 @@ export function PassToPlayerScreen({
   isLoadingQuestion,
 }: PassToPlayerScreenProps) {
   return (
-    <div className="h-dvh bg-void flex flex-col overflow-hidden">
+    <div className="min-h-dvh bg-void relative">
       {/* Background effects */}
       <div className="scan-line" />
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
 
-      {/* Main content - centered */}
-      <div className="flex-1 flex items-center justify-center px-6 min-h-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      {/* Main content - centered in viewport minus button space */}
+      <div
+        className="flex items-center justify-center px-6"
+        style={{
+          minHeight: 'calc(100dvh - 120px)',
+          paddingTop: 'env(safe-area-inset-top, 0px)'
+        }}
+      >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -60,7 +66,7 @@ export function PassToPlayerScreen({
             <h1
               className="font-black text-frost leading-none"
               style={{
-                fontSize: 'clamp(4rem, 18vw, 10rem)',
+                fontSize: 'clamp(3rem, 15vw, 8rem)',
                 textShadow: '0 0 60px rgba(108, 92, 231, 0.4)',
               }}
             >
@@ -70,8 +76,11 @@ export function PassToPlayerScreen({
         </motion.div>
       </div>
 
-      {/* Bottom button area - always visible */}
-      <div className="px-6 pb-8 flex-shrink-0" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px))' }}>
+      {/* Fixed bottom button - always visible */}
+      <div
+        className="fixed bottom-0 left-0 right-0 px-6 pb-6 bg-void/80 backdrop-blur-sm"
+        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
+      >
         {isLoadingQuestion ? (
           <div className="w-full bg-steel-800 text-steel-500 font-bold py-4 px-8 rounded-xl text-center text-lg">
             Hold tight...
