@@ -32,8 +32,10 @@ registerMiniGame<TriviaConfig>({
       currentPlayerId
     );
 
-    if (eligibleTurns.length < 1) {
-      return null; // Not enough data for trivia
+    // Require at least 3 eligible turns for variety and better game experience
+    // This matches the eligibility check in eligibility.ts
+    if (eligibleTurns.length < 3) {
+      return null; // Not enough data for trivia - need more player answers
     }
 
     // Find the source turn
