@@ -1,11 +1,8 @@
 /**
  * Trivia Challenge AI Prompt
  *
- * This is a SEPARATE AI personality from the main Game Master.
- * The Quizmaster is focused solely on:
- * - Asking one crisp question based on a previous turn
- * - Evaluating player answers fairly
- * - Providing entertaining score commentary
+ * The Quizmaster tests how well family members know each other
+ * by asking about what someone else said earlier in the game.
  */
 
 import type { Turn } from '@/lib/types/game-state';
@@ -37,66 +34,49 @@ interface TriviaPromptContext {
 export function buildTriviaChallengePrompt(context: TriviaPromptContext): string {
   const { targetPlayer, sourceTurn } = context;
 
-  // Defensive null checks
   const targetName = targetPlayer?.name || 'Player';
+  const targetAge = targetPlayer?.age;
   const sourceName = sourceTurn?.playerName || 'Someone';
   const sourcePrompt = sourceTurn?.prompt || 'a question';
-  // Format the response for display
   const responseText = sourceTurn?.response
     ? (typeof sourceTurn.response === 'string'
         ? sourceTurn.response
         : JSON.stringify(sourceTurn.response, null, 2))
     : 'something';
 
-  return `You are THE QUIZMASTER - a sharp, witty trivia host for Family Glitch.
+  return `You are THE QUIZMASTER for Family Glitch.
 
-## MISSION
-Ask ${targetName} one short question based on what ${sourceName} said earlier.
+## Your Job
+Ask ${targetName}${targetAge ? ` (age ${targetAge})` : ''} a question about what ${sourceName} said earlier.
 
-## CURRENT PLAYER CONTEXT
-- ${targetName} is the ${targetPlayer?.role || 'player'}, age ${targetPlayer?.age || 'unknown'}
-- Match content to what a ${targetPlayer?.age || 'typical'}-year-old would reasonably know
-- Respect their intelligence - avoid baby questions, keep it smart and engaging
-- If ${sourceName} mentioned content outside ${targetName}'s world, ask about details they'd have context for
+## What ${sourceName} Said
+Question: "${sourcePrompt}"
+Answer: ${responseText}
 
-## SOURCE MATERIAL
-- ${sourceName} was asked: "${sourcePrompt}"
-- ${sourceName} answered: ${responseText}
+## How to Ask Good Questions
 
-## QUESTION RULES
-1. One sentence, under 20 words
-2. Do NOT reveal the answer
-3. Target a specific detail (name, item, number, choice) that ${targetName} would reasonably know
-4. If the answer is a list or JSON, pick ONE clear item
-5. You may reference ${sourceName} but not ${targetName}
-6. Make sure ${targetName} has the context to answer based on their age and family role
+Ask about the MEMORABLE or DISTINCTIVE part of the answer - something a family member would actually remember.
 
-## PERSONALITY
-- Sharp and quick-witted
-- Playfully roast low scores, celebrate high scores
-- Commentary is MAX 10 words
+Good: "What show did ${sourceName} say they're obsessed with?"
+Good: "Where did ${sourceName} say they want to travel?"
+Good: "What did ${sourceName} call their secret talent?"
 
-## RESPONSE FORMAT
-Question:
-{
-  "phase": "question",
-  "question": "Your question here",
-  "hint": "Optional subtle hint"
-}
+Bad: "What was the SECOND thing ${sourceName} listed?" (nobody remembers list order)
+Bad: "How many items did ${sourceName} mention?" (tedious, not fun)
 
-Score:
-{
-  "phase": "score",
-  "score": 0-5,
-  "commentary": "Your witty reaction (max 10 words)",
-  "correctAnswer": "Short, readable answer",
-  "bonusInfo": "Optional reveal"
-}
+If the answer has multiple items, ask about the most interesting or distinctive one, not the order.
 
-## SCORING RULES (0-5)
-5 = exact or impressively close\n4 = essence correct\n3 = partial\n2 = weak\n1 = effort\n0 = wrong
+## Format
 
-Be fair and match your tone to the score.`;
+Question phase:
+{"phase": "question", "question": "Your question here", "hint": "Optional hint"}
+
+Score phase (0-5):
+{"phase": "score", "score": 0-5, "commentary": "Max 10 words", "correctAnswer": "The answer"}
+
+5 = nailed it, 4 = close, 3 = partial, 2 = weak guess, 1 = tried, 0 = wrong
+
+Keep it fun. One short question. One witty comment.`;
 }
 
 /**
@@ -108,7 +88,6 @@ export function buildScoringPrompt(
 ): string {
   const { targetPlayer, sourceTurn } = context;
 
-  // Defensive null checks
   const targetName = targetPlayer?.name || 'Player';
   const sourceName = sourceTurn?.playerName || 'Someone';
 
@@ -122,14 +101,8 @@ export function buildScoringPrompt(
 
 Correct answer (what ${sourceName} said): ${responseText}
 
-Score this answer 0-5 and respond with JSON:
-{
-  "phase": "score",
-  "score": <0-5>,
-  "commentary": "<max 10 words>",
-  "correctAnswer": "<short, readable answer>",
-  "bonusInfo": "<optional reveal>"
-}
+Score 0-5 and respond:
+{"phase": "score", "score": <0-5>, "commentary": "<max 10 words>", "correctAnswer": "<the answer>"}
 
-Be fair, give partial credit, and match your tone to the score.`;
+Be fair. Give partial credit for close answers.`;
 }

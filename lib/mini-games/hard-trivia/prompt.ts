@@ -1,8 +1,8 @@
 /**
  * Hard Trivia Challenge - AI Prompts
  *
- * Generates challenging trivia questions based on family interests/hobbies
- * collected during gameplay.
+ * Generates challenging trivia questions based on the player's
+ * own interests and hobbies collected during the game.
  */
 
 import type { Turn } from '@/lib/types/game-state';
@@ -28,82 +28,63 @@ export interface ScorePromptContext {
 export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): string {
   const { targetPlayer, turns } = context;
 
-  // Defensive null checks
   const targetName = targetPlayer?.name || 'Player';
   const targetAge = targetPlayer?.age || 0;
   const targetRole = targetPlayer?.role || 'player';
 
-  // Extract THIS player's interests from their own turns
-  const playerInterests = (turns || []).filter(t =>
+  // Find what this player has said about their interests
+  const playerTurns = (turns || []).filter(t =>
     t &&
     t.playerId === targetPlayer?.id &&
     t.status === 'completed' &&
-    t.response &&
-    (t.prompt?.toLowerCase().includes('interest') ||
-     t.prompt?.toLowerCase().includes('hobby') ||
-     t.prompt?.toLowerCase().includes('hobbies') ||
-     t.prompt?.toLowerCase().includes('love') ||
-     t.prompt?.toLowerCase().includes('favorite'))
+    t.response
   );
 
-  // Also check family-wide interests as backup
-  const familyInterests = (turns || []).filter(t =>
-    t &&
-    t.status === 'completed' &&
-    t.response &&
-    (t.prompt?.toLowerCase().includes('interest') ||
-     t.prompt?.toLowerCase().includes('hobby') ||
-     t.prompt?.toLowerCase().includes('hobbies') ||
-     t.prompt?.toLowerCase().includes('love') ||
-     t.prompt?.toLowerCase().includes('favorite'))
+  // Also gather what others have mentioned (backup context)
+  const allCompletedTurns = (turns || []).filter(t =>
+    t && t.status === 'completed' && t.response
   );
 
-  const playerInterestSummary = playerInterests.length > 0
-    ? `${targetName}'s interests: ${playerInterests.map(t => JSON.stringify(t.response)).join(', ')}`
+  const playerContext = playerTurns.length > 0
+    ? `What ${targetName} has shared:\n${playerTurns.slice(-5).map(t => `- "${t.prompt}" → ${JSON.stringify(t.response)}`).join('\n')}`
     : '';
 
-  const familyInterestSummary = familyInterests.length > 0
-    ? `Family interests: ${familyInterests.slice(-5).map(t => `${t.playerName}: ${JSON.stringify(t.response)}`).join(', ')}`
+  const familyContext = allCompletedTurns.length > 0
+    ? `What the family has shared:\n${allCompletedTurns.slice(-5).map(t => `- ${t.playerName}: "${t.prompt}" → ${JSON.stringify(t.response)}`).join('\n')}`
     : '';
 
-  const interestContext = playerInterestSummary || familyInterestSummary ||
-    'No specific interests identified - use engaging topics matching their age and likely knowledge';
+  return `You are THE QUIZMASTER for Family Glitch's Hard Trivia.
 
-  return `You are THE QUIZMASTER for Family Glitch's Hard Trivia Challenge.
+## Your Job
+Create a challenging trivia question for ${targetName} (${targetRole}, age ${targetAge}).
 
-## MISSION
-Generate one challenging trivia question for ${targetName} based on THEIR interests.
+${playerContext}
 
-## PLAYER CONTEXT
-- ${targetName} is the ${targetRole}, age ${targetAge}
-- Match content to what a ${targetAge}-year-old would know
-- Respect their intelligence - avoid baby questions
-- Use cultural references from their world (shows, games, topics they'd encounter)
+${familyContext}
 
-## INTERESTS TO USE
-${interestContext}
+## How to Make Great Questions
 
-## QUESTION RULES
-1. Prioritize ${targetName}'s OWN interests if available (listed first above)
-2. If using group interests, ensure ${targetName} would know the topic
-3. Make it challenging but fair - respect their intelligence
-4. Match knowledge to their age (10-year-olds know kid shows, not adult dramas)
-5. Provide 4 options: one correct, three plausible wrong
-6. Keep question to 1-2 short sentences
-7. Avoid content they haven't experienced, but keep it smart and engaging
+Use what you know about ${targetName} to ask something in THEIR wheelhouse:
+- If they mentioned loving Marvel movies, ask about Marvel
+- If they're into gaming, ask about games they'd know
+- If they love cooking, ask about cuisine
 
-## OUTPUT FORMAT
+Match the difficulty to their age - a 10-year-old knows different things than a 40-year-old, but both deserve challenging questions in their domain.
+
+If you don't have specific interest data, use topics appropriate to their age and likely world (pop culture, school subjects, hobbies common for their demographic).
+
+## Format
+
 Respond with ONLY valid JSON:
 {
-  \"category\": \"Movies\",
-  \"question\": \"Which actor played Jack Dawson in Titanic?\",
-  \"options\": [\"Leonardo DiCaprio\", \"Brad Pitt\", \"Tom Cruise\", \"Matt Damon\"],
-  \"correct_answer\": \"Leonardo DiCaprio\"
+  "category": "Movies",
+  "question": "Which superhero does Tony Stark become?",
+  "options": ["Iron Man", "Captain America", "Thor", "Hulk"],
+  "correct_answer": "Iron Man"
 }
 
-CRITICAL: correct_answer must EXACTLY match one option.
-
-Generate the trivia question now.`;
+The correct_answer must EXACTLY match one option.
+One question, four options, one clear answer.`;
 }
 
 /**
@@ -112,42 +93,15 @@ Generate the trivia question now.`;
 export function buildHardTriviaScorerPrompt(context: ScorePromptContext): string {
   const { targetPlayer, question, correctAnswer, playerAnswer, options } = context;
 
-  // Defensive null checks
   const targetName = targetPlayer?.name || 'Player';
-  const safeQuestion = question || 'The trivia question';
-  const safeOptions = options || [];
 
-  return `You are scoring ${targetName}'s answer to a Hard Trivia question.
+  return `${targetName} was asked: "${question}"
+Options: ${(options || []).join(', ')}
+Correct answer: ${correctAnswer}
+Their answer: ${playerAnswer}
 
-## QUESTION
-${safeQuestion}
+Score and respond:
+{"correct": true/false, "points": 5 or 0, "commentary": "Max 12 words"}
 
-## OPTIONS
-${safeOptions.map((opt, i) => `${i + 1}. ${opt || 'Option'}`).join('\n') || 'No options provided'}
-
-## CORRECT ANSWER
-${correctAnswer || 'Not provided'}
-
-## PLAYER ANSWER
-${playerAnswer || 'No answer given'}
-
-## SCORING
-- Exact match = 5 points\n- Otherwise = 0 points
-
-## OUTPUT FORMAT
-Respond with ONLY valid JSON:
-{
-  \"correct\": true,
-  \"points\": 5,
-  \"commentary\": \"Nice! You nailed it.\"
-}
-
-OR
-{
-  \"correct\": false,
-  \"points\": 0,
-  \"commentary\": \"Ouch, it was actually [correct answer].\"
-}
-
-Keep commentary to one short sentence (max 12 words).`;
+5 points if correct, 0 if wrong. Keep commentary short and fun.`;
 }
