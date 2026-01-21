@@ -86,6 +86,10 @@
     outline: none;
   }
 
+  button:focus-visible {
+    outline: none;
+  }
+
   *, *::before, *::after {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -250,6 +254,10 @@
 
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-bottom-gap {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .safe-left {

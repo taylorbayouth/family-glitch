@@ -67,7 +67,7 @@ export function TextAreaTemplate({
       </div>
 
       {/* Button - fixed at bottom */}
-      <div className="px-6 pb-6 safe-bottom">
+      <div className="px-6 safe-bottom-gap">
         <button
           onClick={handleSubmit}
           disabled={!hasContent}
