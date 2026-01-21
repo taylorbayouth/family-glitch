@@ -469,28 +469,30 @@ CRITICAL RULES:
       const MiniGameComponent = miniGameDef.component;
 
       return (
-        <div className="min-h-dvh bg-void">
+        <div className="min-h-dvh bg-void flex flex-col overflow-hidden">
           {/* Fixed Header */}
           <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 
           {/* Mini-game content */}
-          <MiniGameComponent
-            targetPlayer={{
-              id: currentPlayer.id,
-              name: currentPlayer.name,
-              role: currentPlayer.role,
-              avatar: currentPlayer.avatar,
-            }}
-            allPlayers={players.map(p => ({
-              id: p.id,
-              name: p.name,
-              role: p.role,
-              avatar: p.avatar,
-            }))}
-            onComplete={handleMiniGameComplete}
-            onSkip={handleMiniGameSkip}
-            {...activeMiniGame.config}
-          />
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+            <MiniGameComponent
+              targetPlayer={{
+                id: currentPlayer.id,
+                name: currentPlayer.name,
+                role: currentPlayer.role,
+                avatar: currentPlayer.avatar,
+              }}
+              allPlayers={players.map(p => ({
+                id: p.id,
+                name: p.name,
+                role: p.role,
+                avatar: p.avatar,
+              }))}
+              onComplete={handleMiniGameComplete}
+              onSkip={handleMiniGameSkip}
+              {...activeMiniGame.config}
+            />
+          </div>
         </div>
       );
     }
