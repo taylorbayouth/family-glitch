@@ -130,7 +130,7 @@ export function TimedBinaryTemplate({
       </div>
 
       {/* Choice Buttons - fill ALL remaining space */}
-      <div className="flex-1 flex flex-col gap-3 p-3 min-h-0 overflow-hidden safe-bottom">
+      <div className="flex-1 flex flex-col gap-3 p-3 min-h-0 overflow-hidden safe-bottom-gap">
         {/* Main Options */}
         <div
           className={`flex-1 flex ${
@@ -140,6 +140,7 @@ export function TimedBinaryTemplate({
           {/* Left/Top Option */}
           <motion.button
             onClick={() => handleChoice('left')}
+            onFocus={(event) => event.currentTarget.blur()}
             disabled={hasSelected}
             whileTap={{ scale: 0.97 }}
             autoFocus={false}
@@ -160,6 +161,7 @@ export function TimedBinaryTemplate({
           {/* Right/Bottom Option */}
           <motion.button
             onClick={() => handleChoice('right')}
+            onFocus={(event) => event.currentTarget.blur()}
             disabled={hasSelected}
             whileTap={{ scale: 0.97 }}
             autoFocus={false}
@@ -181,6 +183,7 @@ export function TimedBinaryTemplate({
         {/* Neither Option */}
         <motion.button
           onClick={() => handleChoice('neither')}
+          onFocus={(event) => event.currentTarget.blur()}
           disabled={hasSelected}
           whileTap={{ scale: 0.97 }}
           autoFocus={false}
