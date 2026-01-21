@@ -140,9 +140,8 @@ export function HardTriviaUI({
             category: triviaData.category,
             playerAnswer: selectedAnswer,
             correctAnswer: triviaData.correct_answer,
-            score: scoreData.score,
+            score: scoreData.points,
             commentary: scoreData.commentary,
-            explanation: scoreData.explanation,
           },
           duration
         );
