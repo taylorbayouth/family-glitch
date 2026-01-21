@@ -62,9 +62,13 @@ export function PersonalityMatchUI({
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [turnId, setTurnId] = useState<string | null>(null);
+  const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const turns = useGameStore((state) => state.turns);
   const scores = useGameStore((state) => state.scores);
+  const addTurn = useGameStore((state) => state.addTurn);
+  const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
 
   // Generate word grid on mount using AI
@@ -119,6 +123,24 @@ export function PersonalityMatchUI({
 
     generateWords();
   }, [subjectPlayer.id, subjectPlayer.name, subjectPlayer.role, allPlayers, turns]);
+
+  useEffect(() => {
+    if (words.length > 0 && !turnId) {
+      const createdTurnId = addTurn({
+        playerId: targetPlayer.id,
+        playerName: targetPlayer.name,
+        templateType: 'personality_match',
+        prompt: `Select all words that describe ${subjectPlayer.name}.`,
+        templateParams: {
+          wordOptions: words,
+          subjectPlayerId: subjectPlayer.id,
+          subjectPlayerName: subjectPlayer.name,
+        },
+      });
+      setTurnId(createdTurnId);
+      setTurnStartTime(Date.now());
+    }
+  }, [addTurn, subjectPlayer.id, subjectPlayer.name, targetPlayer.id, targetPlayer.name, turnId, words]);
 
   const handleWordClick = (word: string) => {
     if (selectedWords.includes(word)) {
@@ -185,6 +207,21 @@ export function PersonalityMatchUI({
 
   const handleComplete = () => {
     if (result) {
+      if (turnId) {
+        const duration = turnStartTime ? (Date.now() - turnStartTime) / 1000 : undefined;
+        completeTurn(
+          turnId,
+          {
+            wordOptions: words,
+            selectedWords,
+            score: result.score,
+            commentary: result.commentary,
+            subjectPlayerId: subjectPlayer.id,
+            subjectPlayerName: subjectPlayer.name,
+          },
+          duration
+        );
+      }
       onComplete(result);
     }
   };

@@ -65,8 +65,12 @@ export function TriviaChallengeUI({
   const [playerAnswer, setPlayerAnswer] = useState('');
   const [scoreResult, setScoreResult] = useState<TriviaScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [turnId, setTurnId] = useState<string | null>(null);
+  const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const scores = useGameStore((state) => state.scores);
+  const addTurn = useGameStore((state) => state.addTurn);
+  const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
 
   // Start generating question when user clicks "Let's Go!"
@@ -103,6 +107,24 @@ export function TriviaChallengeUI({
       setQuestion(parsed.question);
       setHint(parsed.hint);
       setPhase('question');
+
+      if (!turnId) {
+        const createdTurnId = addTurn({
+          playerId: targetPlayer.id,
+          playerName: targetPlayer.name,
+          templateType: 'trivia_challenge',
+          prompt: parsed.question,
+          templateParams: {
+            hint: parsed.hint,
+            sourceTurnId: sourceTurn.turnId,
+            sourcePlayerId: sourceTurn.playerId,
+            sourcePlayerName: sourceTurn.playerName,
+            sourcePrompt: sourceTurn.prompt,
+          },
+        });
+        setTurnId(createdTurnId);
+        setTurnStartTime(Date.now());
+      }
     } catch (err) {
       console.error('Failed to generate question:', err);
       setError('Failed to generate question. Please try again.');
@@ -166,6 +188,26 @@ export function TriviaChallengeUI({
 
   const handleComplete = () => {
     if (scoreResult) {
+      if (turnId) {
+        const duration = turnStartTime ? (Date.now() - turnStartTime) / 1000 : undefined;
+        completeTurn(
+          turnId,
+          {
+            question,
+            hint,
+            playerAnswer,
+            score: scoreResult.score,
+            commentary: scoreResult.commentary,
+            correctAnswer: scoreResult.correctAnswer,
+            sourceTurnId: sourceTurn.turnId,
+            sourcePlayerId: sourceTurn.playerId,
+            sourcePlayerName: sourceTurn.playerName,
+            sourcePrompt: sourceTurn.prompt,
+            sourceAnswer: sourceTurn.response,
+          },
+          duration
+        );
+      }
       onComplete({
         score: scoreResult.score,
         maxScore: 5,

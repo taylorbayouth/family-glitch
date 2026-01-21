@@ -69,7 +69,7 @@ export const useGameStore = create<GameStoreState>()(
       status: 'setup',
       scores: {},
       settings: {
-        totalRounds: 10,
+        totalRounds: 30,
         difficulty: 'casual',
         allowTargeting: true,
         numberOfPlayers: 0,
@@ -92,17 +92,21 @@ export const useGameStore = create<GameStoreState>()(
         })),
 
       startGame: (numberOfPlayers) =>
-        set((state) => ({
-          gameStarted: true,
-          gameId: crypto.randomUUID(),
-          startedAt: new Date().toISOString(),
-          status: 'playing',
-          currentRound: 1,
-          settings: {
-            ...state.settings,
-            numberOfPlayers: numberOfPlayers || state.players.length,
-          },
-        })),
+        set((state) => {
+          const resolvedPlayerCount = numberOfPlayers || state.players.length;
+          return {
+            gameStarted: true,
+            gameId: crypto.randomUUID(),
+            startedAt: new Date().toISOString(),
+            status: 'playing',
+            currentRound: 1,
+            settings: {
+              ...state.settings,
+              numberOfPlayers: resolvedPlayerCount,
+              totalRounds: calculateTotalRounds(resolvedPlayerCount),
+            },
+          };
+        }),
 
       startNewGame: () =>
         set({
