@@ -72,7 +72,7 @@ export function PlayerSelectorTemplate({
   return (
     <div className="min-h-dvh bg-void flex flex-col safe-y">
       {/* Content - top aligned with spacing */}
-      <div className="flex-1 flex flex-col px-6 pt-10">
+      <div className="flex flex-col px-6 pt-10 mb-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
