@@ -90,15 +90,6 @@ function checkTriviaChallengeEligibility(context: EligibilityContext): Eligibili
     };
   }
 
-  // Rule 3: Should have at least 3 eligible turns for variety
-  if (eligibleTurns.length < 3) {
-    return {
-      eligible: false,
-      reason: 'Building knowledge... need more answers first',
-      eligibleTurns,
-    };
-  }
-
   return {
     eligible: true,
     eligibleTurns,
@@ -127,15 +118,6 @@ function checkPersonalityMatchEligibility(context: EligibilityContext): Eligibil
     return {
       eligible: false,
       reason: 'Need answers from other players first',
-    };
-  }
-
-  // Rule 3: Should have at least 3 eligible turns for meaningful scoring
-  if (eligibleTurns.length < 3) {
-    return {
-      eligible: false,
-      reason: 'Building knowledge... need more answers first',
-      eligibleTurns,
     };
   }
 
