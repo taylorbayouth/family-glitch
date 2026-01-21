@@ -53,7 +53,7 @@ Ask ONE question per turn. Make it specific and interesting.` : `**Act ${current
 
 Use what you've learned about this family to run targeted mini-games. Pick games that fit the current player's age and interests.
 
-${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 1 ? `**Trivia Challenge** - Quiz them on what another family member said
+${options?.triviaEligibleTurns && options.triviaEligibleTurns.length >= 3 ? `**Trivia Challenge** - Quiz them on what another family member said
 **Personality Match** - Have them describe a family member with words` : ''}
 **Hard Trivia** - Test their knowledge in their own interest areas
 ${currentAct >= 3 ? `**Mad Libs** - Fill-in-the-blank wordplay

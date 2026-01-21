@@ -5,7 +5,7 @@
 // Application info
 export const APP_NAME = 'Family Glitch';
 export const APP_DESCRIPTION = 'A family game application with AI integration';
-export const APP_VERSION = '1.1.1';
+export const APP_VERSION = '1.1.2';
 export const APP_TAGLINE = 'DIGITAL NOIR';
 
 // URLs
@@ -19,7 +19,7 @@ export const OAUTH_SIGNIN_PATH = '/auth/signin';
 
 // AI Configuration
 export const DEFAULT_AI_MODEL = 'gpt-5.2';
-export const DEFAULT_TEMPERATURE = 0.7;
+export const DEFAULT_TEMPERATURE = 1;
 export const DEFAULT_MAX_TOKENS = 4096;
 export const MAX_TOOL_ITERATIONS = 10;
 
@@ -72,8 +72,8 @@ export function calculateTotalRounds(numberOfPlayers: number): number {
 export function calculateCurrentAct(currentRound: number, totalRounds: number): 1 | 2 | 3 {
   if (totalRounds === 0) return 1;
   const progress = currentRound / totalRounds;
-  if (progress < 0.20) return 1;
-  if (progress < 0.65) return 2;
+  if (progress < 0.25) return 1;
+  if (progress < 0.75) return 2;
   return 3;
 }
 
