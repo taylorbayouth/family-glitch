@@ -28,6 +28,13 @@ export function TimedBinaryTemplate({
   const [timeLeft, setTimeLeft] = useState(seconds);
   const [hasSelected, setHasSelected] = useState(false);
 
+  // Prevent auto-focus on mount
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, []);
+
   // Timer countdown
   useEffect(() => {
     if (hasSelected) return;
@@ -57,12 +64,12 @@ export function TimedBinaryTemplate({
     }
   }, [timeLeft, hasSelected, onSubmit, onTimeout]);
 
-  const handleChoice = (choice: 'left' | 'right') => {
+  const handleChoice = (choice: 'left' | 'right' | 'neither') => {
     if (!hasSelected) {
       setHasSelected(true);
       onSubmit({
         choice,
-        selectedText: choice === 'left' ? leftText : rightText,
+        selectedText: choice === 'left' ? leftText : choice === 'right' ? rightText : 'Neither',
         timeRemaining: timeLeft,
         timedOut: false,
       });
@@ -123,49 +130,64 @@ export function TimedBinaryTemplate({
       </div>
 
       {/* Choice Buttons - fill ALL remaining space */}
-      <div
-        className={`flex-1 flex ${
-          orientation === 'horizontal' ? 'flex-row' : 'flex-col'
-        } gap-3 p-3 min-h-0 overflow-hidden safe-bottom`}
-      >
-        {/* Left/Top Option */}
-        <motion.button
-          onClick={() => handleChoice('left')}
-          disabled={hasSelected}
-          whileTap={{ scale: 0.97 }}
-          autoFocus={false}
-          tabIndex={-1}
-          className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-glitch/30 to-glitch/10 border-3 border-glitch hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+      <div className="flex-1 flex flex-col gap-3 p-3 min-h-0 overflow-hidden safe-bottom">
+        {/* Main Options */}
+        <div
+          className={`flex-1 flex ${
+            orientation === 'horizontal' ? 'flex-row' : 'flex-col'
+          } gap-3 min-h-0`}
         >
-          <div className="absolute inset-0 bg-glitch/0 group-hover:bg-glitch/10 transition-all" />
-          <div className="relative z-10 h-full flex items-center justify-center p-3">
-            <span
-              className="font-black text-frost text-center leading-tight"
-              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
-            >
-              {leftText}
-            </span>
-          </div>
-        </motion.button>
+          {/* Left/Top Option */}
+          <motion.button
+            onClick={() => handleChoice('left')}
+            disabled={hasSelected}
+            whileTap={{ scale: 0.97 }}
+            autoFocus={false}
+            tabIndex={-1}
+            className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-glitch/30 to-glitch/10 border-3 border-glitch hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group focus:outline-none"
+          >
+            <div className="absolute inset-0 bg-glitch/0 group-hover:bg-glitch/10 transition-all" />
+            <div className="relative z-10 h-full flex items-center justify-center p-3">
+              <span
+                className="font-black text-frost text-center leading-tight"
+                style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+              >
+                {leftText}
+              </span>
+            </div>
+          </motion.button>
 
-        {/* Right/Bottom Option */}
+          {/* Right/Bottom Option */}
+          <motion.button
+            onClick={() => handleChoice('right')}
+            disabled={hasSelected}
+            whileTap={{ scale: 0.97 }}
+            autoFocus={false}
+            tabIndex={-1}
+            className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-frost/30 to-frost/10 border-3 border-frost hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group focus:outline-none"
+          >
+            <div className="absolute inset-0 bg-frost/0 group-hover:bg-frost/10 transition-all" />
+            <div className="relative z-10 h-full flex items-center justify-center p-3">
+              <span
+                className="font-black text-frost text-center leading-tight"
+                style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
+              >
+                {rightText}
+              </span>
+            </div>
+          </motion.button>
+        </div>
+
+        {/* Neither Option */}
         <motion.button
-          onClick={() => handleChoice('right')}
+          onClick={() => handleChoice('neither')}
           disabled={hasSelected}
           whileTap={{ scale: 0.97 }}
           autoFocus={false}
           tabIndex={-1}
-          className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-frost/30 to-frost/10 border-3 border-frost hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+          className="flex-shrink-0 py-4 rounded-xl bg-steel-800/50 border-2 border-steel-700 hover:border-steel-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
         >
-          <div className="absolute inset-0 bg-frost/0 group-hover:bg-frost/10 transition-all" />
-          <div className="relative z-10 h-full flex items-center justify-center p-3">
-            <span
-              className="font-black text-frost text-center leading-tight"
-              style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
-            >
-              {rightText}
-            </span>
-          </div>
+          <span className="font-bold text-steel-400 text-lg">Neither</span>
         </motion.button>
       </div>
     </div>
