@@ -45,14 +45,15 @@ export function buildMadLibsGeneratorPrompt(context: GeneratePromptContext): str
 Generate one Mad Libs-style sentence for ${targetName}${roleInfo}${ageInfo} to complete.
 
 ## PLAYER CONTEXT
-- ${targetName} is ${targetPlayerAge || 'an adult'}${targetPlayerAge && targetPlayerAge < 13 ? ' - keep it PG but still funny' : ' - go for edgy, awkward-reveal humor'}
-- Think Cards Against Humanity energy: setups where ANY fill-in becomes hilarious
-- The best templates make players nervous about what they're about to reveal
+- ${targetName} is ${targetPlayerAge || 'an adult'}
+- The goal is to make players feel WITTY, not just shocking
+- Great templates reward clever word choices and unexpected combinations
+- Avoid setups that obviously beg for crude answers
 
 ## SENTENCE RULES
 1. 8-14 words total
-2. Include 1-3 blanks marked as ___
-3. Structure it so the reveal is awkward, confessional, or absurd
+2. Include exactly 2 blanks marked as ___
+3. Structure it so clever word combos create the humor
 4. Avoid proper names and real people
 5. The system assigns starting letters later
 
@@ -64,17 +65,17 @@ Respond with valid JSON:
   \"hint\": \"Optional playful hint about the theme\"
 }
 
-## STRONG TEMPLATE SHAPES (Cards Against Humanity energy)
-- \"Mom doesn't know I've been ___ in the ___.\"
-- \"The family group chat went silent after I mentioned ___.\"
-- \"At the reunion, grandma caught me ___.\"
-- \"My browser history is just ___ and ___.\"
-- \"I told my boss I was sick but I was actually ___.\"
-- \"The therapist said my ___ is concerning.\"
-- \"Dating me is like ___ but with more ___.\"
-- \"My tombstone will read: Died doing what they loved - ___.\"
+## STRONG TEMPLATE SHAPES (2 blanks, reward cleverness)
+- \"Scientists discovered that ___ is actually just ___ in disguise.\"
+- \"The secret to a happy marriage is ___ and plenty of ___.\"
+- \"In my defense, the ___ was already ___ when I got there.\"
+- \"Nothing says 'I love you' like ___ covered in ___.\"
+- \"Step 1: ___. Step 2: ___. Step 3: Profit.\"
+- \"According to my horoscope, I should avoid ___ near ___.\"
+- \"The recipe calls for two cups of ___ and a pinch of ___.\"
+- \"Life hack: Replace your ___ with ___ for instant results.\"
 
-The best templates set up awkward reveals where almost ANY word becomes funny.
+The best templates reward WIT - they're open-ended, not obviously dirty.
 
 Generate ONE creative template.`;
 }
