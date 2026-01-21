@@ -49,7 +49,9 @@ Great questions uncover:
 - Binary debates ("Beatles or Stones?" "Morning person or night owl?")
 - Interest grids ("Pick your top 3: sports, TV, video games, cooking, DIY, music")
 
-Ask ONE question per turn. Make it specific and interesting.` : `**Act ${currentAct}: Mini-game time.**
+Ask ONE question per turn. Make it specific and interesting.
+
+Avoid memory-check questions in Act 1 (answers are secret).` : `**Act ${currentAct}: Mini-game time.**
 
 Use what you've learned about this family to run targeted mini-games. Pick games that fit the current player's age and interests.
 

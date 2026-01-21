@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGameStore } from '@/lib/store';
 import type { Turn } from '@/lib/types/game-state';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 import type { MiniGamePlayer } from '@/lib/mini-games/registry';
@@ -42,6 +43,11 @@ export function HardTriviaUI({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [scoreData, setScoreData] = useState<HardTriviaScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [turnId, setTurnId] = useState<string | null>(null);
+  const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
+
+  const addTurn = useGameStore((state) => state.addTurn);
+  const completeTurn = useGameStore((state) => state.completeTurn);
 
   // Phase 1: Generate trivia question
   useEffect(() => {
@@ -49,6 +55,23 @@ export function HardTriviaUI({
       generateTriviaQuestion();
     }
   }, [phase]);
+
+  useEffect(() => {
+    if (triviaData && !turnId) {
+      const createdTurnId = addTurn({
+        playerId: targetPlayer.id,
+        playerName: targetPlayer.name,
+        templateType: 'hard_trivia',
+        prompt: triviaData.question,
+        templateParams: {
+          category: triviaData.category,
+          options: triviaData.options,
+        },
+      });
+      setTurnId(createdTurnId);
+      setTurnStartTime(Date.now());
+    }
+  }, [addTurn, targetPlayer.id, targetPlayer.name, triviaData, turnId]);
 
   const generateTriviaQuestion = async () => {
     try {
@@ -107,6 +130,23 @@ export function HardTriviaUI({
 
   const handleComplete = () => {
     if (scoreData) {
+      if (turnId && triviaData) {
+        const duration = turnStartTime ? (Date.now() - turnStartTime) / 1000 : undefined;
+        completeTurn(
+          turnId,
+          {
+            question: triviaData.question,
+            options: triviaData.options,
+            category: triviaData.category,
+            playerAnswer: selectedAnswer,
+            correctAnswer: triviaData.correct_answer,
+            score: scoreData.score,
+            commentary: scoreData.commentary,
+            explanation: scoreData.explanation,
+          },
+          duration
+        );
+      }
       onComplete(toMiniGameResult(scoreData));
     }
   };

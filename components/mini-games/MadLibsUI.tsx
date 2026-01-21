@@ -62,14 +62,36 @@ export function MadLibsUI({
   const [filledSentence, setFilledSentence] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<boolean[]>([]);
+  const [turnId, setTurnId] = useState<string | null>(null);
+  const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const scores = useGameStore((state) => state.scores);
+  const addTurn = useGameStore((state) => state.addTurn);
+  const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
 
   // Generate template on mount
   useEffect(() => {
     generateTemplate();
   }, []);
+
+  useEffect(() => {
+    if (template && blanks.length > 0 && !turnId) {
+      const createdTurnId = addTurn({
+        playerId: targetPlayer.id,
+        playerName: targetPlayer.name,
+        templateType: 'madlibs_challenge',
+        prompt: `Fill in the blanks: ${template}`,
+        templateParams: {
+          template,
+          blanks,
+          hint,
+        },
+      });
+      setTurnId(createdTurnId);
+      setTurnStartTime(Date.now());
+    }
+  }, [addTurn, blanks, hint, targetPlayer.id, targetPlayer.name, template, turnId]);
 
   const generateTemplate = async () => {
     setPhase('loading');
@@ -198,6 +220,21 @@ export function MadLibsUI({
 
   const handleComplete = () => {
     if (result) {
+      if (turnId) {
+        const duration = turnStartTime ? (Date.now() - turnStartTime) / 1000 : undefined;
+        completeTurn(
+          turnId,
+          {
+            template,
+            blanks,
+            filledWords,
+            filledSentence,
+            score: result.score,
+            commentary: result.commentary,
+          },
+          duration
+        );
+      }
       onComplete(result);
     }
   };

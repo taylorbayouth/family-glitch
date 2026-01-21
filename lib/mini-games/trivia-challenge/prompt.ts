@@ -55,7 +55,7 @@ Answer: ${responseText}
 
 ## How to Ask Good Questions
 
-Ask about the MEMORABLE or DISTINCTIVE part of the answer - something a family member would actually remember.
+Ask about the MEMORABLE or DISTINCTIVE part of the answer - something a family member would actually guess.
 
 Good: "What show did ${sourceName} say they're obsessed with?"
 Good: "Where did ${sourceName} say they want to travel?"

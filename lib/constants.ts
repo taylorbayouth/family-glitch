@@ -56,8 +56,8 @@ export const PAGES = {
 
 // Game Duration & Progression
 // Target total turns for a full game. This is the single tuning knob for game length.
-// Baseline expectation: with 3 players, this yields ~12 turns per player (36 total turns).
-export const TARGET_TOTAL_GAME_TURNS = 36;
+// Baseline expectation: with 3 players, this yields ~10 turns per player (30 total turns).
+export const TARGET_TOTAL_GAME_TURNS = 30;
 
 /**
  * Calculate total number of rounds (turns) based on player count.
@@ -65,8 +65,8 @@ export const TARGET_TOTAL_GAME_TURNS = 36;
  * total turns roughly consistent around TARGET_TOTAL_GAME_TURNS.
  *
  * Example:
- * - 3 players: ~12 turns/player => 36 total turns
- * - 6 players: ~6 turns/player => 36 total turns
+ * - 3 players: ~10 turns/player => 30 total turns
+ * - 6 players: ~5 turns/player => 30 total turns
  */
 export function calculateTotalRounds(numberOfPlayers: number): number {
   if (numberOfPlayers <= 0) return 0;
@@ -84,8 +84,8 @@ export function calculateTotalRounds(numberOfPlayers: number): number {
 export function calculateCurrentAct(currentRound: number, totalRounds: number): 1 | 2 | 3 {
   if (totalRounds === 0) return 1;
   const progress = currentRound / totalRounds;
-  if (progress < 0.25) return 1;
-  if (progress < 0.75) return 2;
+  if (progress < 1 / 3) return 1;
+  if (progress < 2 / 3) return 2;
   return 3;
 }
 
