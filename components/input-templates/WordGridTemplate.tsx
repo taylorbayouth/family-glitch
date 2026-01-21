@@ -72,7 +72,7 @@ export function WordGridTemplate({
   };
 
   return (
-    <div className="min-h-dvh bg-void flex flex-col safe-y">
+    <div className="min-h-full bg-void flex flex-col safe-y">
       {/* Content - centered */}
       <div className="flex flex-col px-6 pt-10 mb-10">
         <motion.div

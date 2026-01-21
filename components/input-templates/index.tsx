@@ -89,7 +89,7 @@ export function TemplateRenderer({
 
   if (!TemplateComponent) {
     return (
-      <div className="min-h-dvh bg-void flex items-center justify-center p-6">
+      <div className="min-h-full bg-void flex items-center justify-center p-6">
         <div className="text-alert font-mono">
           Unknown template type: {templateType}
         </div>

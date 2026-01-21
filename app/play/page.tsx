@@ -433,7 +433,7 @@ CRITICAL RULES:
   // Question screen (regular templates)
   if (phase === 'question' && currentTemplate) {
     return (
-      <div className="min-h-dvh bg-void relative flex flex-col">
+      <div className="min-h-dvh h-dvh bg-void relative flex flex-col overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
 
@@ -441,7 +441,7 @@ CRITICAL RULES:
         <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} />
 
         {/* Template */}
-        <div className="relative z-10 flex-1 flex flex-col">
+        <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar">
           <TemplateRenderer
             templateType={currentTemplate.templateType}
             params={{
@@ -469,7 +469,7 @@ CRITICAL RULES:
       const MiniGameComponent = miniGameDef.component;
 
       return (
-        <div className="min-h-dvh bg-void flex flex-col overflow-hidden">
+        <div className="min-h-dvh h-dvh bg-void flex flex-col overflow-hidden">
           {/* Fixed Header */}
           <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
 

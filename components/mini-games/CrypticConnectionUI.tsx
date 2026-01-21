@@ -282,7 +282,7 @@ export function CrypticConnectionUI({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gradient-to-br from-violet-500/20 via-void to-violet-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden"
+              className="fixed inset-0 bg-gradient-to-br from-violet-500/20 via-void to-violet-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-x-hidden overflow-y-auto"
             >
               {/* Animated background elements */}
               <div className="absolute inset-0 overflow-hidden">

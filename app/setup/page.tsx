@@ -168,7 +168,7 @@ export default function SetupPage() {
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
       <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-glitch/15 rounded-full blur-[120px]" />
 
-      <div className="relative z-10 min-h-dvh flex flex-col max-w-lg mx-auto">
+      <div className="relative z-10 min-h-dvh h-dvh flex flex-col max-w-lg mx-auto">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
@@ -182,7 +182,7 @@ export default function SetupPage() {
         </motion.header>
 
         {/* Player List */}
-        <div className="flex-1 px-4 pb-4 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 px-4 pb-4 overflow-y-auto custom-scrollbar">
           <AnimatePresence mode="popLayout">
             {playerForms.map((form, index) => (
               <motion.div

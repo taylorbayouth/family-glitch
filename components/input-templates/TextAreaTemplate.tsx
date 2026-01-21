@@ -32,7 +32,7 @@ export function TextAreaTemplate({
   };
 
   return (
-    <div className="min-h-dvh bg-void flex flex-col safe-y">
+    <div className="min-h-full bg-void flex flex-col safe-y">
       {/* Content - top aligned with spacing */}
       <div className="flex flex-col px-6 pt-10 mb-10">
         <motion.div

@@ -187,7 +187,7 @@ export function HardTriviaUI({
   // Intro phase - Dramatic Full Screen
   if (phase === 'intro') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-cyan-500/20 via-void to-cyan-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-hidden">
+      <div className="fixed inset-0 bg-gradient-to-br from-cyan-500/20 via-void to-cyan-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-x-hidden overflow-y-auto">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
