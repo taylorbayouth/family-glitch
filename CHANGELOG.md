@@ -5,60 +5,49 @@ All notable changes to Family Glitch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-01-20
-
-### Added
-- Shared mini-game component library in `components/mini-games/shared/`:
-  - `LoadingSpinner`: Animated loading indicator with ARIA labels
-  - `ScoreDisplay`: Large animated score card with accessibility support
-  - `CommentaryCard`: AI commentary display with emoji
-  - `ErrorToast`: Fixed error notification with retry/dismiss buttons
-  - `IntroScreen`: Full-screen animated intro with game-specific theming
-- Shared utility functions in `lib/mini-games/utils.ts`:
-  - `extractAndParseJSON()`: Safe JSON parsing with error handling
-  - `getScoreColor()`, `getScoreBg()`: Consistent score color coding
-  - `safePlayerName()`, `safeArray()`: Defensive null handling
-  - `clamp()`, `formatList()`: Math and formatting helpers
-- Centralized game themes in `lib/mini-games/themes.ts` with unique color schemes
-- ARIA accessibility labels throughout mini-games:
-  - `role="status"` for loading indicators
-  - `aria-live="polite"` for score announcements
-  - `aria-label` for all interactive elements
-- CHANGELOG.md for version history tracking
-
-### Fixed
-- TypeScript type safety issues:
-  - Added `'the_filter'` to `MiniGameType` union
-  - Fixed all 6 register files to use proper `ComponentType<BaseMiniGameProps>` instead of `as any`
-  - Added `TheFilterUI` to barrel exports in `components/mini-games/index.ts`
-- Responsive grid layouts for mobile devices:
-  - CrypticConnectionUI now uses 3 cols (mobile) → 4 cols (tablet) → 5 cols (desktop)
-  - Improved mobile experience for word grids
-- Z-index conflicts: Error toasts now use `z-[60]` to appear above intro screens
-- Border radius consistency: Standardized all grid items to use `rounded-xl`
+## [1.1.3] - 2026-01-21
 
 ### Changed
-- The Filter theme changed from cyan to teal to avoid conflict with Hard Trivia
-- Extracted magic numbers to named constants:
-  - `TURN_SELECTION_WEIGHTS` in `lib/mini-games/eligibility.ts`
-  - `CRYPTIC_GRID_SIZE` in `lib/mini-games/cryptic-connection/prompt.ts`
-- Optimized background animations (opacity-only for better performance)
 
-### Removed
-- Unused exports from public API:
-  - `isTriviaEligible()` from `lib/mini-games/eligibility.ts`
-  - `createTriviaChallengeSession()` from `lib/mini-games/trivia-challenge/index.ts`
+#### AI Prompt Improvements
+- **Game Master prompt**: Completely rewritten to be goal-focused instead of restriction-heavy
+  - Removed "family-friendly" language that was causing overly cautious questions
+  - Expanded Act 1 question examples: passions, skills, entertainment picks, local flavor, binary debates, interest grids
+  - Added explicit guidance: "Avoid memory-check questions in Act 1 (answers are secret)"
+  - Streamlined from ~200 lines to ~80 lines for better AI comprehension
+- **Trivia Challenge prompt**: Fixed ordinal problem
+  - Added "Ask about MEMORABLE or DISTINCTIVE parts, not list order"
+  - Prevents impossible questions like "What was the SECOND thing they mentioned?"
+- **Mad Libs prompt**: Edgier with Cards Against Humanity energy
+  - Changed to exactly 2 blanks per template
+  - Added 8 strong template examples that reward wit over shock value
+  - Focus: "Make players feel WITTY, not just shocking"
+- **Hard Trivia prompt**: Simplified and more direct
+- Treat 10+ year-olds as pre-teens/teens, not kids
+
+### Fixed
+- **Mini-game eligibility constraints**: Removed artificial `>= 3 turns` requirement
+  - Trivia and Personality Match now available with just 1 eligible turn
+  - Rationale: Act 1 already collects player data, constraint was redundant
+  - Updated: `game-master-prompt.ts`, `trivia-challenge/register.ts`, `eligibility.ts`
+- **Personality Match config extraction**: Added player IDs to AI prompt
+  - AI can now properly call `trigger_personality_match` with valid subject player IDs
+  - Format: `Available subjects (use these EXACT IDs): Alice (id: "abc123"), Bob (id: "def456")`
+- **Timed Binary pre-selection bug**: First button no longer appears pre-selected
+  - Added `useEffect` to blur active element on mount
+  - Added `focus:outline-none` to all buttons
+
+### Added
+- **Timed Binary "Neither" option**: Third button below main choices
+  - Allows players to opt out of binary choices
+  - Returns `choice: 'neither'` with `selectedText: 'Neither'`
+- **CHANGELOG.md**: Version history tracking (this file)
+- **ROADMAP.md**: Future plans moved from CHANGELOG
 
 ### Documentation
-- Updated GAME_FLOW_ISSUES.md to mark v1.1.1 fixes as resolved
-- Updated GAME_FLOW.md to reflect mini-games creating turn entries
-- Updated lib/mini-games/README.md with shared components documentation
-- Updated README.md to mention 6 mini-games and accessibility features
-- Updated AGENTS.md with v1.2.0 refactoring details
-
-### Performance
-- Reduced code duplication by ~40% through shared components
-- Simplified animations for better mobile performance
+- Updated all documentation to reflect Act 1 special rules and mini-game eligibility
+- Clarified act boundaries: 33%/66% splits (not 25%/75%)
+- Added comprehensive git commit summaries
 
 ## [1.1.1] - 2026-01-18
 

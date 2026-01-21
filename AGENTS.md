@@ -21,6 +21,40 @@ Repository: https://github.com/taylorbayouth/family-glitch
 - Animations: Framer Motion 12.27.1
 - Package manager: npm
 
+## Recent Changes (v1.1.3 - 2026-01-21)
+
+### AI Prompt Philosophy Shift
+Changed from restriction-heavy prompts to goal-focused prompts:
+- **Before**: Long lists of what NOT to do → bloated, confusing
+- **After**: Clear goals of what TO accomplish → concise, effective
+
+### Game Master Prompt Rewrite
+- Removed "family-friendly" language causing overly cautious questions
+- Treat 10+ year-olds as pre-teens/teens, not young children
+- Expanded Act 1 examples: passions, skills, entertainment, local flavor, binary debates, interest grids
+- Added explicit rule: "Avoid memory-check questions in Act 1 (answers are secret)"
+- Reduced from ~200 lines to ~80 lines
+
+### Trivia Challenge Improvements
+- Fixed "ordinal problem": AI was asking "What was the SECOND thing?" (impossible to answer)
+- Added guidance: "Ask about MEMORABLE or DISTINCTIVE parts, not list order"
+
+### Mad Libs Enhancement
+- Changed to exactly 2 blanks per template (was variable)
+- Added Cards Against Humanity energy with witty templates
+- Goal shifted to "Make players feel WITTY, not just shocking"
+- 8 strong example templates that reward cleverness over crude answers
+
+### Mini-Game Eligibility Relaxed
+- Removed artificial `>= 3 turns` constraint
+- Now available with just 1 eligible turn from another player
+- Rationale: Act 1 already collects data, constraint was redundant
+
+### Timed Binary UX Fixes
+- Added "Neither" button as third option below main choices
+- Fixed pre-selection bug (first button appeared selected on load)
+- Added `focus:outline-none` and blur-on-mount to prevent auto-focus
+
 ## App Routes and Flow
 
 - `/` Home page with Google sign-in CTA. If a session exists, the client redirects to `/setup`.
@@ -38,7 +72,48 @@ Repository: https://github.com/taylorbayouth/family-glitch
 5. The app requests short AI commentary (toolChoice: `none`) and shows a manual "Pass to {next}" button.
 6. Game ends when `useGameStore().isGameComplete()` returns true, then `/play` shows `EndGameResults` which calls `/api/announcer` for rankings.
 
-Notes:
+### 3-Act Structure
+
+The game divides into acts based on progress (calculated in `lib/constants.ts`):
+
+**Act 1 (0-33% of rounds)**: Data Collection
+- AI asks questions using input templates to learn about each player
+- Questions reveal interests, skills, preferences, stories, local knowledge
+- **Critical constraint**: Questions must NOT test memory of other players' answers (those are secret until Act 2)
+- Examples: "What could you talk about for hours?" "Beatles or Stones?" "Favorite YouTuber?"
+- Goal: Build knowledge database for mini-games in Acts 2-3
+
+**Act 2 (33-66%)**: Mini-Games Unlocked (Trivia, Personality Match, Hard Trivia)
+- AI switches from questions to mini-games that test family knowledge
+- Eligibility: At least 1 completed turn from another player
+- Games reference Act 1 answers to create personalized challenges
+
+**Act 3 (66-100%)**: All Mini-Games Available
+- All 6 mini-games unlocked: + Mad Libs, Cryptic Connection, The Filter
+- More challenging games appear as the knowledge base grows
+
+### Mini-Game Handoff Process
+
+When AI returns a mini-game template type (e.g., `trivia_challenge`):
+
+1. `/play` detects `isMiniGame(templateType)` → true
+2. Loads registry config from `lib/mini-games/registry.ts`
+3. Calls `extractConfig()` to build game-specific props from AI tool params
+4. Renders mini-game UI component (e.g., `TriviaChallengeUI`)
+5. Mini-game owns:
+   - Its own AI calls (generation + scoring)
+   - User interaction
+   - Turn creation via `addTurn()`
+   - Score calculation (0-5 points)
+6. On completion: `onComplete(MiniGameResult)`
+7. `/play` calls `updatePlayerScore()` and shows commentary
+
+All mini-games follow a **2-turn AI pattern**:
+- Turn 1: Generate puzzle/question
+- Turn 2: Score the player's response
+
+### Implementation Notes
+
 - The pass screen uses a large button, not the `SlideToUnlock` component. `SlideToUnlock` exists but is not wired into `/play`.
 - Both regular questions and mini-games create `Turn` entries in the game store for proper progress tracking.
 - Scores from mini-games are applied to the player's total via `updatePlayerScore()`.
@@ -127,11 +202,23 @@ Template tools that start mini-games:
 
 ### Game Master Prompt
 
-`buildGameMasterPrompt()` injects:
-- Player roster and scores
-- Recent turns (last 5) to avoid repeated topics
-- Act logic (Act 1 questions, Act 2+ mini-games)
-- Rules for short, single-question prompts and brief commentary
+`buildGameMasterPrompt()` in `lib/ai/game-master-prompt.ts` injects:
+- Player roster with ages, roles, and current player indicator
+- Score leaderboard (if any scores exist)
+- Recent turns (last 8) to avoid repeated questions
+- Act-specific mission and available games
+- Eligible trivia turns (if any) with player IDs for `trigger_personality_match`
+
+**Act 1 mission**: Ask ONE question per turn to learn about family interests, skills, preferences
+**Act 2+ mission**: Run ONE mini-game per turn, picking games that fit player age and interests
+
+Key rules in prompt:
+- ONE question or mini-game per turn
+- NEVER repeat a question that's been asked before
+- Keep questions short (under 20 words)
+- Match content to the player's age and world
+- Be witty - one-liner commentary only (max 10 words)
+- In Act 1: Avoid memory-check questions (answers are secret)
 
 ### Announcer Prompt
 
@@ -157,15 +244,78 @@ Notes:
 
 Mini-games are registered in `lib/mini-games/*/register.ts` and discovered via the registry in `lib/mini-games/registry.ts`.
 
-Available mini-games (6 total):
-- Trivia Challenge (glitch theme)
-- Hard Trivia (cyan theme)
-- Personality Match (mint theme)
-- Mad Libs Challenge (amber theme)
-- Cryptic Connection (violet theme)
-- The Filter (teal theme)
+### Available Mini-Games (6 total)
 
-Eligibility rules live in `lib/mini-games/eligibility.ts`. `/play` currently uses `getEligibleTurnsForPlayer()` to pass trivia eligibility data into the prompt.
+1. **Trivia Challenge** (glitch/purple theme)
+   - Type: `trivia_challenge`
+   - Trigger: `trigger_trivia_challenge`
+   - Uses a past turn from another player
+   - AI asks a question about what that player said
+   - Scores 0-5 based on answer accuracy
+   - Eligibility: ≥1 completed turn from another player
+
+2. **Hard Trivia** (cyan theme)
+   - Type: `hard_trivia`
+   - Trigger: `trigger_hard_trivia`
+   - Multiple-choice trivia based on player's stated interests
+   - Scores 0-5 based on correctness
+   - No special eligibility (always available in Acts 2+)
+
+3. **Personality Match** (mint theme)
+   - Type: `personality_match`
+   - Trigger: `trigger_personality_match` (requires `subjectPlayerId`)
+   - Player describes a family member using word grid
+   - AI scores based on past turns about that person
+   - Eligibility: ≥1 completed turn from another player
+
+4. **Mad Libs Challenge** (amber theme)
+   - Type: `madlibs_challenge`
+   - Trigger: `trigger_madlibs_challenge`
+   - Fill-in-the-blank with 2 blanks, each with a starting letter
+   - Scores 0-5 based on creativity and wit
+   - No special eligibility (always available in Act 3+)
+
+5. **Cryptic Connection** (violet theme)
+   - Type: `cryptic_connection`
+   - Trigger: `trigger_cryptic_connection`
+   - 5×5 word grid, find the mystery connecting word
+   - Scores 0-5 with fuzzy AI matching
+   - No special eligibility (always available in Act 3+)
+
+6. **The Filter** (teal theme)
+   - Type: `the_filter`
+   - Trigger: `trigger_the_filter`
+   - Grid-based selection game with pattern recognition
+   - Select items that match a secret rule
+   - Scores 0-5 based on selections
+   - No special eligibility (always available in Act 3+)
+
+### Mini-Game Architecture
+
+**Registry pattern**: Each game has:
+- `register.ts` - Registers with central registry
+- `prompt.ts` - AI prompts for generation and scoring
+- Component in `components/mini-games/` - UI and game logic
+
+**2-turn AI pattern** (all mini-games follow this):
+1. **Generation turn**: AI creates puzzle/question content
+2. **Scoring turn**: AI evaluates player's response and assigns 0-5 points
+
+**Config extraction**: Registry's `extractConfig()` validates AI params and builds game-specific props
+
+**Turn tracking**: Mini-games call `addTurn()` themselves for proper game progression
+
+### Eligibility System
+
+`lib/mini-games/eligibility.ts` provides:
+- `getEligibleTurnsForPlayer(turns, currentPlayerId)` - Returns completed turns from other players
+- Used by `/play` to build `triviaEligibleTurns` for Game Master prompt
+- Used by `trivia-challenge/register.ts` and `personality-match/register.ts` for config extraction
+
+**Current eligibility requirements** (as of v1.1.3):
+- Trivia Challenge: ≥1 eligible turn
+- Personality Match: ≥1 eligible turn
+- All others: No requirements (always available in their unlocked act)
 
 ## State Management
 
@@ -223,6 +373,44 @@ Custom classes in `app/globals.css`:
 Some pages still use inline styles:
 - `/auth/signin`
 - `/chat`
+
+## Common Pitfalls and Debugging
+
+### Act Boundaries
+- Acts are calculated as 33%/66% splits, NOT 25%/75%
+- Calculated in `lib/constants.ts` by `calculateCurrentAct()`
+- Must match `GameProgressBar.tsx` divider positions
+
+### Mini-Game Eligibility
+- Don't add artificial turn count requirements (e.g., `>= 3`)
+- Act 1 already collects data - just need ≥1 eligible turn
+- Trivia/Personality Match require eligible turns; others don't
+
+### AI Prompt Design
+- **Goal-focused** beats restriction-heavy
+- Show examples of what you WANT, not endless lists of what NOT to do
+- Keep prompts concise - long prompts confuse the AI
+- Treat 10+ year-olds as pre-teens/teens, not young kids
+
+### Turn Creation
+- Both regular questions AND mini-games must call `addTurn()`
+- Without turn creation, game progress stalls
+- Mini-games should call `addTurn()` during generation phase
+
+### Score Application
+- Mini-games return `MiniGameResult` with score
+- `/play` must call `updatePlayerScore()` to apply it
+- Don't forget this step or scores won't update
+
+### Template Type Mismatches
+- Always check if template type is in registry before rendering
+- Use `isMiniGame(templateType)` to detect mini-games
+- Use `getTemplateComponent(templateType)` for regular templates
+
+### Defensive Coding
+- All AI prompt builders should have null checks
+- Use patterns like: `const safeName = player?.name || 'Player'`
+- Filter arrays defensively: `(arr || []).filter(x => x && x.property)`
 
 ## API Endpoints
 
@@ -310,3 +498,54 @@ npm start
 ## Testing
 
 No test runner is configured yet. There are no automated tests in the repo.
+
+## Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history. See [ROADMAP.md](ROADMAP.md) for planned features.
+
+### v1.1.3 - AI Prompt Improvements & UX Fixes (2026-01-21)
+
+**AI Prompt Philosophy Shift**: Changed from restriction-heavy to goal-focused prompts.
+
+**Game Master Prompt Rewrite**:
+- Removed "family-friendly" language causing overly cautious questions
+- Treat 10+ year-olds as pre-teens/teens, not young children
+- Expanded Act 1 examples: passions, skills, entertainment, local flavor, binary debates, interest grids
+- Added explicit rule: "Avoid memory-check questions in Act 1 (answers are secret)"
+- Reduced from ~200 lines to ~80 lines
+
+**Trivia Challenge**: Fixed ordinal problem (AI asking "What was the SECOND thing?")
+**Mad Libs**: Exactly 2 blanks, Cards Against Humanity energy, focus on wit
+**Mini-Game Eligibility**: Removed `>= 3 turns` constraint (now just ≥1 eligible turn)
+**Timed Binary**: Added "Neither" button, fixed pre-selection bug
+
+### v1.1.1 - Critical Bug Fixes (2026-01-18)
+
+**Critical Fixes**:
+- React Hooks violation in `/play`
+- Hard Trivia props mismatch (`currentPlayer` → `targetPlayer`)
+- Mini-games now create turn entries for proper progression
+- Score application via `updatePlayerScore()`
+- Play Again reset clears stale state
+
+**AI Prompts**: Comprehensive null safety checks in all mini-game prompt builders
+**UI/UX**: Removed scrolling, improved spacing, vibrant progress bar
+
+### v1.1.0 - Feature Additions (2026-01-15)
+
+- Fixed game header with leaderboard and progress bar
+- Hard Trivia mini-game
+- The Filter mini-game
+- 0-5 scoring standardization
+- Mini-games only in Acts 2-3
+- Announcer API uses GPT-5.2
+
+### v1.0.0 - Initial Release (2026-01-10)
+
+- Next.js 15 + React 19 + TypeScript
+- Google OAuth via NextAuth v5
+- GPT-5.2 chat completions with tool execution
+- 6 input templates
+- 4 mini-games (Trivia, Personality Match, Mad Libs, Cryptic Connection)
+- 3-act game structure
+- Pass-and-play gameplay

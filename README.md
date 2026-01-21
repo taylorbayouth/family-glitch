@@ -10,13 +10,19 @@ Repository: https://github.com/taylorbayouth/family-glitch
 - Next.js 15 App Router with React 19 and TypeScript
 - Google OAuth via NextAuth v5
 - GPT-5.2 chat completions with server-side tool execution
-- Template-driven input system (6 templates)
-- Mini-game registry (6 games: Trivia Challenge, Hard Trivia, Personality Match, Mad Libs, Cryptic Connection, The Filter)
+- Template-driven input system (6 templates for Act 1 data collection)
+- Mini-game registry (6 games for Acts 2-3):
+  - Trivia Challenge - Quiz on other players' answers
+  - Hard Trivia - Interest-based multiple choice
+  - Personality Match - Word grid personality description
+  - Mad Libs - Fill-in-the-blank with letter constraints
+  - Cryptic Connection - 5×5 word grid puzzle
+  - The Filter - Pattern recognition selection game
+- 3-act structure: Act 1 learns, Acts 2-3 test knowledge
 - End-game announcer results (AI rankings and blurbs)
 - Zustand stores with localStorage persistence
 - Tailwind CSS v4 theme tokens in `app/globals.css`
 - Framer Motion animations
-- ARIA accessibility labels and keyboard navigation (v1.2.0)
 
 ## Quick Start
 
