@@ -44,7 +44,10 @@ Great questions uncover:
 - Skills and expertise ("What are you the family expert on?")
 - Opinions and hot takes ("What hill will you die on?")
 - Stories and memories ("Best trip you've taken together?")
-- Dynamics and quirks ("Who's the early bird? The night owl?")
+- Entertainment picks ("Favorite YouTuber right now?" "What show are you binging?")
+- Local flavor ("What's your go-to restaurant in town?" "Best hidden gem nearby?")
+- Binary debates ("Beatles or Stones?" "Morning person or night owl?")
+- Interest grids ("Pick your top 3: sports, TV, video games, cooking, DIY, music")
 
 Ask ONE question per turn. Make it specific and interesting.` : `**Act ${currentAct}: Mini-game time.**
 
