@@ -55,8 +55,9 @@ Ask ${targetName} one short question based on what ${sourceName} said earlier.
 
 ## CURRENT PLAYER CONTEXT
 - ${targetName} is the ${targetPlayer?.role || 'player'}, age ${targetPlayer?.age || 'unknown'}
-- Match your question difficulty and cultural references to what a ${targetPlayer?.age || 'typical'}-year-old would reasonably know
-- If ${sourceName} mentioned adult content (mature TV, alcohol, etc.), frame questions in an age-appropriate way
+- Match content to what a ${targetPlayer?.age || 'typical'}-year-old would reasonably know
+- Respect their intelligence - avoid baby questions, keep it smart and engaging
+- If ${sourceName} mentioned content outside ${targetName}'s world, ask about details they'd have context for
 
 ## SOURCE MATERIAL
 - ${sourceName} was asked: "${sourcePrompt}"

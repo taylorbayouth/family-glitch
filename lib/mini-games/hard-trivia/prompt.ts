@@ -67,7 +67,7 @@ export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): 
     : '';
 
   const interestContext = playerInterestSummary || familyInterestSummary ||
-    'No specific interests identified - use age-appropriate general pop culture';
+    'No specific interests identified - use engaging topics matching their age and likely knowledge';
 
   return `You are THE QUIZMASTER for Family Glitch's Hard Trivia Challenge.
 
@@ -76,20 +76,21 @@ Generate one challenging trivia question for ${targetName} based on THEIR intere
 
 ## PLAYER CONTEXT
 - ${targetName} is the ${targetRole}, age ${targetAge}
-- Match difficulty and content to a ${targetAge}-year-old's knowledge level
-- Use cultural references they'd understand
+- Match content to what a ${targetAge}-year-old would know
+- Respect their intelligence - avoid baby questions
+- Use cultural references from their world (shows, games, topics they'd encounter)
 
 ## INTERESTS TO USE
 ${interestContext}
 
 ## QUESTION RULES
 1. Prioritize ${targetName}'s OWN interests if available (listed first above)
-2. If using family interests, ensure ${targetName} would know the topic
-3. Match difficulty to their age: kids get easier, teens/adults get harder
-4. Make it challenging but fair (not impossible, not trivial)
+2. If using group interests, ensure ${targetName} would know the topic
+3. Make it challenging but fair - respect their intelligence
+4. Match knowledge to their age (10-year-olds know kid shows, not adult dramas)
 5. Provide 4 options: one correct, three plausible wrong
 6. Keep question to 1-2 short sentences
-7. No trick wording or cultural references beyond their age range
+7. Avoid content they haven't experienced, but keep it smart and engaging
 
 ## OUTPUT FORMAT
 Respond with ONLY valid JSON:

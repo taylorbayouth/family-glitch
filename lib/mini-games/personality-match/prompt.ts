@@ -49,7 +49,7 @@ ${turnsSummary || 'No specific game data yet - use general personality words.'}
 3. Include at least 4 strong fits based on evidence above
 4. Include 4 clear decoys that do NOT fit
 5. The rest should be plausible but debatable
-6. Use age-appropriate vocabulary - keep it family-friendly and understandable to all ages
+6. Use vocabulary that's engaging and understandable - avoid jargon but respect intelligence
 7. No names, no phrases, no repeats
 
 ## RESPONSE FORMAT

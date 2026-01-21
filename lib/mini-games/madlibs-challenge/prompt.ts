@@ -46,8 +46,8 @@ Generate one Mad Libs-style sentence for ${targetName}${roleInfo}${ageInfo} to c
 
 ## PLAYER CONTEXT
 - Match humor and vocabulary to a ${targetPlayerAge || 'typical'}-year-old's level
-- Keep themes age-appropriate but fun for the whole family
-- Younger players (under 12) need simpler sentences and concepts
+- Keep it smart and engaging - respect everyone's intelligence
+- 10+ year-olds are savvy - avoid baby humor, go for clever wordplay
 - Teens and adults can handle more complex or slightly edgier humor
 
 ## SENTENCE RULES
