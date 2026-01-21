@@ -45,18 +45,16 @@ export function buildMadLibsGeneratorPrompt(context: GeneratePromptContext): str
 Generate one Mad Libs-style sentence for ${targetName}${roleInfo}${ageInfo} to complete.
 
 ## PLAYER CONTEXT
-- Match humor and vocabulary to a ${targetPlayerAge || 'typical'}-year-old's level
-- Keep it smart and engaging - respect everyone's intelligence
-- 10+ year-olds are savvy - avoid baby humor, go for clever wordplay
-- Teens and adults can handle more complex or slightly edgier humor
+- ${targetName} is ${targetPlayerAge || 'an adult'}${targetPlayerAge && targetPlayerAge < 13 ? ' - keep it PG but still funny' : ' - go for edgy, awkward-reveal humor'}
+- Think Cards Against Humanity energy: setups where ANY fill-in becomes hilarious
+- The best templates make players nervous about what they're about to reveal
 
 ## SENTENCE RULES
 1. 8-14 words total
 2. Include 1-3 blanks marked as ___
-3. The reveal should be funny or oddly revealing when filled in
-4. Use family-safe humor appropriate for the player's age
-5. Avoid proper names and real people
-6. The system assigns starting letters later
+3. Structure it so the reveal is awkward, confessional, or absurd
+4. Avoid proper names and real people
+5. The system assigns starting letters later
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
@@ -66,11 +64,17 @@ Respond with valid JSON:
   \"hint\": \"Optional playful hint about the theme\"
 }
 
-## STRONG TEMPLATE SHAPES
-- \"The last time I ___ at dinner, everyone ___.\"
-- \"My secret talent is ___ while pretending to be ___.\"
-- \"If I could ___ once without consequences, I'd do it ___.\"
-- \"Everyone thinks I'm ___, but I'm actually ___.\"
+## STRONG TEMPLATE SHAPES (Cards Against Humanity energy)
+- \"Mom doesn't know I've been ___ in the ___.\"
+- \"The family group chat went silent after I mentioned ___.\"
+- \"At the reunion, grandma caught me ___.\"
+- \"My browser history is just ___ and ___.\"
+- \"I told my boss I was sick but I was actually ___.\"
+- \"The therapist said my ___ is concerning.\"
+- \"Dating me is like ___ but with more ___.\"
+- \"My tombstone will read: Died doing what they loved - ___.\"
+
+The best templates set up awkward reveals where almost ANY word becomes funny.
 
 Generate ONE creative template.`;
 }

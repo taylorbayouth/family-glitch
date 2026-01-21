@@ -134,6 +134,7 @@ export function TimedBinaryTemplate({
           disabled={hasSelected}
           whileTap={{ scale: 0.97 }}
           autoFocus={false}
+          tabIndex={-1}
           className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-glitch/30 to-glitch/10 border-3 border-glitch hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
           <div className="absolute inset-0 bg-glitch/0 group-hover:bg-glitch/10 transition-all" />
@@ -153,6 +154,7 @@ export function TimedBinaryTemplate({
           disabled={hasSelected}
           whileTap={{ scale: 0.97 }}
           autoFocus={false}
+          tabIndex={-1}
           className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-frost/30 to-frost/10 border-3 border-frost hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
           <div className="absolute inset-0 bg-frost/0 group-hover:bg-frost/10 transition-all" />
