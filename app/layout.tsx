@@ -37,12 +37,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="antialiased">
-      <body className="min-h-screen bg-void text-frost overflow-x-hidden">
+      <body className="bg-void text-frost">
         {/* Noise overlay for texture */}
         <div className="noise-overlay" />
         <SessionProvider>
-          <HamburgerMenu />
-          {children}
+          <div className="app-shell">
+            <HamburgerMenu />
+            {children}
+          </div>
         </SessionProvider>
       </body>
     </html>

@@ -63,6 +63,9 @@
     color: var(--color-frost);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
   }
 
   body {
@@ -70,11 +73,22 @@
     background-color: var(--color-void);
     color: var(--color-frost);
     overscroll-behavior: none;
-    touch-action: pan-y;
+    touch-action: manipulation;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   button:focus {
     outline: none;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
@@ -83,10 +97,17 @@
   }
 
   /* Form element resets for dark theme */
-  input, select, textarea {
+  input, select, textarea, button {
     background-color: var(--color-void-light);
     border-color: var(--color-steel-800);
     color: var(--color-frost);
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   input::placeholder {
@@ -101,6 +122,17 @@
 
 /* Component Styles */
 @layer components {
+  .app-shell {
+    min-height: 100dvh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Glass effect */
   .glass {
     backdrop-filter: blur(12px);
