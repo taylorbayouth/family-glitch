@@ -7,6 +7,7 @@ import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { GameHeader } from '@/components/GameHeader';
 import { getTheme } from '@/lib/mini-games/themes';
 import triviaIcon from '@/lib/mini-games/trivia-challenge/icon.png';
 import {
@@ -41,6 +42,8 @@ interface TriviaChallengeUIProps {
 
   /** Called if user wants to skip */
   onSkip?: () => void;
+
+  turnNumber?: number;
 }
 
 type ChallengePhase = 'intro' | 'loading' | 'question' | 'answering' | 'scoring' | 'result';
@@ -63,6 +66,7 @@ export function TriviaChallengeUI({
   allPlayers,
   onComplete,
   onSkip,
+  turnNumber,
 }: TriviaChallengeUIProps) {
   const [phase, setPhase] = useState<ChallengePhase>('intro');
   const [question, setQuestion] = useState('');
@@ -262,25 +266,30 @@ export function TriviaChallengeUI({
   }
 
   return (
-    <div className="bg-void flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-mono text-xs text-glitch uppercase tracking-wider">
-              Trivia Challenge
-            </p>
-            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
-          </div>
-          <div className="text-right">
-            <p className="font-mono text-xs text-steel-500">About</p>
-            <p className="text-frost">{sourceTurn.playerName}</p>
+    <div className="min-h-dvh h-dvh bg-void flex flex-col">
+      {phase === 'scoring' && (
+        <GameHeader currentPlayerId={targetPlayer.id} turnNumber={turnNumber} compact />
+      )}
+
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-mono text-xs text-glitch uppercase tracking-wider">
+                Trivia Challenge
+              </p>
+              <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-xs text-steel-500">About</p>
+              <p className="text-frost">{sourceTurn.playerName}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 safe-bottom-gap">
+        {/* Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 safe-bottom-gap">
         <AnimatePresence mode="wait">
           {/* Loading Phase */}
           {phase === 'loading' && (
@@ -500,6 +509,7 @@ export function TriviaChallengeUI({
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

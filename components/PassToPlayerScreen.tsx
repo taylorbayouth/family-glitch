@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { GameHeader } from '@/components/GameHeader';
 import type { Player } from '@/lib/store/player-store';
 
 /**
@@ -22,6 +23,7 @@ export function PassToPlayerScreen({
   player,
   onUnlock,
   isLoadingQuestion,
+  turnNumber,
 }: PassToPlayerScreenProps) {
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
@@ -82,12 +84,13 @@ export function PassToPlayerScreen({
     }, 20);
   };
   return (
-    <div
-      className="min-h-dvh bg-void flex flex-col relative"
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
-    >
+    <div className="min-h-dvh bg-void flex flex-col relative">
       {/* Background effects */}
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
+
+      <div className="relative z-10">
+        <GameHeader currentPlayerId={player.id} turnNumber={turnNumber} />
+      </div>
 
       {/* Main content - flex-1 pushes button to bottom when content is short */}
       <div className="flex-1 flex items-center justify-center px-6 relative z-10">

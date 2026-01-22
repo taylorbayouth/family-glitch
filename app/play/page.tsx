@@ -8,7 +8,6 @@ import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
 import { InsightsCollectionScreen } from '@/components/InsightsCollectionScreen';
-import { GameHeader } from '@/components/GameHeader';
 import { EndGameResults } from '@/components/EndGameResults';
 import { calculateCurrentAct, calculateTotalRounds } from '@/lib/constants';
 import { selectQuestionForPlayer, type TransitionEventDefinition } from '@/lib/act-transitions';
@@ -635,9 +634,6 @@ CRITICAL RULES:
         {/* Background */}
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
 
-        {/* Sticky Header */}
-        <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} />
-
         {/* Template */}
         <div className="relative z-10 flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar">
           <TemplateRenderer
@@ -668,9 +664,6 @@ CRITICAL RULES:
 
       return (
         <div className="min-h-dvh h-dvh bg-void flex flex-col overflow-hidden">
-          {/* Fixed Header */}
-          <GameHeader currentPlayerId={currentPlayer.id} turnNumber={turnNumber} compact />
-
           {/* Mini-game content */}
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <MiniGameComponent
@@ -688,6 +681,7 @@ CRITICAL RULES:
               }))}
               onComplete={handleMiniGameComplete}
               onSkip={handleMiniGameSkip}
+              turnNumber={turnNumber}
               {...activeMiniGame.config}
             />
           </div>

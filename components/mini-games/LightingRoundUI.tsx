@@ -36,6 +36,7 @@ interface LightingRoundUIProps {
   intro?: string;
   onComplete: (result: MiniGameResult) => void;
   onSkip?: () => void;
+  turnNumber?: number;
 }
 
 type LightingRoundPhase = 'intro' | 'loading' | 'question' | 'feedback' | 'result' | 'error';
