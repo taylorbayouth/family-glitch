@@ -46,11 +46,11 @@ export function buildHardTriviaGeneratorPrompt(context: GeneratePromptContext): 
   );
 
   const playerContext = playerTurns.length > 0
-    ? `What ${targetName} has shared:\n${playerTurns.slice(-5).map(t => `- "${t.prompt}" → ${JSON.stringify(t.response)}`).join('\n')}`
+    ? `What ${targetName} has shared:\n${playerTurns.map(t => `- "${t.prompt}" → ${JSON.stringify(t.response)}`).join('\n')}`
     : '';
 
   const familyContext = allCompletedTurns.length > 0
-    ? `What the family has shared:\n${allCompletedTurns.slice(-5).map(t => `- ${t.playerName}: "${t.prompt}" → ${JSON.stringify(t.response)}`).join('\n')}`
+    ? `What the family has shared:\n${allCompletedTurns.map(t => `- ${t.playerName}: "${t.prompt}" → ${JSON.stringify(t.response)}`).join('\n')}`
     : '';
 
   return `You are THE QUIZMASTER for Family Glitch's Hard Trivia.

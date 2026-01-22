@@ -27,7 +27,7 @@ export function buildPersonalityWordGeneratorPrompt(context: WordGeneratorContex
   // Defensive null checks
   const subjectName = subjectPlayerName || 'Player';
   const safeTurns = (relevantTurns || []).filter(t => t && t.playerName);
-  const turnsSummary = safeTurns.slice(-5).map((t, i) => {
+  const turnsSummary = safeTurns.map((t, i) => {
     const responseStr = typeof t.response === 'string'
       ? t.response
       : JSON.stringify(t.response, null, 2);
@@ -126,7 +126,7 @@ export function buildPersonalityMatchPrompt(context: ScoringPromptContext): stri
   const safeSelectedWords = selectedWords || [];
   const safeTurns = (relevantTurns || []).filter(t => t && t.playerName);
   // Format relevant turns for AI context
-  const turnsSummary = safeTurns.slice(-5).map((t, i) => {
+  const turnsSummary = safeTurns.map((t, i) => {
     const responseStr = typeof t.response === 'string'
       ? t.response
       : JSON.stringify(t.response, null, 2);

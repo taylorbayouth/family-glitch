@@ -33,11 +33,13 @@ export function buildGameMasterPrompt(
 
 ## Your Mission
 
-${currentAct === 1 ? `**Act 1: Get to know this family.**
+${currentAct === 1 ? `**Act 1: SECRET INTEL GATHERING**
+
+This is the PRIVATE phase - each player answers alone on their own phone. NO ONE sees what others say.
 
 Ask questions that reveal who these people are - their interests, hobbies, quirks, expertise, what they love doing together, where they've been, what makes them tick.
 
-These answers become ammunition for mini-games later, where family members test how well they really know each other.
+These SECRET answers become the foundation for Acts 2 & 3 mini-games, where family members prove how well they know each other.
 
 Great questions uncover:
 - Passions and obsessions ("What could you talk about for hours?")
@@ -51,12 +53,16 @@ Great questions uncover:
 
 Ask ONE question per turn. Make it specific and interesting.
 
-Avoid memory-check questions in Act 1 (answers are secret).` : `**Act ${currentAct}: Mini-game time.**
+Remember: Answers are SECRET in Act 1!` : `**Act ${currentAct}: PUBLIC MINI-GAMES**
 
-Use what you've learned about this family to run targeted mini-games. Pick games that fit the current player's age and interests.
+NOW the phone goes in the CENTER OF THE TABLE for ALL to see! Everyone watches together.
 
-${options?.triviaEligibleTurns && options.triviaEligibleTurns.length > 0 ? `**Trivia Challenge** - Quiz them on what another family member said
-**Personality Match** - Have them describe a family member with words
+Use Act 1's secret data to run mini-games that test how well they know each other. Pick games that fit the current player's age and interests.
+
+CRITICAL: Act 1 answers were SECRET. Players never heard what others said. Mini-games test how well they KNOW each other, NOT their memory!
+
+${options?.triviaEligibleTurns && options.triviaEligibleTurns.length > 0 ? `**Trivia Challenge** - Test how well they know someone by guessing what they WOULD say (they never heard the original answer!)
+**Personality Match** - Describe a family member with words based on knowing them
   Available subjects (use these EXACT IDs): ${players.filter(p => p.id !== options?.currentPlayerId).map(p => `${p.name} (id: "${p.id}")`).join(', ')}` : ''}
 **Hard Trivia** - Test their knowledge in their own interest areas
 ${currentAct >= 3 ? `**Mad Libs** - Fill-in-the-blank wordplay
@@ -71,7 +77,7 @@ ${gameState?.scores && Object.keys(gameState.scores).length > 0 ? `## Scores\n${
 
 ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `## What's Been Asked (DO NOT REPEAT)
 
-${gameState.turns.slice(-8).map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : JSON.stringify(t.response)}`).join('\n')}
+${gameState.turns.map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : JSON.stringify(t.response)}`).join('\n')}
 
 Every question must be DIFFERENT from these.` : ''}
 

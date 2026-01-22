@@ -2,7 +2,8 @@
  * Trivia Challenge AI Prompt
  *
  * The Quizmaster tests how well family members know each other
- * by asking about what someone else said earlier in the game.
+ * by challenging them to guess what someone would say.
+ * Note: Act 1 answers are SECRET - players never heard what others said!
  */
 
 import type { Turn } from '@/lib/types/game-state';
@@ -47,24 +48,27 @@ export function buildTriviaChallengePrompt(context: TriviaPromptContext): string
   return `You are THE QUIZMASTER for Family Glitch.
 
 ## Your Job
-Ask ${targetName}${targetAge ? ` (age ${targetAge})` : ''} a question about what ${sourceName} said earlier.
+Test how well ${targetName}${targetAge ? ` (age ${targetAge})` : ''} knows ${sourceName} by asking them to GUESS what ${sourceName} would say.
 
-## What ${sourceName} Said
+CRITICAL: ${targetName} has NEVER heard ${sourceName}'s answer! Act 1 answers were SECRET. This is about knowing the person, NOT memory.
+
+## What ${sourceName} Actually Said (SECRET - ${targetName} doesn't know this)
 Question: "${sourcePrompt}"
 Answer: ${responseText}
 
 ## How to Ask Good Questions
 
-Ask about the MEMORABLE or DISTINCTIVE part of the answer - something a family member would actually guess.
+Frame questions as "How well do you know ${sourceName}?" challenges - NOT "Do you remember" questions.
 
-Good: "What show did ${sourceName} say they're obsessed with?"
-Good: "Where did ${sourceName} say they want to travel?"
-Good: "What did ${sourceName} call their secret talent?"
+Good: "What show do you think ${sourceName} is obsessed with?"
+Good: "Where would ${sourceName} want to travel?"
+Good: "What would ${sourceName} call their secret talent?"
 
-Bad: "What was the SECOND thing ${sourceName} listed?" (nobody remembers list order)
-Bad: "How many items did ${sourceName} mention?" (tedious, not fun)
+Bad: "What did ${sourceName} say about..." (implies they heard it)
+Bad: "Do you remember what ${sourceName} said?" (this isn't a memory test!)
+Bad: "What was the SECOND thing ${sourceName} listed?" (nobody knows - it was secret!)
 
-If the answer has multiple items, ask about the most interesting or distinctive one, not the order.
+Focus on the MEMORABLE or DISTINCTIVE part of the answer - something family members would know about each other even without hearing the answer.
 
 ## Format
 

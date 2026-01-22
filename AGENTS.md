@@ -412,6 +412,35 @@ Some pages still use inline styles:
 - Use patterns like: `const safeName = player?.name || 'Player'`
 - Filter arrays defensively: `(arr || []).filter(x => x && x.property)`
 
+### AI Context Requirements ⚠️ CRITICAL
+
+**MANDATORY RULE: Always send FULL game state to AI prompts when context is needed.**
+
+Modern AI models (GPT-5.2, Claude Sonnet, etc.) have massive context windows (200K+ tokens). There is NO need to artificially limit the data we send. Limiting context causes critical bugs like:
+- Question repetition (AI "forgets" old questions and repeats them)
+- Poor personalization (AI can't see full player history)
+- Inconsistent mini-game scoring (AI lacks complete context)
+
+**DO NOT use `.slice(-N)` to limit context unless you have a specific, documented reason.**
+
+**Examples of what to send:**
+- ✅ All game turns (`gameState.turns.map(...)`) - NOT `.slice(-8)`
+- ✅ All player turns (`playerTurns.map(...)`) - NOT `.slice(-5)`
+- ✅ Full conversation history
+- ✅ Complete player profiles
+
+**Previous bugs caused by artificial limits:**
+- `gameState.turns.slice(-8)` caused question repetition after 8+ turns (FIXED in v1.1.4)
+- `playerTurns.slice(-5)` in Hard Trivia limited personalization (FIXED in v1.1.4)
+- `safeTurns.slice(-5)` in Personality Match limited accuracy (FIXED in v1.1.4)
+
+**When to limit context (rare cases):**
+- User-facing UI displays (e.g., "Show last 5 messages")
+- Performance-critical real-time updates
+- Explicit user preferences
+
+**Cost is not a concern:** The benefit of full context far outweighs token costs. A better AI experience is worth the extra ~$0.01 per game.
+
 ## API Endpoints
 
 - `POST /api/chat` Chat completions with tool execution loop
