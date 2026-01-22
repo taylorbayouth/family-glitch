@@ -19,6 +19,26 @@ const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 const ISO_TIMESTAMP_PATTERN = /"timestamp":\s*"[^"]+"/g;
 
 /**
+ * Template type labels for readability in AI context.
+ * These replace internal IDs with short, human-friendly labels.
+ */
+const TEMPLATE_TYPE_LABELS: Record<string, string> = {
+  tpl_text_area: 'text-area',
+  tpl_text_input: 'text-list',
+  tpl_timed_binary: 'binary-choice',
+  tpl_word_grid: 'word-grid',
+  tpl_slider: 'rating',
+  tpl_player_selector: 'player-vote',
+  trivia_challenge: 'trivia',
+  personality_match: 'personality-match',
+  madlibs_challenge: 'mad-libs',
+  cryptic_connection: 'cryptic-connection',
+  hard_trivia: 'hard-trivia',
+  the_filter: 'the-filter',
+  lighting_round: 'lighting-round',
+};
+
+/**
  * Compresses UUIDs in JSON/text to short placeholders
  * 36 chars → ~4 chars, keeping first 4 for debugging
  *
@@ -50,6 +70,19 @@ export function stripTimestamps(text: string): string {
 }
 
 /**
+ * Replaces templateType values with short labels for prompt readability.
+ */
+export function labelTemplateTypes(text: string): string {
+  return text.replace(/"templateType"\s*:\s*"([^"]+)"/g, (match, value: string) => {
+    const label = TEMPLATE_TYPE_LABELS[value];
+    if (!label) {
+      return match;
+    }
+    return match.replace(value, label);
+  });
+}
+
+/**
  * Full sanitization: compress IDs + strip timestamps
  * Use this when stringifying game data for AI prompts
  */
@@ -57,5 +90,17 @@ export function sanitizeForAI(obj: any): string {
   let json = JSON.stringify(obj);
   json = compressIds(json);
   json = stripTimestamps(json);
+  json = labelTemplateTypes(json);
+  return json;
+}
+
+/**
+ * Pretty-printed sanitization for readability in prompts.
+ */
+export function sanitizeForAIPretty(obj: any): string {
+  let json = JSON.stringify(obj, null, 2);
+  json = compressIds(json);
+  json = stripTimestamps(json);
+  json = labelTemplateTypes(json);
   return json;
 }
