@@ -192,21 +192,27 @@ CRITICAL RULES:
         'ask_player_vote',
       ];
 
-      const act23Tools = [
+      const act2Tools = [
         'trigger_trivia_challenge',
         'trigger_personality_match',
         'trigger_hard_trivia',
-        'trigger_madlibs_challenge',
-        'trigger_cryptic_connection',
         'trigger_the_filter',
       ];
 
+      const act3Tools = [
+        ...act2Tools,
+        'trigger_madlibs_challenge',
+        'trigger_cryptic_connection',
+        'trigger_lighting_round',
+      ];
+
       // Select tools based on current act
-      const allowedTools = currentAct === 1 ? act1Tools : act23Tools;
+      const allowedTools = currentAct === 1 ? act1Tools : currentAct === 2 ? act2Tools : act3Tools;
 
       const response = await sendChatRequest(newMessages, {
         toolChoice: 'required', // Force AI to use one of the template tools
         tools: allowedTools, // Restrict to act-appropriate tools (enforced at API level)
+        temperature: 0.9, // Increase variety for questions/mini-games
       });
 
       // Parse tool call result (template configuration)
