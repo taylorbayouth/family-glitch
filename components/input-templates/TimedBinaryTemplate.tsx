@@ -30,6 +30,17 @@ export function TimedBinaryTemplate({
   const [timeLeft, setTimeLeft] = useState(seconds);
   const [hasSelected, setHasSelected] = useState(false);
 
+  // Randomly shuffle left/right options to prevent AI bias
+  const [shuffledOptions] = useState(() => {
+    const shouldSwap = Math.random() < 0.5;
+    return {
+      firstText: shouldSwap ? rightText : leftText,
+      secondText: shouldSwap ? leftText : rightText,
+      firstChoice: shouldSwap ? ('right' as const) : ('left' as const),
+      secondChoice: shouldSwap ? ('left' as const) : ('right' as const),
+    };
+  });
+
   // Prevent auto-focus on mount
   useEffect(() => {
     if (document.activeElement instanceof HTMLElement) {
@@ -71,7 +82,12 @@ export function TimedBinaryTemplate({
       setHasSelected(true);
       onSubmit({
         choice,
-        selectedText: choice === 'left' ? leftText : choice === 'right' ? rightText : resolvedNeitherLabel,
+        selectedText:
+          choice === 'left'
+            ? leftText
+            : choice === 'right'
+            ? rightText
+            : resolvedNeitherLabel,
         timeRemaining: timeLeft,
         timedOut: false,
       });
@@ -139,15 +155,15 @@ export function TimedBinaryTemplate({
             orientation === 'horizontal' ? 'flex-row' : 'flex-col'
           } gap-3 min-h-0`}
         >
-          {/* Left/Top Option */}
+          {/* First Option (randomly left or right) */}
           <motion.button
-            onClick={() => handleChoice('left')}
+            onClick={() => handleChoice(shuffledOptions.firstChoice)}
             onFocus={(event) => event.currentTarget.blur()}
             disabled={hasSelected}
             whileTap={{ scale: 0.97 }}
             autoFocus={false}
             tabIndex={-1}
-            className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-glitch/30 to-glitch/10 border-3 border-glitch hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group focus:outline-none"
+            className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-steel-900/60 to-steel-800/40 border-3 border-steel-700 hover:border-glitch-bright hover:from-glitch/20 hover:to-glitch/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed group focus:outline-none"
           >
             <div className="absolute inset-0 bg-glitch/0 group-hover:bg-glitch/10 transition-all" />
             <div className="relative z-10 h-full flex items-center justify-center p-3">
@@ -155,20 +171,20 @@ export function TimedBinaryTemplate({
                 className="font-black text-frost text-center leading-tight"
                 style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
               >
-                {leftText}
+                {shuffledOptions.firstText}
               </span>
             </div>
           </motion.button>
 
-          {/* Right/Bottom Option */}
+          {/* Second Option (randomly left or right) */}
           <motion.button
-            onClick={() => handleChoice('right')}
+            onClick={() => handleChoice(shuffledOptions.secondChoice)}
             onFocus={(event) => event.currentTarget.blur()}
             disabled={hasSelected}
             whileTap={{ scale: 0.97 }}
             autoFocus={false}
             tabIndex={-1}
-            className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-frost/30 to-frost/10 border-3 border-frost hover:border-glitch-bright transition-all disabled:opacity-50 disabled:cursor-not-allowed group focus:outline-none"
+            className="flex-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-steel-900/60 to-steel-800/40 border-3 border-steel-700 hover:border-frost hover:from-frost/20 hover:to-frost/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed group focus:outline-none"
           >
             <div className="absolute inset-0 bg-frost/0 group-hover:bg-frost/10 transition-all" />
             <div className="relative z-10 h-full flex items-center justify-center p-3">
@@ -176,7 +192,7 @@ export function TimedBinaryTemplate({
                 className="font-black text-frost text-center leading-tight"
                 style={{ fontSize: 'clamp(1.5rem, 8vw, 3rem)' }}
               >
-                {rightText}
+                {shuffledOptions.secondText}
               </span>
             </div>
           </motion.button>

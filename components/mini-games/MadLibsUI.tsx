@@ -15,6 +15,8 @@ import {
   toMiniGameResult,
   fillTemplate,
   createBlanksFromTemplate,
+  getPriorMadLibsGames,
+  getAllMiniGamesPlayed,
 } from '@/lib/mini-games/madlibs-challenge';
 import type { MadLibsBlank, MiniGameResult } from '@/lib/mini-games/types';
 
@@ -68,6 +70,8 @@ export function MadLibsUI({
   const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const scores = useGameStore((state) => state.scores);
+  const storedTurns = useGameStore((state) => state.turns);
+  const transitionResponses = useGameStore((state) => state.transitionResponses);
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
@@ -102,8 +106,14 @@ export function MadLibsUI({
     try {
       const prompt = buildMadLibsGeneratorPrompt({
         targetPlayerName: targetPlayer.name,
+        targetPlayerAge: (targetPlayer as any).age,
+        targetPlayerRole: targetPlayer.role,
         allPlayers,
         scores,
+        turns: storedTurns,
+        transitionResponses,
+        priorMadLibsGames: getPriorMadLibsGames(storedTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(storedTurns),
       });
 
       const response = await sendChatRequest([

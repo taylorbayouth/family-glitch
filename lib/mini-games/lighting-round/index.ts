@@ -10,6 +10,7 @@
 export {
   buildLightingRoundQuestionPrompt,
   parseLightingRoundQuestionResponse,
+  getAllMiniGamesPlayed,
   type LightingRoundHistoryItem,
   type LightingRoundPromptContext,
   type LightingRoundQuestionResponse,

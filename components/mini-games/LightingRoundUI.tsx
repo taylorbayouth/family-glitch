@@ -19,6 +19,7 @@ import lightingRoundIcon from '@/lib/mini-games/lighting-round/icon.png';
 import {
   buildLightingRoundQuestionPrompt,
   parseLightingRoundQuestionResponse,
+  getAllMiniGamesPlayed,
   type LightingRoundHistoryItem,
   type LightingRoundQuestionResponse,
 } from '@/lib/mini-games/lighting-round';
@@ -169,6 +170,7 @@ export function LightingRoundUI({
         seconds: QUESTION_SECONDS,
         previousQuestions: historyForPrompt,
         priorLightingQuestions,
+        allMiniGamesPlayed: getAllMiniGamesPlayed(allTurns),
       });
 
       const response = await sendChatRequest([

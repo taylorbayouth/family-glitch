@@ -11,6 +11,9 @@ export {
   parseFilterGeneratorResponse,
   parseFilterScoreResponse,
   toMiniGameResult,
+  getPriorFilterGames,
+  getAllMiniGamesPlayed,
   type FilterGenerateResponse,
   type FilterScoreResponse,
+  type PriorFilterGame,
 } from './prompt';

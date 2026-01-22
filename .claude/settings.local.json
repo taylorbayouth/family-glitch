@@ -25,7 +25,8 @@
       "Bash(npx tsx:*)",
       "Bash(npm run type-check:*)",
       "Bash(npm run:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(git tag:*)"
     ]
   }
 }

@@ -2,11 +2,11 @@
  * Cryptic Connection Mini-Game
  *
  * Flow:
- * 1. AI generates a cryptic clue and 25-word grid
- * 2. Player selects words they think connect to the clue
- * 3. AI scores with fuzzy logic (exact + creative matches)
+ * 1. AI generates a brain teaser core idea + 25-word grid
+ * 2. Player selects words they think connect to the core idea
+ * 3. AI scores using a right/wrong key with tricky decoys
  *
- * The puzzle is intentionally vague - perfect scores should be rare.
+ * The puzzle is intentionally tough but fair.
  */
 
 export {
@@ -15,7 +15,10 @@ export {
   parseCrypticGeneratorResponse,
   parseCrypticScoreResponse,
   toMiniGameResult,
+  getPriorCrypticGames,
+  getAllMiniGamesPlayed,
   type CrypticGenerateResponse,
   type CrypticScoreResponse,
   type WordScore,
+  type PriorCrypticGame,
 } from './prompt';

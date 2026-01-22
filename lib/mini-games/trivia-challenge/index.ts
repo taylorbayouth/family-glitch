@@ -15,7 +15,12 @@ import type { Turn } from '@/lib/types/game-state';
 import type { TriviaChallengeSession } from '../types';
 
 // Re-export prompt builders
-export { buildTriviaChallengePrompt, buildScoringPrompt } from './prompt';
+export {
+  buildTriviaChallengePrompt,
+  buildScoringPrompt,
+  getPriorTriviaChallengeQuestions,
+  getAllMiniGamesPlayed,
+} from './prompt';
 
 // ============================================================================
 // SESSION CREATION

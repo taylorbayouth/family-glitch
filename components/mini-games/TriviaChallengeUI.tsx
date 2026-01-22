@@ -13,6 +13,8 @@ import {
   buildTriviaChallengePrompt,
   buildScoringPrompt,
   parseTriviaChallengeResponse,
+  getPriorTriviaChallengeQuestions,
+  getAllMiniGamesPlayed,
   type TriviaScoreResponse,
 } from '@/lib/mini-games/trivia-challenge';
 import type { Turn } from '@/lib/types/game-state';
@@ -71,6 +73,7 @@ export function TriviaChallengeUI({
   const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const scores = useGameStore((state) => state.scores);
+  const storedTurns = useGameStore((state) => state.turns);
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
@@ -91,6 +94,9 @@ export function TriviaChallengeUI({
         sourceTurn,
         allPlayers,
         scores,
+        turns: storedTurns,
+        priorTriviaChallengeQuestions: getPriorTriviaChallengeQuestions(storedTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(storedTurns),
       });
 
       const response = await sendChatRequest([
@@ -142,6 +148,9 @@ export function TriviaChallengeUI({
         sourceTurn,
         allPlayers,
         scores,
+        turns: storedTurns,
+        priorTriviaChallengeQuestions: getPriorTriviaChallengeQuestions(storedTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(storedTurns),
       });
 
       const scoringPrompt = buildScoringPrompt(playerAnswer, {
@@ -149,6 +158,9 @@ export function TriviaChallengeUI({
         sourceTurn,
         allPlayers,
         scores,
+        turns: storedTurns,
+        priorTriviaChallengeQuestions: getPriorTriviaChallengeQuestions(storedTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(storedTurns),
       });
 
       const response = await sendChatRequest([

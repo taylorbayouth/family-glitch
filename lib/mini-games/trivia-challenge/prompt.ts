@@ -6,13 +6,19 @@
  * Note: Act 1 answers are SECRET - players never heard what others said!
  */
 
-import type { Turn } from '@/lib/types/game-state';
+import type { Turn, TransitionResponse } from '@/lib/types/game-state';
 
 interface Player {
   id: string;
   name: string;
   role?: string;
   age?: number;
+}
+
+export interface PriorTriviaChallengeQuestion {
+  question: string;
+  sourceName: string;
+  targetName: string;
 }
 
 interface TriviaPromptContext {
@@ -27,13 +33,25 @@ interface TriviaPromptContext {
 
   /** Current scores */
   scores: Record<string, number>;
+
+  /** All game turns for context */
+  turns: Turn[];
+
+  /** Transition responses (insight collection) */
+  transitionResponses?: TransitionResponse[];
+
+  /** Prior trivia challenge questions to avoid repeats */
+  priorTriviaChallengeQuestions: PriorTriviaChallengeQuestion[];
+
+  /** All mini-games played this session */
+  allMiniGamesPlayed: Array<{ type: string; playerId: string; playerName: string }>;
 }
 
 /**
  * Build the system prompt for the Trivia Challenge bot
  */
 export function buildTriviaChallengePrompt(context: TriviaPromptContext): string {
-  const { targetPlayer, sourceTurn } = context;
+  const { targetPlayer, sourceTurn, allPlayers, scores, turns, transitionResponses, priorTriviaChallengeQuestions, allMiniGamesPlayed } = context;
 
   const targetName = targetPlayer?.name || 'Player';
   const targetAge = targetPlayer?.age;
@@ -45,16 +63,70 @@ export function buildTriviaChallengePrompt(context: TriviaPromptContext): string
         : JSON.stringify(sourceTurn.response, null, 2))
     : 'something';
 
+  // Player list with full details
+  const playerList = (allPlayers || [])
+    .map(
+      (player) =>
+        `- ${player.name} (id: "${player.id}", role: ${player.role || 'player'}, age: ${player.age || 'unknown'})`
+    )
+    .join('\n');
+
+  // Prior questions to avoid repeats
+  const priorQuestionsBlock = (priorTriviaChallengeQuestions || []).length > 0
+    ? `ALREADY ASKED (DO NOT REPEAT OR ASK SIMILAR):\n${priorTriviaChallengeQuestions.map((q, i) => `${i + 1}. "${q.question}" (about ${q.sourceName}, asked to ${q.targetName})`).join('\n')}`
+    : 'No prior Trivia Challenge questions yet.';
+
+  // All mini-games played for variety tracking
+  const miniGamesPlayedBlock = (allMiniGamesPlayed || []).length > 0
+    ? `Mini-games played this session:\n${allMiniGamesPlayed.map(g => `- ${g.type} (${g.playerName})`).join('\n')}`
+    : '';
+
+  // Full turn history for context
+  const turnsBlock = (turns || []).length > 0
+    ? `Full game turn history:\n${JSON.stringify(turns, null, 2)}`
+    : '';
+
+  // Transition responses (insight collection)
+  const transitionResponsesBlock = (transitionResponses || []).length > 0
+    ? `Insight collection responses:\n${JSON.stringify(transitionResponses, null, 2)}`
+    : '';
+
   return `You are THE QUIZMASTER for Family Glitch.
+
+CURRENT GAME: trivia_challenge
+This is a "how well do you know them?" mini-game. Vary your question angles.
 
 ## Your Job
 Test how well ${targetName}${targetAge ? ` (age ${targetAge})` : ''} knows ${sourceName} by asking them to GUESS what ${sourceName} would say.
 
 CRITICAL: ${targetName} has NEVER heard ${sourceName}'s answer! Act 1 answers were SECRET. This is about knowing the person, NOT memory.
 
+Players:
+${playerList || 'No players listed.'}
+
+Current scores:
+${JSON.stringify(scores || {}, null, 2)}
+
 ## What ${sourceName} Actually Said (SECRET - ${targetName} doesn't know this)
 Question: "${sourcePrompt}"
 Answer: ${responseText}
+
+## FULL GAME DATA (Use for personalization)
+${turnsBlock}
+
+${transitionResponsesBlock}
+
+## CRITICAL: NO REPEATS
+${priorQuestionsBlock}
+
+${miniGamesPlayedBlock}
+
+## UNIQUENESS RULES (MANDATORY)
+1. NEVER repeat a question that was already asked
+2. NEVER ask a similar question with different wording
+3. NEVER ask about the same topic/fact twice
+4. VARY the question STYLE and ANGLE
+5. Look at what ${sourceName} said and find a UNIQUE angle to ask about
 
 ## How to Ask Good Questions
 
@@ -94,7 +166,8 @@ Score phase (0-5):
 
 5 = nailed it, 4 = close, 3 = partial, 2 = weak guess, 1 = tried, 0 = wrong
 
-Keep it fun. One short question. One witty comment.`;
+Keep it fun. One short question. One witty comment.
+REMEMBER: This question MUST be completely different from all prior questions!`;
 }
 
 /**
@@ -138,4 +211,44 @@ Respond as JSON:
 {"phase": "score", "score": <0-5>, "commentary": "<max 10 words>", "correctAnswer": "<the answer>"}
 
 Keep commentary witty and concise.`;
+}
+
+/**
+ * Extract prior Trivia Challenge questions from turns
+ */
+export function getPriorTriviaChallengeQuestions(turns: Turn[]): PriorTriviaChallengeQuestion[] {
+  return (turns || [])
+    .filter((turn) => turn?.templateType === 'trivia_challenge' && turn.response)
+    .map((turn) => {
+      const response = turn.response as Record<string, any>;
+      return {
+        question: response?.question || turn.prompt || '',
+        sourceName: (turn.templateParams as Record<string, any>)?.sourceName || 'Unknown',
+        targetName: turn.playerName,
+      };
+    })
+    .filter((q) => q.question);
+}
+
+/**
+ * Extract all mini-games played from turns
+ */
+export function getAllMiniGamesPlayed(turns: Turn[]): Array<{ type: string; playerId: string; playerName: string }> {
+  const miniGameTypes = [
+    'hard_trivia',
+    'trivia_challenge',
+    'lighting_round',
+    'personality_match',
+    'the_filter',
+    'cryptic_connection',
+    'madlibs_challenge',
+  ];
+
+  return (turns || [])
+    .filter((turn) => turn && miniGameTypes.includes(turn.templateType) && turn.status === 'completed')
+    .map((turn) => ({
+      type: turn.templateType,
+      playerId: turn.playerId,
+      playerName: turn.playerName,
+    }));
 }

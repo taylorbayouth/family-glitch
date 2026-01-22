@@ -7,8 +7,13 @@
  * - Provides witty commentary on selections
  */
 
-import type { Turn } from '@/lib/types/game-state';
+import type { Turn, TransitionResponse } from '@/lib/types/game-state';
 import type { MiniGameResult } from '../types';
+
+export interface PriorPersonalityMatchGame {
+  subjectName: string;
+  words: string[];
+}
 
 interface WordGeneratorContext {
   subjectPlayerName: string;
@@ -16,13 +21,17 @@ interface WordGeneratorContext {
   subjectPlayerAge?: number;
   relevantTurns: Turn[];
   allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
+  allTurns: Turn[];
+  transitionResponses?: TransitionResponse[];
+  priorPersonalityMatches: PriorPersonalityMatchGame[];
+  allMiniGamesPlayed: Array<{ type: string; playerId: string; playerName: string }>;
 }
 
 /**
  * Build prompt for AI to generate personality words for the grid
  */
 export function buildPersonalityWordGeneratorPrompt(context: WordGeneratorContext): string {
-  const { subjectPlayerName, subjectPlayerRole, subjectPlayerAge, relevantTurns } = context;
+  const { subjectPlayerName, subjectPlayerRole, subjectPlayerAge, relevantTurns, allTurns, transitionResponses, priorPersonalityMatches, allMiniGamesPlayed } = context;
 
   // Defensive null checks
   const subjectName = subjectPlayerName || 'Player';
@@ -35,13 +44,52 @@ export function buildPersonalityWordGeneratorPrompt(context: WordGeneratorContex
    Response: ${responseStr}`;
   }).join('\n\n');
 
+  // Prior personality match words to avoid repeats
+  const priorWordsBlock = (priorPersonalityMatches || []).length > 0
+    ? `WORDS ALREADY USED (DO NOT REPEAT):\n${priorPersonalityMatches.map(g => `- ${g.subjectName}: ${g.words.join(', ')}`).join('\n')}`
+    : 'No prior Personality Match games yet.';
+
+  // All mini-games played for variety tracking
+  const miniGamesPlayedBlock = (allMiniGamesPlayed || []).length > 0
+    ? `Mini-games played this session:\n${allMiniGamesPlayed.map(g => `- ${g.type} (${g.playerName})`).join('\n')}`
+    : '';
+
+  // Full turn history for context
+  const fullTurnsBlock = (allTurns || []).length > 0
+    ? `Full game turn history:\n${JSON.stringify(allTurns, null, 2)}`
+    : '';
+
+  // Transition responses (insight collection)
+  const transitionResponsesBlock = (transitionResponses || []).length > 0
+    ? `Insight collection responses:\n${JSON.stringify(transitionResponses, null, 2)}`
+    : '';
+
   return `You are THE ANALYST - generating personality words for a Family Glitch challenge.
 
+CURRENT GAME: personality_match
+This generates a word grid for players to select personality traits.
+
 ## MISSION
-Generate exactly 16 personality words for a 4x4 grid about ${subjectName}${subjectPlayerRole ? ` (${subjectPlayerRole}` : ''}${subjectPlayerAge ? `, age ${subjectPlayerAge})` : subjectPlayerRole ? ')' : ''}.
+Generate exactly 16 UNIQUE personality words for a 4x4 grid about ${subjectName}${subjectPlayerRole ? ` (${subjectPlayerRole}` : ''}${subjectPlayerAge ? `, age ${subjectPlayerAge})` : subjectPlayerRole ? ')' : ''}.
 
 ## WHAT WE KNOW ABOUT ${subjectName.toUpperCase()}
 ${turnsSummary || 'No specific game data yet - use general personality words.'}
+
+## FULL GAME DATA (Use for personalization)
+${fullTurnsBlock}
+
+${transitionResponsesBlock}
+
+## CRITICAL: NO REPEATS
+${priorWordsBlock}
+
+${miniGamesPlayedBlock}
+
+## UNIQUENESS RULES (MANDATORY)
+1. NEVER use a word that was already used in a prior Personality Match game
+2. Generate FRESH, UNIQUE words each time
+3. Use different vocabulary - don't just use synonyms of prior words
+4. Vary the word categories: some emotions, some habits, some traits, some roles
 
 ## WORD RULES
 
@@ -75,7 +123,8 @@ Respond with valid JSON:
   "words": ["word1", "word2", ... exactly 16 words]
 }
 
-The best grids make families debate and laugh together!`;
+The best grids make families debate and laugh together!
+REMEMBER: Use ONLY words that haven't been used before!`;
 }
 
 export interface PersonalityWordGeneratorResponse {
@@ -245,4 +294,44 @@ export function toMiniGameResult(response: PersonalityMatchScoreResponse): MiniG
       : undefined,
     bonusInfo: response.insight,
   };
+}
+
+/**
+ * Extract prior Personality Match games from turns
+ */
+export function getPriorPersonalityMatches(turns: Turn[]): PriorPersonalityMatchGame[] {
+  return (turns || [])
+    .filter((turn) => turn?.templateType === 'personality_match' && turn.response)
+    .map((turn) => {
+      const response = turn.response as Record<string, any>;
+      const params = turn.templateParams as Record<string, any>;
+      return {
+        subjectName: params?.subjectPlayerName || turn.playerName,
+        words: response?.words || params?.words || [],
+      };
+    })
+    .filter((g) => g.words.length > 0);
+}
+
+/**
+ * Extract all mini-games played from turns
+ */
+export function getAllMiniGamesPlayed(turns: Turn[]): Array<{ type: string; playerId: string; playerName: string }> {
+  const miniGameTypes = [
+    'hard_trivia',
+    'trivia_challenge',
+    'lighting_round',
+    'personality_match',
+    'the_filter',
+    'cryptic_connection',
+    'madlibs_challenge',
+  ];
+
+  return (turns || [])
+    .filter((turn) => turn && miniGameTypes.includes(turn.templateType) && turn.status === 'completed')
+    .map((turn) => ({
+      type: turn.templateType,
+      playerId: turn.playerId,
+      playerName: turn.playerName,
+    }));
 }

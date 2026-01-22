@@ -15,6 +15,8 @@ import {
   parseHardTriviaGeneratorResponse,
   parseHardTriviaScoreResponse,
   toMiniGameResult,
+  getPriorHardTriviaQuestions,
+  getAllMiniGamesPlayed,
   type HardTriviaGenerateResponse,
   type HardTriviaScoreResponse,
 } from '@/lib/mini-games/hard-trivia';
@@ -43,6 +45,7 @@ export function HardTriviaUI({
 }: HardTriviaUIProps) {
   const [phase, setPhase] = useState<HardTriviaPhase>('loading');
   const [triviaData, setTriviaData] = useState<HardTriviaGenerateResponse | null>(null);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [scoreData, setScoreData] = useState<HardTriviaScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +54,11 @@ export function HardTriviaUI({
 
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
+  const storedTurns = useGameStore((state) => state.turns);
+  const scores = useGameStore((state) => state.scores);
+
+  // Use stored turns if not provided via props
+  const allTurns = turns.length > 0 ? turns : storedTurns;
 
   // Phase 1: Generate trivia question
   useEffect(() => {
@@ -81,7 +89,10 @@ export function HardTriviaUI({
       const prompt = buildHardTriviaGeneratorPrompt({
         targetPlayer,
         allPlayers,
-        turns,
+        turns: allTurns,
+        scores,
+        priorHardTriviaQuestions: getPriorHardTriviaQuestions(allTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(allTurns),
       });
 
       const response = await sendChatRequest([
@@ -93,6 +104,15 @@ export function HardTriviaUI({
 
       const parsedData = parseHardTriviaGeneratorResponse(response.text);
       setTriviaData(parsedData);
+
+      // Shuffle options to prevent AI bias (Fisher-Yates shuffle)
+      const shuffled = [...parsedData.options];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      setShuffledOptions(shuffled);
+
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate trivia question:', err);
@@ -238,7 +258,7 @@ export function HardTriviaUI({
             transition={{ delay: 0.2 }}
             className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"
           >
-            {triviaData.options.map((option, index) => {
+            {shuffledOptions.map((option, index) => {
               const isSelected = selectedAnswer === option;
               return (
                 <motion.button

@@ -20,6 +20,9 @@ export {
   toMiniGameResult,
   fillTemplate,
   createBlanksFromTemplate,
+  getPriorMadLibsGames,
+  getAllMiniGamesPlayed,
   type MadLibsGenerateResponse,
   type MadLibsScoreResponse,
+  type PriorMadLibsGame,
 } from './prompt';

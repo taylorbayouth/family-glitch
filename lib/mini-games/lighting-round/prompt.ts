@@ -5,7 +5,7 @@
  * Uses full game context + local question history to avoid repeats.
  */
 
-import type { Turn } from '@/lib/types/game-state';
+import type { Turn, TransitionResponse } from '@/lib/types/game-state';
 import type { MiniGamePlayer } from '../registry';
 import { extractAndParseJSON } from '../utils';
 
@@ -24,12 +24,14 @@ export interface LightingRoundPromptContext {
   targetPlayer: MiniGamePlayer;
   allPlayers: MiniGamePlayer[];
   turns: Turn[];
+  transitionResponses?: TransitionResponse[];
   scores: Record<string, number>;
   roundIndex: number;
   totalRounds: number;
   seconds: number;
   previousQuestions: LightingRoundHistoryItem[];
   priorLightingQuestions: LightingRoundHistoryItem[];
+  allMiniGamesPlayed: Array<{ type: string; playerId: string; playerName: string }>;
 }
 
 export interface LightingRoundQuestionResponse {
@@ -55,12 +57,14 @@ export function buildLightingRoundQuestionPrompt(
     targetPlayer,
     allPlayers,
     turns,
+    transitionResponses,
     scores,
     roundIndex,
     totalRounds,
     seconds,
     previousQuestions,
     priorLightingQuestions,
+    allMiniGamesPlayed,
   } = context;
 
   const targetName = targetPlayer?.name || 'Player';
@@ -76,21 +80,30 @@ export function buildLightingRoundQuestionPrompt(
     )
     .join('\n');
 
-  const historyBlock = previousQuestions.length > 0
-    ? JSON.stringify(previousQuestions, null, 2)
-    : '[]';
+  // Format previous questions as explicit list
+  const allPriorQuestions = [...previousQuestions, ...priorLightingQuestions];
+  const priorQuestionsBlock = allPriorQuestions.length > 0
+    ? `ALREADY ASKED (DO NOT REPEAT, REPHRASE, OR ASK SIMILAR):\n${allPriorQuestions.map((q, i) => `${i + 1}. "${q.question}" (${q.leftText} vs ${q.rightText})`).join('\n')}`
+    : 'No prior questions yet.';
 
-  const priorLightingBlock = priorLightingQuestions.length > 0
-    ? JSON.stringify(priorLightingQuestions, null, 2)
-    : '[]';
+  // All mini-games played for variety tracking
+  const miniGamesPlayedBlock = (allMiniGamesPlayed || []).length > 0
+    ? `Mini-games played this session:\n${allMiniGamesPlayed.map(g => `- ${g.type} (${g.playerName})`).join('\n')}`
+    : '';
+
+  // Transition responses (insight collection)
+  const transitionResponsesBlock = (transitionResponses || []).length > 0
+    ? `Insight collection responses:\n${JSON.stringify(transitionResponses, null, 2)}`
+    : '';
 
   return `You are THE LIGHTING ROUND HOST for Family Glitch.
 
+CURRENT GAME: lighting_round
 Round ${roundIndex} of ${totalRounds}. Timer: ${seconds} seconds.
 
 Current player: ${targetName}${targetAge ? ` (age ${targetAge})` : ''}, role: ${targetRole}
 
-Your job: Write ONE timed binary question about a specific family member.
+Your job: Write ONE UNIQUE timed binary question about a specific family member.
 Use the full game data to choose a question with a CLEAR correct answer.
 Make it a "how well do you know them?" guess, not a memory test.
 
@@ -100,23 +113,37 @@ ${playerList || 'No players listed.'}
 Scores:
 ${JSON.stringify(scores || {}, null, 2)}
 
-Full turn history (ALL turns, do not ignore anything):
+## FULL GAME DATA (Use for personalization)
+Full turn history (ALL turns - read EVERYTHING to find unique question angles):
 ${JSON.stringify(turns || [], null, 2)}
 
-Local Lighting Round history (asked this session, with answers):
-${historyBlock}
+${transitionResponsesBlock}
 
-Prior Lighting Round questions from earlier turns:
-${priorLightingBlock}
+## CRITICAL: NO REPEATS
+${priorQuestionsBlock}
 
-Rules:
+${miniGamesPlayedBlock}
+
+## UNIQUENESS RULES (MANDATORY)
+1. NEVER repeat a question that was already asked (check the list above)
+2. NEVER ask a similar question with different wording (e.g., if "Who likes pizza?" was asked, don't ask "Who loves Italian food?")
+3. NEVER ask about the same person + trait combination twice
+4. VARY the question STYLE:
+   - "Who is most likely to..." questions
+   - "Who said they..." questions
+   - "Who would rather..." questions
+   - "Whose favorite is..." questions
+5. VARY the SUBJECTS: ask about different family members
+6. VARY the TOPICS: hobbies, food, entertainment, personality, habits, preferences
+7. Look for UNUSED data in the turns - find facts that haven't been asked about yet
+
+## Rules:
 - ONE question only.
 - Must be binary: two options (left/right). No "neither".
 - The correctChoice MUST be "left" or "right".
 - Options should be short (1-3 words each).
 - Question should be short (under ~12 words).
 - Use data from turns to justify the correct answer.
-- Do NOT repeat or rephrase any prior Lighting Round questions.
 - Avoid asking about the current player's own answer unless needed.
 
 Return ONLY valid JSON:
@@ -131,7 +158,9 @@ Return ONLY valid JSON:
   "commentaryCorrect": "Nailed it. You know your people.",
   "commentaryWrong": "Nope. Mom is the true crime fiend.",
   "commentaryPass": "Strategic pass. Living to fight on."
-}`;
+}
+
+REMEMBER: This question MUST be completely different from all ${allPriorQuestions.length} prior questions!`;
 }
 
 /**
@@ -165,4 +194,27 @@ export function parseLightingRoundQuestionResponse(
     commentaryWrong: parsed.commentaryWrong || 'Oof. Not quite.',
     commentaryPass: parsed.commentaryPass || 'Pass logged.',
   };
+}
+
+/**
+ * Extract all mini-games played from turns
+ */
+export function getAllMiniGamesPlayed(turns: Turn[]): Array<{ type: string; playerId: string; playerName: string }> {
+  const miniGameTypes = [
+    'hard_trivia',
+    'trivia_challenge',
+    'lighting_round',
+    'personality_match',
+    'the_filter',
+    'cryptic_connection',
+    'madlibs_challenge',
+  ];
+
+  return (turns || [])
+    .filter((turn) => turn && miniGameTypes.includes(turn.templateType) && turn.status === 'completed')
+    .map((turn) => ({
+      type: turn.templateType,
+      playerId: turn.playerId,
+      playerName: turn.playerName,
+    }));
 }

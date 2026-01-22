@@ -1,12 +1,13 @@
 /**
  * Cryptic Connection AI Prompts
  *
- * The Riddler is a cryptic puzzle master that:
- * - Generates vague, enigmatic clues
- * - Creates 25 words where some secretly connect to the clue
- * - Scores players with fuzzy logic on their word selections
+ * The Brain Teaser Builder:
+ * - Generates a tough-but-fair core idea
+ * - Creates 25 words with clear right/wrong + tricky decoys
+ * - Scores players with explicit answer and trick keys
  */
 
+import type { Turn, TransitionResponse } from '@/lib/types/game-state';
 import type { MiniGameResult } from '../types';
 
 /**
@@ -15,12 +16,22 @@ import type { MiniGameResult } from '../types';
  */
 const CRYPTIC_GRID_SIZE = 25;
 
+export interface PriorCrypticGame {
+  mysteryWord: string;
+  playerId: string;
+  playerName: string;
+}
+
 interface GeneratePromptContext {
   targetPlayerName: string;
   targetPlayerAge?: number;
   targetPlayerRole?: string;
   allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
   scores: Record<string, number>;
+  turns: Turn[];
+  priorCrypticGames: PriorCrypticGame[];
+  allMiniGamesPlayed: Array<{ type: string; playerId: string; playerName: string }>;
+  transitionResponses?: TransitionResponse[];
 }
 
 /**
@@ -28,27 +39,59 @@ interface GeneratePromptContext {
  * Uses the "Mystery Word" approach with layered associations
  */
 export function buildCrypticGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName, targetPlayerAge, targetPlayerRole } = context;
+  const {
+    targetPlayerName,
+    targetPlayerAge,
+    targetPlayerRole,
+    turns,
+    priorCrypticGames,
+    allMiniGamesPlayed,
+    transitionResponses,
+  } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
   const ageInfo = targetPlayerAge ? `, age ${targetPlayerAge}` : '';
   const roleInfo = targetPlayerRole ? ` (${targetPlayerRole})` : '';
 
-  return `You are THE SEMANTIC ARCHITECT - creating word association puzzles for Family Glitch.
+  // Prior mystery words to avoid repeats
+  const priorWordsBlock = (priorCrypticGames || []).length > 0
+    ? `CORE IDEAS ALREADY USED (DO NOT REPEAT):\n${priorCrypticGames.map((g, i) => `${i + 1}. "${g.mysteryWord}" (played by ${g.playerName})`).join('\n')}`
+    : 'No prior Cryptic Connection games yet.';
+
+  // All mini-games played for variety tracking
+  const miniGamesPlayedBlock = (allMiniGamesPlayed || []).length > 0
+    ? `Mini-games played this session:\n${allMiniGamesPlayed.map(g => `- ${g.type} (${g.playerName})`).join('\n')}`
+    : '';
+
+  // Full turn history for context
+  const fullTurnsBlock = (turns || []).length > 0
+    ? `Full game turn history:\n${JSON.stringify(turns, null, 2)}`
+    : '';
+
+  // Transition responses (insight collection)
+  const transitionResponsesBlock = (transitionResponses || []).length > 0
+    ? `Insight collection responses:\n${JSON.stringify(transitionResponses, null, 2)}`
+    : '';
+
+  return `You are THE BRAIN TEASER BUILDER - creating hard-but-fair word association puzzles for Family Glitch.
+
+CURRENT GAME: cryptic_connection
+This is a word association mini-game (not a cryptic riddle). Use completely different core ideas each time.
 
 ## MISSION
-Generate a JSON object for a word association game for ${targetName}${roleInfo}${ageInfo}.
+Generate a JSON object for a word association brain teaser for ${targetName}${roleInfo}${ageInfo}.
 
 ## PLAYER CONTEXT
-- Adjust clue complexity to a ${targetPlayerAge || 'typical'}-year-old's vocabulary
-- Younger players (under 12) need simpler mystery words with obvious connections
-- Teens and adults can handle more subtle wordplay and obscure meanings
-- Use words and cultural references they'd understand
+Use the full history to personalize at least 3 words based on what this player has said or chosen.
+Adjust difficulty to a ${targetPlayerAge || 'typical'}-year-old's vocabulary:
+- Ages 8-11: concrete categories, obvious-but-not-trivial connections
+- Ages 12-16: layered meanings, pop culture, light idioms
+- Ages 17+: nuanced associations, subtle domain references
 
-## STEP 1: Choose a "Mystery Word"
+## STEP 1: Choose a "Core Idea"
 
-Pick a word with MULTIPLE meanings/uses (polysemous). The best words work as nouns, verbs, adjectives, or in compound words.
+Pick a word or concept with MULTIPLE meanings/uses. The best options work as nouns, verbs, adjectives, or in compound words.
 
 **Ages 8-12** (simple, accessible):
 - STAR (celebrity, sky object, to star in)
@@ -71,19 +114,38 @@ Pick a word with MULTIPLE meanings/uses (polysemous). The best words work as nou
 - PITCH (throw, sales pitch, tar pitch, musical pitch)
 - POUND (weight, to pound, dog pound, British pound)
 
-Choose words where connections are CLEVER, not obvious!
+Choose words where connections are CLEVER but still fair.
+
+## FULL GAME DATA (Use for personalization)
+${fullTurnsBlock}
+
+${transitionResponsesBlock}
+
+## CRITICAL: NO REPEATS
+${priorWordsBlock}
+
+${miniGamesPlayedBlock}
+
+## UNIQUENESS RULES (MANDATORY)
+1. NEVER use a mystery word that was already used in a prior Cryptic Connection game
+2. Choose a COMPLETELY DIFFERENT mystery word each time
+3. Vary the type of word: some nouns, some verbs, some that work as both
+4. If similar concepts were used, pick a different domain entirely
 
 ## STEP 2: Generate 25 Grid Words
 Create an array of exactly 25 UNIQUE single words with intentional layers:
-- 5 words that are LITERAL associations (obvious physical/direct connections)
-- 5 words that are IDIOMATIC or METAPHORICAL associations (phrases, sayings)
-- 5 words that are PUNS or COMPOUND words (wordplay, combinations with mystery word)
-- 10 words that are completely UNRELATED distractors (no connection at all)
+- 8 TRUE answers (clearly connected to the core idea)
+- 5 TRICK answers (tempting but actually wrong)
+- 12 UNRELATED distractors (no connection at all)
 
 ## QUALITY RULES
 - All words must be single words (no spaces or hyphens)
 - Match vocabulary to player's age and knowledge level
 - Mix nouns, verbs, adjectives appropriate for their age
+- Ensure at least 3 words are personalized using prior turns or transition answers
+- At least 2 TRUE answers must be subtle (not obvious objects/synonyms)
+- Trick answers should be plausible due to common misconceptions or near-misses
+- The answerKey and trickKey must be words from the grid with no overlap
 - Make distractors convincing but clearly wrong
 - Ensure variety - avoid obvious lists or categories
 
@@ -91,10 +153,12 @@ Create an array of exactly 25 UNIQUE single words with intentional layers:
 Respond with valid JSON only:
 {
   "mysteryWord": "WORD",
-  "words": ["word1", "word2", ... exactly 25 words]
+  "words": ["word1", "word2", ... exactly 25 words],
+  "answerKey": ["exactly 8 correct words"],
+  "trickKey": ["exactly 5 tempting but wrong words"]
 }
 
-Generate ONE puzzle now.`;
+Generate ONE UNIQUE puzzle now. The mystery word MUST be different from all prior games!`;
 }
 
 interface ScorePromptContext {
@@ -102,6 +166,8 @@ interface ScorePromptContext {
   mysteryWord: string;
   selectedWords: string[];
   allWords: string[];
+  answerKey: string[];
+  trickKey: string[];
 }
 
 /**
@@ -109,21 +175,29 @@ interface ScorePromptContext {
  * Uses fuzzy AI judging with per-word scoring
  */
 export function buildCrypticScorerPrompt(context: ScorePromptContext): string {
-  const { targetPlayerName, mysteryWord, selectedWords, allWords } = context;
+  const { targetPlayerName, mysteryWord, selectedWords, allWords, answerKey, trickKey } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
   const safeMysteryWord = mysteryWord || 'the mystery word';
   const safeSelectedWords = selectedWords || [];
   const safeAllWords = allWords || [];
+  const safeAnswerKey = answerKey || [];
+  const safeTrickKey = trickKey || [];
 
-  return `You are THE FUZZY JUDGE - evaluating ${targetName}'s word association attempt.
+  return `You are THE BRAIN TEASER JUDGE - evaluating ${targetName}'s word association attempt.
 
-## THE MYSTERY WORD
+## THE CORE IDEA
 ${safeMysteryWord.toUpperCase()}
 
 ## THE GRID (all 25 words)
 ${safeAllWords.join(', ')}
+
+## ANSWER KEY (8 correct)
+${safeAnswerKey.join(', ')}
+
+## TRICK KEY (5 tempting but wrong)
+${safeTrickKey.join(', ')}
 
 ## PLAYER SELECTED (${safeSelectedWords.length} words)
 ${safeSelectedWords.join(', ')}
@@ -132,36 +206,17 @@ ${safeSelectedWords.join(', ')}
 
 Evaluate EACH word they selected:
 
-**0 points** - No connection, pure distractor
-- Example (BAR): "Ocean" - no relationship at all
+**0 points** - Distractor (not connected)
+**1 point** - Trick answer (tempting but wrong)
+**4 points** - Correct answer (standard connection)
+**5 points** - Correct answer with subtle or clever link
 
-**1-2 points** - Obvious/literal connection, first thing you'd think of
-- Example (BAR): "Beer" - too obvious (bar serves beer)
-- Example (BAR): "Stool" - too literal (barstool)
-
-**3-4 points** - Clever connection, compound word, idiom, or metaphor
-- Example (BAR): "Exam" - Bar Exam (professional test)
-- Example (BAR): "Code" - Bar Code (product scanner)
-- Example (BAR): "Gold" - Gold Bar (bullion)
-
-**5 points** - Brilliant lateral thinking, unexpected but valid
-- Example (BAR): "Mars" - Mars Bar (candy)
-- Example (BAR): "Space" - Space Bar (keyboard)
-- Example (BAR): "Raise" - "Raise the bar" (idiom)
-
-**REWARD CREATIVITY:**
-- If they found a connection you didn't plan, give full credit if it's valid
-- Multiple meanings count: "Scales" could be fish scales, music scales, or weight scales
-- Compound words are valuable: "Ball" + "Park" = Ballpark
-- Idioms and phrases count: "Raise" + "Bar" = "Raise the bar"
+If they found a valid connection not in the answerKey, you may award 3-4 points,
+but only if it is clearly justified and not a trick answer.
 
 **Final Score (0-5):**
-Average the individual word scores, then normalize:
-- High average (4-5 pts/word) → 5 points
-- Good average (3-4 pts/word) → 4 points
-- Decent average (2-3 pts/word) → 3 points
-- Weak average (1-2 pts/word) → 2 points
-- Poor average (<1 pt/word) → 0-1 points
+Average the individual word scores, then normalize.
+If they selected more than 10 words, cap totalScore at 3 unless average >= 4.
 
 ## RESPONSE FORMAT
 Return JSON only:
@@ -180,6 +235,8 @@ The totalScore should be normalized to 0-5 based on the average quality of selec
 export interface CrypticGenerateResponse {
   mysteryWord: string;
   words: string[];
+  answerKey: string[];
+  trickKey: string[];
 }
 
 export interface WordScore {
@@ -221,6 +278,8 @@ export function parseCrypticGeneratorResponse(text: string): CrypticGenerateResp
     return {
       mysteryWord: parsed.mysteryWord,
       words: parsed.words,
+      answerKey: Array.isArray(parsed.answerKey) ? parsed.answerKey : [],
+      trickKey: Array.isArray(parsed.trickKey) ? parsed.trickKey : [],
     };
   } catch {
     return null;
@@ -267,9 +326,50 @@ export function toMiniGameResult(response: CrypticScoreResponse, mysteryWord: st
     score: response.totalScore,
     maxScore: 5,
     commentary: response.commentary,
-    correctAnswer: `Mystery word: ${mysteryWord.toUpperCase()}`,
+    correctAnswer: `Core idea: ${mysteryWord.toUpperCase()}`,
     bonusInfo: highScorers.length > 0
       ? `Best picks: ${highScorers.map(b => `${b.word} (${b.points}pts)`).join(', ')}`
       : `Total points: ${totalPoints} across ${response.breakdown.length} selections`,
   };
+}
+
+/**
+ * Extract prior Cryptic Connection games from turns
+ */
+export function getPriorCrypticGames(turns: Turn[]): PriorCrypticGame[] {
+  return (turns || [])
+    .filter((turn) => turn?.templateType === 'cryptic_connection' && turn.response)
+    .map((turn) => {
+      const response = turn.response as Record<string, any>;
+      const params = turn.templateParams as Record<string, any>;
+      return {
+        mysteryWord: response?.mysteryWord || params?.mysteryWord || '',
+        playerId: turn.playerId,
+        playerName: turn.playerName,
+      };
+    })
+    .filter((g) => g.mysteryWord);
+}
+
+/**
+ * Extract all mini-games played from turns
+ */
+export function getAllMiniGamesPlayed(turns: Turn[]): Array<{ type: string; playerId: string; playerName: string }> {
+  const miniGameTypes = [
+    'hard_trivia',
+    'trivia_challenge',
+    'lighting_round',
+    'personality_match',
+    'the_filter',
+    'cryptic_connection',
+    'madlibs_challenge',
+  ];
+
+  return (turns || [])
+    .filter((turn) => turn && miniGameTypes.includes(turn.templateType) && turn.status === 'completed')
+    .map((turn) => ({
+      type: turn.templateType,
+      playerId: turn.playerId,
+      playerName: turn.playerName,
+    }));
 }

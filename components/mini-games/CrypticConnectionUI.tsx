@@ -7,28 +7,25 @@ import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
 import { getTheme } from '@/lib/mini-games/themes';
 import crypticIcon from '@/lib/mini-games/cryptic-connection/icon.png';
 import { sendChatRequest } from '@/lib/ai/client';
+import type { MiniGamePlayer } from '@/lib/mini-games/registry';
 import {
   buildCrypticGeneratorPrompt,
   buildCrypticScorerPrompt,
   parseCrypticGeneratorResponse,
   parseCrypticScoreResponse,
   toMiniGameResult,
+  getPriorCrypticGames,
+  getAllMiniGamesPlayed,
   type WordScore,
 } from '@/lib/mini-games/cryptic-connection';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
-interface Player {
-  id: string;
-  name: string;
-  role?: string;
-}
-
 interface CrypticConnectionUIProps {
   /** Player answering the challenge */
-  targetPlayer: Player;
+  targetPlayer: MiniGamePlayer;
 
   /** All players (for context) */
-  allPlayers: Player[];
+  allPlayers: MiniGamePlayer[];
 
   /** Called when challenge completes */
   onComplete: (result: MiniGameResult) => void;
@@ -43,8 +40,8 @@ type CrypticPhase = 'loading' | 'intro' | 'playing' | 'scoring' | 'result';
  * Cryptic Connection UI Component
  *
  * Flow:
- * 1. Loading - AI generates cryptic clue + 25 words
- * 2. Intro - Show the cryptic challenge
+ * 1. Loading - AI generates core idea + 25 words
+ * 2. Intro - Show the brain teaser challenge
  * 3. Playing - Player selects words from 5x5 grid
  * 4. Scoring - AI evaluates with fuzzy logic
  * 5. Result - Show score with revealed answer
@@ -58,6 +55,8 @@ export function CrypticConnectionUI({
   const [phase, setPhase] = useState<CrypticPhase>('loading');
   const [mysteryWord, setMysteryWord] = useState('');
   const [words, setWords] = useState<string[]>([]);
+  const [answerKey, setAnswerKey] = useState<string[]>([]);
+  const [trickKey, setTrickKey] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
   const [breakdown, setBreakdown] = useState<WordScore[]>([]);
@@ -66,6 +65,8 @@ export function CrypticConnectionUI({
   const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const scores = useGameStore((state) => state.scores);
+  const storedTurns = useGameStore((state) => state.turns);
+  const transitionResponses = useGameStore((state) => state.transitionResponses);
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
@@ -86,12 +87,23 @@ export function CrypticConnectionUI({
         templateParams: {
           mysteryWord,
           wordOptions: words,
+          answerKey,
+          trickKey,
         },
       });
       setTurnId(createdTurnId);
       setTurnStartTime(Date.now());
     }
-  }, [addTurn, mysteryWord, targetPlayer.id, targetPlayer.name, turnId, words]);
+  }, [
+    addTurn,
+    answerKey,
+    mysteryWord,
+    targetPlayer.id,
+    targetPlayer.name,
+    trickKey,
+    turnId,
+    words,
+  ]);
 
   const generatePuzzle = async () => {
     setPhase('loading');
@@ -100,13 +112,19 @@ export function CrypticConnectionUI({
     try {
       const prompt = buildCrypticGeneratorPrompt({
         targetPlayerName: targetPlayer.name,
+        targetPlayerAge: targetPlayer.age,
+        targetPlayerRole: targetPlayer.role,
         allPlayers,
         scores,
+        turns: storedTurns,
+        priorCrypticGames: getPriorCrypticGames(storedTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(storedTurns),
+        transitionResponses,
       });
 
       const response = await sendChatRequest([
         { role: 'system', content: prompt },
-        { role: 'user', content: 'Generate a cryptic puzzle now.' },
+        { role: 'user', content: 'Generate a brain teaser puzzle now.' },
       ], {
         toolChoice: 'none',
       });
@@ -117,8 +135,22 @@ export function CrypticConnectionUI({
         throw new Error('Invalid puzzle response from AI');
       }
 
+      const uniqueAnswers = Array.from(new Set(parsed.answerKey));
+      const uniqueTricks = Array.from(new Set(parsed.trickKey)).filter(
+        (word) => !uniqueAnswers.includes(word)
+      );
+
+      const filteredAnswers = uniqueAnswers.filter((word) => parsed.words.includes(word));
+      const filteredTricks = uniqueTricks.filter((word) => parsed.words.includes(word));
+
+      if (filteredAnswers.length !== 8 || filteredTricks.length !== 5) {
+        throw new Error('Invalid puzzle response from AI');
+      }
+
       setMysteryWord(parsed.mysteryWord);
       setWords(parsed.words);
+      setAnswerKey(filteredAnswers);
+      setTrickKey(filteredTricks);
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate puzzle:', err);
@@ -131,6 +163,8 @@ export function CrypticConnectionUI({
         'mitzvah', 'graph', 'music', 'harbor', 'iron',
         'gold', 'silver', 'steel', 'top', 'crow',
       ]);
+      setAnswerKey(['mars', 'exam', 'stool', 'code', 'space', 'alcohol', 'gold', 'raiser']);
+      setTrickKey(['iron', 'silver', 'steel', 'harbor', 'bell']);
       setPhase('intro');
     }
   };
@@ -155,11 +189,13 @@ export function CrypticConnectionUI({
         mysteryWord,
         selectedWords,
         allWords: words,
+        answerKey,
+        trickKey,
       });
 
       const response = await sendChatRequest([
         { role: 'system', content: prompt },
-        { role: 'user', content: 'Score this puzzle attempt now.' },
+        { role: 'user', content: 'Score this brain teaser attempt now.' },
       ], {
         toolChoice: 'none',
       });
@@ -208,6 +244,8 @@ export function CrypticConnectionUI({
             mysteryWord,
             wordOptions: words,
             selectedWords,
+            answerKey,
+            trickKey,
             score: result.score,
             commentary: result.commentary,
             breakdown,

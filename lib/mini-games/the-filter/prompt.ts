@@ -5,7 +5,14 @@
  * Players must identify all items that pass a specific rule or constraint.
  */
 
+import type { Turn, TransitionResponse } from '@/lib/types/game-state';
 import type { MiniGameResult } from '../types';
+
+export interface PriorFilterGame {
+  rule: string;
+  playerId: string;
+  playerName: string;
+}
 
 interface GeneratePromptContext {
   targetPlayerName: string;
@@ -13,6 +20,10 @@ interface GeneratePromptContext {
   targetPlayerRole?: string;
   allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
   scores: Record<string, number>;
+  turns: Turn[];
+  transitionResponses?: TransitionResponse[];
+  priorFilterGames: PriorFilterGame[];
+  allMiniGamesPlayed: Array<{ type: string; playerId: string; playerName: string }>;
 }
 
 /**
@@ -20,13 +31,36 @@ interface GeneratePromptContext {
  * Creates a rule/constraint and 9-12 items to classify
  */
 export function buildFilterGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName, targetPlayerAge, targetPlayerRole } = context;
+  const { targetPlayerName, targetPlayerAge, targetPlayerRole, turns, transitionResponses, priorFilterGames, allMiniGamesPlayed } = context;
 
   const targetName = targetPlayerName || 'Player';
   const ageInfo = targetPlayerAge ? `, age ${targetPlayerAge}` : '';
   const roleInfo = targetPlayerRole ? ` (${targetPlayerRole})` : '';
 
+  // Prior rules to avoid repeats
+  const priorRulesBlock = (priorFilterGames || []).length > 0
+    ? `RULES ALREADY USED (DO NOT REPEAT OR USE SIMILAR):\n${priorFilterGames.map((g, i) => `${i + 1}. "${g.rule}" (played by ${g.playerName})`).join('\n')}`
+    : 'No prior Filter games yet.';
+
+  // All mini-games played for variety tracking
+  const miniGamesPlayedBlock = (allMiniGamesPlayed || []).length > 0
+    ? `Mini-games played this session:\n${allMiniGamesPlayed.map(g => `- ${g.type} (${g.playerName})`).join('\n')}`
+    : '';
+
+  // Full turn history for context
+  const fullTurnsBlock = (turns || []).length > 0
+    ? `Full game turn history:\n${JSON.stringify(turns, null, 2)}`
+    : '';
+
+  // Transition responses (insight collection)
+  const transitionResponsesBlock = (transitionResponses || []).length > 0
+    ? `Insight collection responses:\n${JSON.stringify(transitionResponses, null, 2)}`
+    : '';
+
   return `You are THE LOGIC MASTER - creating binary classification puzzles for Family Glitch.
+
+CURRENT GAME: the_filter
+This is a classification puzzle mini-game. Use completely different rules each time.
 
 ## MISSION
 Generate a JSON object for "The Filter" game for ${targetName}${roleInfo}${ageInfo}.
@@ -67,6 +101,22 @@ Pick a CLEVER, testable constraint. The best rules spark "Wait, really?" moments
 
 Make it challenging but solvable!
 
+## FULL GAME DATA (Use for personalization)
+${fullTurnsBlock}
+
+${transitionResponsesBlock}
+
+## CRITICAL: NO REPEATS
+${priorRulesBlock}
+
+${miniGamesPlayedBlock}
+
+## UNIQUENESS RULES (MANDATORY)
+1. NEVER use a rule that was already used in a prior Filter game
+2. NEVER use a similar rule with different wording (e.g., if "Is a mammal" was used, don't use "Is a warm-blooded animal")
+3. Use COMPLETELY DIFFERENT categories and concepts each time
+4. Vary the type: some science, some history, some wordplay, some geography
+
 ## STEP 2: Generate 9-12 Items
 Create exactly 9-12 items with intentional difficulty layers:
 - **3-4 Obviously TRUE** (pass the filter clearly)
@@ -96,7 +146,7 @@ Respond with valid JSON only:
   ]
 }
 
-Generate ONE puzzle now.`;
+Generate ONE UNIQUE puzzle now. The rule MUST be different from all prior games!`;
 }
 
 interface ScorePromptContext {
@@ -245,4 +295,45 @@ export function toMiniGameResult(response: FilterScoreResponse, rule: string, co
     correctAnswer: `Rule: "${rule}"`,
     bonusInfo: `Correct items: ${correctItems.join(', ')}`,
   };
+}
+
+/**
+ * Extract prior Filter games from turns
+ */
+export function getPriorFilterGames(turns: Turn[]): PriorFilterGame[] {
+  return (turns || [])
+    .filter((turn) => turn?.templateType === 'the_filter' && turn.response)
+    .map((turn) => {
+      const response = turn.response as Record<string, any>;
+      const params = turn.templateParams as Record<string, any>;
+      return {
+        rule: response?.rule || params?.rule || '',
+        playerId: turn.playerId,
+        playerName: turn.playerName,
+      };
+    })
+    .filter((g) => g.rule);
+}
+
+/**
+ * Extract all mini-games played from turns
+ */
+export function getAllMiniGamesPlayed(turns: Turn[]): Array<{ type: string; playerId: string; playerName: string }> {
+  const miniGameTypes = [
+    'hard_trivia',
+    'trivia_challenge',
+    'lighting_round',
+    'personality_match',
+    'the_filter',
+    'cryptic_connection',
+    'madlibs_challenge',
+  ];
+
+  return (turns || [])
+    .filter((turn) => turn && miniGameTypes.includes(turn.templateType) && turn.status === 'completed')
+    .map((turn) => ({
+      type: turn.templateType,
+      playerId: turn.playerId,
+      playerName: turn.playerName,
+    }));
 }

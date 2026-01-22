@@ -15,6 +15,8 @@ import {
   buildPersonalityMatchPrompt,
   parsePersonalityMatchResponse,
   toMiniGameResult,
+  getPriorPersonalityMatches,
+  getAllMiniGamesPlayed,
 } from '@/lib/mini-games/personality-match';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
@@ -70,6 +72,7 @@ export function PersonalityMatchUI({
 
   const turns = useGameStore((state) => state.turns);
   const scores = useGameStore((state) => state.scores);
+  const transitionResponses = useGameStore((state) => state.transitionResponses);
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
@@ -89,8 +92,13 @@ export function PersonalityMatchUI({
         const prompt = buildPersonalityWordGeneratorPrompt({
           subjectPlayerName: subjectPlayer.name,
           subjectPlayerRole: subjectPlayer.role,
+          subjectPlayerAge: (subjectPlayer as any).age,
           relevantTurns,
           allPlayers,
+          allTurns: turns,
+          transitionResponses,
+          priorPersonalityMatches: getPriorPersonalityMatches(turns),
+          allMiniGamesPlayed: getAllMiniGamesPlayed(turns),
         });
 
         const response = await sendChatRequest([

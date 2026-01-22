@@ -7,6 +7,7 @@
  * - Scores filled-in sentences for humor and creativity
  */
 
+import type { Turn, TransitionResponse } from '@/lib/types/game-state';
 import type { MadLibsBlank, MiniGameResult } from '../types';
 
 // Common letters that are easier to work with
@@ -20,26 +21,59 @@ export function selectRandomLetters(count: number): string[] {
   return shuffled.slice(0, count);
 }
 
+export interface PriorMadLibsGame {
+  template: string;
+  playerId: string;
+  playerName: string;
+}
+
 interface GeneratePromptContext {
   targetPlayerName: string;
   targetPlayerAge?: number;
   targetPlayerRole?: string;
   allPlayers: Array<{ id: string; name: string; role?: string; age?: number }>;
   scores: Record<string, number>;
+  turns: Turn[];
+  transitionResponses?: TransitionResponse[];
+  priorMadLibsGames: PriorMadLibsGame[];
+  allMiniGamesPlayed: Array<{ type: string; playerId: string; playerName: string }>;
 }
 
 /**
  * Build the system prompt for generating a Mad Libs sentence
  */
 export function buildMadLibsGeneratorPrompt(context: GeneratePromptContext): string {
-  const { targetPlayerName, targetPlayerAge, targetPlayerRole } = context;
+  const { targetPlayerName, targetPlayerAge, targetPlayerRole, turns, transitionResponses, priorMadLibsGames, allMiniGamesPlayed } = context;
 
   // Defensive null checks
   const targetName = targetPlayerName || 'Player';
   const ageInfo = targetPlayerAge ? `, age ${targetPlayerAge}` : '';
   const roleInfo = targetPlayerRole ? ` (${targetPlayerRole})` : '';
 
+  // Prior templates to avoid repeats
+  const priorTemplatesBlock = (priorMadLibsGames || []).length > 0
+    ? `TEMPLATES ALREADY USED (DO NOT REPEAT OR USE SIMILAR):\n${priorMadLibsGames.map((g, i) => `${i + 1}. "${g.template}" (played by ${g.playerName})`).join('\n')}`
+    : 'No prior Mad Libs games yet.';
+
+  // All mini-games played for variety tracking
+  const miniGamesPlayedBlock = (allMiniGamesPlayed || []).length > 0
+    ? `Mini-games played this session:\n${allMiniGamesPlayed.map(g => `- ${g.type} (${g.playerName})`).join('\n')}`
+    : '';
+
+  // Full turn history for context
+  const fullTurnsBlock = (turns || []).length > 0
+    ? `Full game turn history:\n${JSON.stringify(turns, null, 2)}`
+    : '';
+
+  // Transition responses (insight collection)
+  const transitionResponsesBlock = (transitionResponses || []).length > 0
+    ? `Insight collection responses:\n${JSON.stringify(transitionResponses, null, 2)}`
+    : '';
+
   return `You are THE WORDSMITH - a witty, playful word game host for Family Glitch.
+
+CURRENT GAME: madlibs_challenge
+This is a fill-in-the-blank sentence game. Use completely different templates each time.
 
 ## MISSION
 Generate one Mad Libs-style sentence for ${targetName}${roleInfo}${ageInfo} to complete.
@@ -93,9 +127,25 @@ Respond with valid JSON:
 - Ages 15-17: Allow mild edge (embarrassment, awkwardness)
 - Ages 18+: Full creative freedom (still favor wit over crude)
 
+## FULL GAME DATA (Use for personalization)
+${fullTurnsBlock}
+
+${transitionResponsesBlock}
+
+## CRITICAL: NO REPEATS
+${priorTemplatesBlock}
+
+${miniGamesPlayedBlock}
+
+## UNIQUENESS RULES (MANDATORY)
+1. NEVER use a template that was already used in a prior Mad Libs game
+2. NEVER use a similar template with different wording
+3. Vary the THEME: some science, some life advice, some explanations, some comparisons
+4. Each template should feel FRESH and DIFFERENT
+
 The best templates are OPEN-ENDED - they don't obviously beg for dirty answers. Wit > Shock.
 
-Generate ONE creative template.`;
+Generate ONE UNIQUE creative template. It MUST be different from all prior templates!`;
 }
 
 interface ScorePromptContext {
@@ -278,4 +328,45 @@ export function createBlanksFromTemplate(template: string): MadLibsBlank[] {
     letter,
     filledWord: undefined,
   }));
+}
+
+/**
+ * Extract prior Mad Libs games from turns
+ */
+export function getPriorMadLibsGames(turns: Turn[]): PriorMadLibsGame[] {
+  return (turns || [])
+    .filter((turn) => turn?.templateType === 'madlibs_challenge' && turn.response)
+    .map((turn) => {
+      const response = turn.response as Record<string, any>;
+      const params = turn.templateParams as Record<string, any>;
+      return {
+        template: response?.template || params?.template || '',
+        playerId: turn.playerId,
+        playerName: turn.playerName,
+      };
+    })
+    .filter((g) => g.template);
+}
+
+/**
+ * Extract all mini-games played from turns
+ */
+export function getAllMiniGamesPlayed(turns: Turn[]): Array<{ type: string; playerId: string; playerName: string }> {
+  const miniGameTypes = [
+    'hard_trivia',
+    'trivia_challenge',
+    'lighting_round',
+    'personality_match',
+    'the_filter',
+    'cryptic_connection',
+    'madlibs_challenge',
+  ];
+
+  return (turns || [])
+    .filter((turn) => turn && miniGameTypes.includes(turn.templateType) && turn.status === 'completed')
+    .map((turn) => ({
+      type: turn.templateType,
+      playerId: turn.playerId,
+      playerName: turn.playerName,
+    }));
 }

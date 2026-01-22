@@ -12,6 +12,9 @@ export {
   buildPersonalityMatchPrompt,
   parsePersonalityMatchResponse,
   toMiniGameResult,
+  getPriorPersonalityMatches,
+  getAllMiniGamesPlayed,
   type PersonalityWordGeneratorResponse,
   type PersonalityMatchScoreResponse,
+  type PriorPersonalityMatchGame,
 } from './prompt';

@@ -13,6 +13,8 @@ import {
   parseFilterGeneratorResponse,
   parseFilterScoreResponse,
   toMiniGameResult,
+  getPriorFilterGames,
+  getAllMiniGamesPlayed,
   type FilterGenerateResponse,
 } from '@/lib/mini-games/the-filter';
 import type { MiniGameResult } from '@/lib/mini-games/types';
@@ -65,6 +67,8 @@ export function TheFilterUI({
   const [turnStartTime, setTurnStartTime] = useState<number | null>(null);
 
   const scores = useGameStore((state) => state.scores);
+  const storedTurns = useGameStore((state) => state.turns);
+  const transitionResponses = useGameStore((state) => state.transitionResponses);
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
@@ -99,8 +103,14 @@ export function TheFilterUI({
     try {
       const prompt = buildFilterGeneratorPrompt({
         targetPlayerName: targetPlayer.name,
+        targetPlayerAge: (targetPlayer as any).age,
+        targetPlayerRole: targetPlayer.role,
         allPlayers,
         scores,
+        turns: storedTurns,
+        transitionResponses,
+        priorFilterGames: getPriorFilterGames(storedTurns),
+        allMiniGamesPlayed: getAllMiniGamesPlayed(storedTurns),
       });
 
       const response = await sendChatRequest([
