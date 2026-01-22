@@ -36,6 +36,21 @@ export function buildGameMasterPrompt(
     gameState?.transitionResponses || [],
     gameState?.transitionEvents || {}
   );
+  const miniGameTypes = new Set([
+    'trivia_challenge',
+    'personality_match',
+    'hard_trivia',
+    'the_filter',
+    'madlibs_challenge',
+    'cryptic_connection',
+    'lighting_round',
+  ]);
+  const miniGameCounts = (gameState?.turns || []).reduce<Record<string, number>>((acc, turn) => {
+    if (miniGameTypes.has(turn.templateType)) {
+      acc[turn.templateType] = (acc[turn.templateType] || 0) + 1;
+    }
+    return acc;
+  }, {});
 
   return `You are the Game Master for FAMILY GLITCH, a pass-and-play party game.
 
@@ -99,6 +114,8 @@ Use Act 1's secret data to run mini-games that test how well they know each othe
 
 CRITICAL: Act 1 answers were SECRET. Players never heard what others said. Mini-games test how well they KNOW each other, NOT their memory!
 
+ROTATION RULE: Run mini-games round-robin style. Do NOT repeat a mini-game until all unlocked games have been used at least once (unless eligibility blocks it).
+
 ${options?.triviaEligibleTurns && options.triviaEligibleTurns.length > 0 ? `**Trivia Challenge** - Test how well they know someone by guessing what they WOULD say (they never heard the original answer!)
 **Personality Match** - Describe a family member with words based on knowing them
   Available subjects (use these EXACT IDs): ${players.filter(p => p.id !== options?.currentPlayerId).map(p => `${p.name} (id: "${p.id}")`).join(', ')}` : ''}
@@ -110,17 +127,38 @@ ${currentAct >= 3 ? `**Mad Libs** - Fill-in-the-blank wordplay
 
 ## Players
 
-${players.length > 0 ? players.map((p, i) => `${i + 1}. ${p.name} (${p.role}, age ${p.age})${options?.currentPlayerId === p.id ? ' ← CURRENT' : ''}`).join('\n') : 'No players yet.'}
+${players.length > 0 ? players.map((p, i) => `${i + 1}. ${p.name} (${p.role}, age ${p.age}, avatar ${p.avatar}, id ${p.id})${options?.currentPlayerId === p.id ? ' ← CURRENT' : ''}`).join('\n') : 'No players yet.'}
 
 ${gameState?.scores && Object.keys(gameState.scores).length > 0 ? `## Scores\n${players.map(p => `${p.name}: ${gameState.scores?.[p.id] || 0}`).join(' | ')}` : ''}
+
+${Object.keys(miniGameCounts).length > 0 ? `## Mini-Game Usage So Far\n${Object.entries(miniGameCounts).map(([type, count]) => `- ${type}: ${count}`).join('\n')}` : ''}
 
 ${transitionData}
 
 ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `## What's Been Asked (DO NOT REPEAT)
 
-${gameState.turns.map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : `\n\`\`\`json\n${sanitizeForAIPretty(t.response)}\n\`\`\``}`).join('\n')}
+${gameState.turns.map(t => `- ${t.playerName} [${t.templateType}]: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : `\n\`\`\`json\n${sanitizeForAIPretty(t.response)}\n\`\`\``}`).join('\n')}
 
 Every question must be DIFFERENT from these.` : ''}
+
+## Full Game Context (sanitized, complete)
+
+${sanitizeForAIPretty({
+  players: players.map(p => ({
+    id: p.id,
+    name: p.name,
+    role: p.role,
+    age: p.age,
+    avatar: p.avatar,
+  })),
+  gameState: {
+    ...gameState,
+    scores: gameState?.scores || {},
+    turns: gameState?.turns || [],
+    transitionResponses: gameState?.transitionResponses || [],
+    transitionEvents: gameState?.transitionEvents || {},
+  },
+})}
 
 ## Rules
 
