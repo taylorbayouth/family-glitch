@@ -6,7 +6,7 @@ This document summarizes the current game flow and major systems in the codebase
 
 ### Game Flow
 
-- Player setup at `/setup` (3 to 7 players)
+- Player setup at `/setup` (2 to 7 players)
 - Pass-to-player screen with AI preloading
 - Question templates rendered via `TemplateRenderer`
 - AI commentary with manual "Pass to {next}" progression

@@ -56,7 +56,7 @@ npm run dev
 ## Key Routes
 
 - `/` Home and sign-in entry
-- `/setup` Player roster setup (3-7 players)
+- `/setup` Player roster setup (2-7 players)
 - `/play` Main game flow
 - `/chat` AI chat demo page (development/testing)
 
