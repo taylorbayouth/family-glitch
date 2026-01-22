@@ -34,6 +34,7 @@ export interface BaseMiniGameProps {
   allPlayers: MiniGamePlayer[];
   onComplete: (result: MiniGameResult) => void;
   onSkip?: () => void;
+  turnNumber?: number;
 }
 
 // Configuration extracted from the AI's template response

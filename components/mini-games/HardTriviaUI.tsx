@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
+import { GameHeader } from '@/components/GameHeader';
 import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
 import { getTheme } from '@/lib/mini-games/themes';
 import hardTriviaIcon from '@/lib/mini-games/hard-trivia/icon.png';
@@ -33,6 +34,7 @@ interface HardTriviaUIProps {
   allPlayers: MiniGamePlayer[];
   turns?: Turn[];
   onComplete: (result: MiniGameResult) => void;
+  turnNumber?: number;
 }
 
 type HardTriviaPhase = 'loading' | 'intro' | 'question' | 'scoring' | 'result';
@@ -42,6 +44,7 @@ export function HardTriviaUI({
   allPlayers,
   turns = [],
   onComplete,
+  turnNumber,
 }: HardTriviaUIProps) {
   const [phase, setPhase] = useState<HardTriviaPhase>('loading');
   const [triviaData, setTriviaData] = useState<HardTriviaGenerateResponse | null>(null);
@@ -304,15 +307,18 @@ export function HardTriviaUI({
   // Scoring phase
   if (phase === 'scoring') {
     return (
-      <div className="min-h-0 bg-void flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-frost font-mono">Checking your answer...</p>
-        </motion.div>
+      <div className="min-h-dvh h-dvh bg-void flex flex-col">
+        <GameHeader currentPlayerId={targetPlayer.id} turnNumber={turnNumber} compact />
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
+            <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-frost font-mono">Checking your answer...</p>
+          </motion.div>
+        </div>
       </div>
     );
   }

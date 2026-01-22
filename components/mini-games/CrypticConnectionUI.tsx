@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
 import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { GameHeader } from '@/components/GameHeader';
 import { getTheme } from '@/lib/mini-games/themes';
 import crypticIcon from '@/lib/mini-games/cryptic-connection/icon.png';
 import { sendChatRequest } from '@/lib/ai/client';
@@ -32,6 +33,8 @@ interface CrypticConnectionUIProps {
 
   /** Called if user wants to skip */
   onSkip?: () => void;
+
+  turnNumber?: number;
 }
 
 type CrypticPhase = 'loading' | 'intro' | 'playing' | 'scoring' | 'result';
@@ -51,6 +54,7 @@ export function CrypticConnectionUI({
   allPlayers,
   onComplete,
   onSkip,
+  turnNumber,
 }: CrypticConnectionUIProps) {
   const [phase, setPhase] = useState<CrypticPhase>('loading');
   const [mysteryWord, setMysteryWord] = useState('');
@@ -271,24 +275,29 @@ export function CrypticConnectionUI({
   };
 
   return (
-    <div className="bg-void flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-mono text-xs text-violet-400 uppercase tracking-wider">
-              Cryptic Connection
-            </p>
-            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
-          </div>
-          <div className="text-right">
-            <p className="font-mono text-xs text-steel-500">Find the pattern</p>
+    <div className="min-h-dvh h-dvh bg-void flex flex-col">
+      {phase === 'scoring' && (
+        <GameHeader currentPlayerId={targetPlayer.id} turnNumber={turnNumber} compact />
+      )}
+
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-mono text-xs text-violet-400 uppercase tracking-wider">
+                Cryptic Connection
+              </p>
+              <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-xs text-steel-500">Find the pattern</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        {/* Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
           {/* Loading Phase */}
           {phase === 'loading' && (
@@ -525,6 +534,7 @@ export function CrypticConnectionUI({
             <p className="text-alert text-sm">{error}</p>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

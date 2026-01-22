@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
 import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { GameHeader } from '@/components/GameHeader';
 import { getTheme } from '@/lib/mini-games/themes';
 import madLibsIcon from '@/lib/mini-games/madlibs-challenge/icon.png';
 import { sendChatRequest } from '@/lib/ai/client';
@@ -38,6 +39,8 @@ interface MadLibsUIProps {
 
   /** Called if user wants to skip */
   onSkip?: () => void;
+
+  turnNumber?: number;
 }
 
 type MadLibsPhase = 'loading' | 'intro' | 'filling' | 'scoring' | 'result';
@@ -57,6 +60,7 @@ export function MadLibsUI({
   allPlayers,
   onComplete,
   onSkip,
+  turnNumber,
 }: MadLibsUIProps) {
   const [phase, setPhase] = useState<MadLibsPhase>('loading');
   const [template, setTemplate] = useState('');
@@ -287,24 +291,29 @@ export function MadLibsUI({
   };
 
   return (
-    <div className="bg-void flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-mono text-xs text-amber-400 uppercase tracking-wider">
-              Mad Libs Challenge
-            </p>
-            <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
-          </div>
-          <div className="text-right">
-            <p className="font-mono text-xs text-steel-500">Fill the blanks!</p>
+    <div className="min-h-dvh h-dvh bg-void flex flex-col">
+      {phase === 'scoring' && (
+        <GameHeader currentPlayerId={targetPlayer.id} turnNumber={turnNumber} compact />
+      )}
+
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-steel-800 bg-void/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-mono text-xs text-amber-400 uppercase tracking-wider">
+                Mad Libs Challenge
+              </p>
+              <h2 className="text-xl font-bold text-frost">{targetPlayer.name}</h2>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-xs text-steel-500">Fill the blanks!</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        {/* Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
           {/* Loading Phase */}
           {phase === 'loading' && (
@@ -535,6 +544,7 @@ export function MadLibsUI({
             <p className="text-alert text-sm">{error}</p>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
