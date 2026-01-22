@@ -45,6 +45,7 @@ interface RoundResult extends LightingRoundHistoryItem {
   timedOut: boolean;
   isCorrect: boolean | null;
   commentary: string;
+  score: number;
 }
 
 const TOTAL_QUESTIONS = 5;
@@ -227,8 +228,8 @@ export function LightingRoundUI({
     const isCorrect = isSelection ? choice === currentQuestion.correctChoice : null;
     const score = isSelection ? (isCorrect ? 5 : -5) : 0;
     const commentary = isSelection
-      ? (isCorrect ? currentQuestion.commentaryCorrect : currentQuestion.commentaryWrong)
-      : currentQuestion.commentaryPass || 'Pass logged.';
+      ? (isCorrect ? (currentQuestion.commentaryCorrect || 'Nailed it.') : (currentQuestion.commentaryWrong || 'Oof. Not quite.'))
+      : (currentQuestion.commentaryPass || 'Pass logged.');
 
     const roundResult: RoundResult = {
       roundNumber: questionIndex + 1,
