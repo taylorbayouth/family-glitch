@@ -22,7 +22,7 @@ export default function Home() {
   }, [session, router]);
 
   return (
-    <div className="min-h-dvh flex flex-col bg-void relative overflow-hidden">
+    <div className="min-h-dvh flex flex-col bg-void relative overflow-x-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
       <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-glitch/20 rounded-full blur-[150px]" />
