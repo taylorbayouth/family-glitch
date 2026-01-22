@@ -38,17 +38,34 @@ Generate a JSON object for "The Filter" game for ${targetName}${roleInfo}${ageIn
 - Use cultural references and knowledge they'd reasonably have
 
 ## STEP 1: Create The Rule
-Pick a specific, testable constraint appropriate for the player's age:
-- **Kids-friendly**: "Is a mammal", "Has wheels", "Is found in a kitchen"
-- **All ages**: "Contains the letter E", "Is a palindrome", "Has more than 5 letters"
-- **Teens/Adults**: "Invented before 1900", "Is heavier than water", "Predates the internet"
 
-Categories to choose from:
-- **History**: "Invented before 1900", "Happened in the 20th century"
-- **Science**: "Heavier than water", "Is technically a berry", "Can survive in space"
-- **Geography**: "Has population > 1 million", "Is in the Southern Hemisphere"
-- **Logic**: "Contains the letter E", "Is a palindrome", "Is a prime number"
-- **Culture**: "Predates the internet", "Originated in Asia"
+Pick a CLEVER, testable constraint. The best rules spark "Wait, really?" moments.
+
+**Age-Appropriate Difficulty:**
+
+**Ages 8-12** (accessible but fun):
+- "Is a mammal", "Has wheels", "Is found in a kitchen"
+- "Contains the letter A", "Starts with a vowel"
+- "Is larger than a car", "Can fly"
+
+**Ages 13-17** (requires knowledge):
+- "Invented before 1950", "Is technically a fruit"
+- "Has an odd number of syllables", "Contains double letters"
+- "Is older than TikTok", "Can be eaten raw"
+
+**Ages 18+** (expert-level):
+- "Predates the internet (1989)", "Is heavier than water"
+- "Is a palindrome", "Happened during the Cold War"
+- "Originated in Europe", "Is technically a berry"
+
+**Best Rule Categories:**
+- **Tricky Science**: "Is heavier than water", "Is technically a berry"
+- **Surprising History**: "Invented before the telephone (1876)"
+- **Word Logic**: "Is a palindrome", "Contains 3 syllables"
+- **Geography**: "Is in Southern Hemisphere", "Has population > 10M"
+- **Culture/Tech**: "Predates the internet", "Before color TV"
+
+Make it challenging but solvable!
 
 ## STEP 2: Generate 9-12 Items
 Create exactly 9-12 items with intentional difficulty layers:
@@ -76,8 +93,7 @@ Respond with valid JSON only:
       "reason": "Brief explanation why it passes/fails"
     },
     ... exactly 9-12 items
-  ],
-  "hint": "Optional subtle hint (max 10 words)"
+  ]
 }
 
 Generate ONE puzzle now.`;
@@ -113,14 +129,24 @@ ${safeCorrectItems.join(', ')}
 ## PLAYER SELECTED
 ${safeSelectedItems.join(', ')}
 
-## SCORING (0-5 points)
-- Consider how many correct items they found
-- Penalize wrong selections (items that don't pass)
-- Acknowledge close calls and edge cases generously
-- 5 = Perfect or near-perfect
-- 3-4 = Got most of them
-- 1-2 = Struggled but tried
-- 0 = Completely missed the mark
+## SCORING RUBRIC (0-5 points)
+
+Calculate based on accuracy:
+- **Correct selections** = +1 point per item (up to 5)
+- **Wrong selections** = -0.5 points per item
+
+Then map to 0-5 scale:
+- **5 points** - Perfect or nearly perfect (90-100% accuracy)
+- **4 points** - Strong performance (75-89% accuracy)
+- **3 points** - Decent attempt (50-74% accuracy)
+- **2 points** - Struggled but showed some logic (25-49%)
+- **1 point** - Got a few right, mostly wrong (10-24%)
+- **0 points** - Completely missed the pattern (0-9%)
+
+**Be fair with edge cases:**
+- Trick items should be weighted more favorably if player caught them
+- Acknowledge clever reasoning even if wrong
+- Reward partial understanding
 
 ## RESPONSE FORMAT
 Return JSON only:
@@ -129,7 +155,7 @@ Return JSON only:
   "commentary": "One witty line about their logic (max 15 words)"
 }
 
-Keep it simple and fun.`;
+Keep commentary sharp and fun!`;
 }
 
 export interface FilterGenerateResponse {
@@ -140,7 +166,6 @@ export interface FilterGenerateResponse {
     isTrick?: boolean;
     reason: string;
   }>;
-  hint?: string;
 }
 
 export interface FilterScoreResponse {
@@ -180,7 +205,6 @@ export function parseFilterGeneratorResponse(text: string): FilterGenerateRespon
         isTrick: Boolean(item.isTrick),
         reason: item.reason || '',
       })),
-      hint: parsed.hint,
     };
   } catch {
     return null;

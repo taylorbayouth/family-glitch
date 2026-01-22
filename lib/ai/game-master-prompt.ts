@@ -6,8 +6,10 @@
  */
 
 import type { Player } from '@/lib/store/player-store';
-import type { GameState } from '@/lib/types/game-state';
+import type { GameState, TransitionResponse, TransitionEventState } from '@/lib/types/game-state';
 import { calculateCurrentAct, calculateTotalRounds } from '@/lib/constants';
+import { formatAllTransitionResponses } from '@/lib/act-transitions';
+import { sanitizeForAI } from './sanitize';
 
 interface PromptOptions {
   currentPlayerId?: string;
@@ -22,12 +24,18 @@ export function buildGameMasterPrompt(
   gameState?: Partial<GameState>,
   options?: PromptOptions
 ): string {
-  const isNewGame = !gameState || !gameState.gameId || gameState.turns?.length === 0;
+  const isNewGame = !gameState || !gameState.gameId || gameState?.turns?.length === 0;
 
   // Calculate current act based on completed turns
   const completedTurns = gameState?.turns?.filter(t => t.status === 'completed').length || 0;
   const totalRounds = calculateTotalRounds(players.length);
   const currentAct = calculateCurrentAct(completedTurns, totalRounds);
+
+  // Format transition responses for injection into prompt
+  const transitionData = formatAllTransitionResponses(
+    gameState?.transitionResponses || [],
+    gameState?.transitionEvents || {}
+  );
 
   return `You are the Game Master for FAMILY GLITCH, a pass-and-play party game.
 
@@ -37,21 +45,51 @@ ${currentAct === 1 ? `**Act 1: SECRET INTEL GATHERING**
 
 This is the PRIVATE phase - each player answers alone on their own phone. NO ONE sees what others say.
 
-Ask questions that reveal who these people are - their interests, hobbies, quirks, expertise, what they love doing together, where they've been, what makes them tick.
+Your goal: Collect SPECIFIC, TESTABLE facts that family members would know about each other. Vague answers like "I love sports" are useless. Specific answers like "I'm obsessed with the Lakers" are gold.
 
-These SECRET answers become the foundation for Acts 2 & 3 mini-games, where family members prove how well they know each other.
+These answers fuel Acts 2 & 3 mini-games. The more specific the data, the better the games.
 
-Great questions uncover:
-- Passions and obsessions ("What could you talk about for hours?")
-- Skills and expertise ("What are you the family expert on?")
-- Opinions and hot takes ("What hill will you die on?")
-- Stories and memories ("Best trip you've taken together?")
-- Entertainment picks ("Favorite YouTuber right now?" "What show are you binging?")
-- Local flavor ("What's your go-to restaurant in town?" "Best hidden gem nearby?")
-- Binary debates ("Beatles or Stones?" "Morning person or night owl?")
-- Interest grids ("Pick your top 3: sports, TV, video games, cooking, DIY, music")
+**What makes a GREAT Act 1 question:**
+✅ Produces a specific, memorable answer
+✅ Something family would know (or guess correctly)
+✅ Reveals personality, not just facts
+✅ Age-appropriate difficulty
 
-Ask ONE question per turn. Make it specific and interesting.
+**Question Categories (mix these up):**
+
+**Entertainment & Media** (SPECIFIC titles, not genres)
+- "What show are you binging right now?"
+- "Who's your favorite YouTuber/streamer?"
+- "What's the last movie that made you cry?"
+- "What song is stuck in your head lately?"
+
+**Food & Places** (SPECIFIC names, not categories)
+- "What's your go-to order at your favorite restaurant?"
+- "What food could you eat every day?"
+- "Where's the best place you've traveled?"
+- "What's your coffee/drink order?"
+
+**Personality & Quirks** (observable traits)
+- "What's your weirdest habit?"
+- "Morning person or night owl?"
+- "What makes you irrationally angry?"
+- "What's your hidden talent?"
+
+**Expertise & Interests** (for Hard Trivia)
+- "What could you talk about for hours?"
+- "What topic are you the family expert on?"
+- "What hobby do you wish you had more time for?"
+
+**Opinions & Hot Takes** (debatable positions)
+- "What hill will you die on?"
+- "Overrated or underrated: [pop culture thing]?"
+- "What's your unpopular opinion?"
+
+**Binary Choices** (this or that)
+- "Dogs or cats?" "Summer or winter?" "Sweet or savory?"
+- "Books or movies?" "Text or call?" "Beach or mountains?"
+
+Ask ONE question per turn. Match complexity to player age. Get SPECIFIC answers - they're the ammunition for great mini-games.
 
 Remember: Answers are SECRET in Act 1!` : `**Act ${currentAct}: PUBLIC MINI-GAMES**
 
@@ -65,9 +103,10 @@ ${options?.triviaEligibleTurns && options.triviaEligibleTurns.length > 0 ? `**Tr
 **Personality Match** - Describe a family member with words based on knowing them
   Available subjects (use these EXACT IDs): ${players.filter(p => p.id !== options?.currentPlayerId).map(p => `${p.name} (id: "${p.id}")`).join(', ')}` : ''}
 **Hard Trivia** - Test their knowledge in their own interest areas
+${currentAct >= 2 ? `**The Filter** - Spot items that pass a secret rule` : ''}
+${currentAct >= 3 ? `**Lighting Round** - Five rapid binary questions about family members` : ''}
 ${currentAct >= 3 ? `**Mad Libs** - Fill-in-the-blank wordplay
-**Cryptic Connection** - Find the hidden connection in a word grid
-**The Filter** - Spot items that pass a secret rule` : ''}`}
+**Cryptic Connection** - Find the hidden connection in a word grid` : ''}`}
 
 ## Players
 
@@ -75,9 +114,11 @@ ${players.length > 0 ? players.map((p, i) => `${i + 1}. ${p.name} (${p.role}, ag
 
 ${gameState?.scores && Object.keys(gameState.scores).length > 0 ? `## Scores\n${players.map(p => `${p.name}: ${gameState.scores?.[p.id] || 0}`).join(' | ')}` : ''}
 
+${transitionData}
+
 ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `## What's Been Asked (DO NOT REPEAT)
 
-${gameState.turns.map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : JSON.stringify(t.response)}`).join('\n')}
+${gameState.turns.map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : sanitizeForAI(t.response)}`).join('\n')}
 
 Every question must be DIFFERENT from these.` : ''}
 
@@ -100,7 +141,7 @@ export function buildFollowUpPrompt(
   response: any,
   allPlayers: Player[]
 ): string {
-  return `${playerName} responded: ${JSON.stringify(response)}
+  return `${playerName} responded: ${typeof response === 'string' ? response : sanitizeForAI(response)}
 
 Provide commentary only. One sharp line, max 10 words.
 

@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useGameStore } from '@/lib/store';
+import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { getTheme } from '@/lib/mini-games/themes';
+import personalityMatchIcon from '@/lib/mini-games/personality-match/icon.png';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
   getTurnsAboutPlayer,
@@ -70,6 +73,7 @@ export function PersonalityMatchUI({
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
+  const theme = getTheme('personality_match');
 
   // Generate word grid on mount using AI
   useEffect(() => {
@@ -260,133 +264,17 @@ export function PersonalityMatchUI({
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
-          {/* Intro Phase - Dramatic Full Screen */}
+          {/* Intro Phase */}
           {phase === 'intro' && (
-            <motion.div
-              key="intro"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gradient-to-br from-mint/20 via-void to-mint/10 flex flex-col items-center justify-center p-6 z-50 overflow-x-hidden overflow-y-auto"
-            >
-              {/* Animated background elements */}
-              <div className="absolute inset-0 overflow-hidden">
-                <motion.div
-                  className="absolute top-1/3 left-1/3 w-64 h-64 bg-mint/20 rounded-full blur-3xl"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <motion.div
-                  className="absolute bottom-1/3 right-1/3 w-48 h-48 bg-mint/30 rounded-full blur-3xl"
-                  animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                />
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                className="relative z-10 text-center space-y-6 max-w-lg"
-              >
-                {/* Mini-game badge */}
-                <motion.div
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 rounded-full bg-mint/30 border border-mint"
-                >
-                  <span className="font-mono text-sm text-mint uppercase tracking-widest">
-                    Mini-Game
-                  </span>
-                </motion.div>
-
-                {/* Subject Player Avatar */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', delay: 0.3 }}
-                  className="relative"
-                >
-                  <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-mint shadow-[0_0_30px_rgba(0,255,170,0.4)] mx-auto">
-                    <Image
-                      src={`/avatars/${subjectPlayer.avatar || 1}.png`}
-                      alt={subjectPlayer.name}
-                      width={112}
-                      height={112}
-                      className="object-cover"
-                    />
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="mt-3"
-                  >
-                    <p className="text-mint font-bold text-xl">{subjectPlayer.name}</p>
-                  </motion.div>
-                </motion.div>
-
-                {/* Title */}
-                <motion.h1
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-3xl md:text-4xl font-black text-frost"
-                >
-                  Personality Match
-                </motion.h1>
-
-                {/* Description */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="glass rounded-xl p-5 border border-mint/30 space-y-3"
-                >
-                  <p className="text-steel-300 text-lg">
-                    How well do you know <span className="text-mint font-bold">{subjectPlayer.name}</span>?
-                  </p>
-                  <p className="text-steel-500 text-sm">
-                    Select ALL the words that match their personality. No limit - pick as many as you think fit!
-                  </p>
-                </motion.div>
-
-                {/* Place phone reminder */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.55 }}
-                  className="flex items-center justify-center gap-2 text-steel-500"
-                >
-                  <span className="text-lg">📱</span>
-                  <p className="text-sm">Place phone on table so everyone can see!</p>
-                </motion.div>
-
-                {/* Start button */}
-                <motion.button
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  onClick={() => setPhase('selecting')}
-                  className="w-full bg-mint hover:bg-mint/90 text-void font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(0,255,170,0.3)] hover:shadow-[0_0_30px_rgba(0,255,170,0.5)]"
-                >
-                  Let's Go!
-                </motion.button>
-
-                {onSkip && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    onClick={onSkip}
-                    className="text-steel-500 hover:text-frost text-sm py-2"
-                  >
-                    Skip this challenge
-                  </motion.button>
-                )}
-              </motion.div>
-            </motion.div>
+            <IntroScreen
+              theme={theme}
+              title="Personality Match"
+              description={`Pick all words that fit ${subjectPlayer.name}.`}
+              iconImage={personalityMatchIcon}
+              onStart={() => setPhase('selecting')}
+              onSkip={onSkip}
+              startButtonText="Start"
+            />
           )}
 
           {/* Selecting Phase */}

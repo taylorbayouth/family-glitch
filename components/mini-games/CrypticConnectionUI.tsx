@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
+import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { getTheme } from '@/lib/mini-games/themes';
+import crypticIcon from '@/lib/mini-games/cryptic-connection/icon.png';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
   buildCrypticGeneratorPrompt,
@@ -54,7 +57,6 @@ export function CrypticConnectionUI({
 }: CrypticConnectionUIProps) {
   const [phase, setPhase] = useState<CrypticPhase>('loading');
   const [mysteryWord, setMysteryWord] = useState('');
-  const [hint, setHint] = useState<string | undefined>();
   const [words, setWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
@@ -67,6 +69,7 @@ export function CrypticConnectionUI({
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
+  const theme = getTheme('cryptic_connection');
 
   // Generate puzzle on mount
   useEffect(() => {
@@ -82,14 +85,13 @@ export function CrypticConnectionUI({
         prompt: `Find words connected to "${mysteryWord}".`,
         templateParams: {
           mysteryWord,
-          hint,
           wordOptions: words,
         },
       });
       setTurnId(createdTurnId);
       setTurnStartTime(Date.now());
     }
-  }, [addTurn, hint, mysteryWord, targetPlayer.id, targetPlayer.name, turnId, words]);
+  }, [addTurn, mysteryWord, targetPlayer.id, targetPlayer.name, turnId, words]);
 
   const generatePuzzle = async () => {
     setPhase('loading');
@@ -116,14 +118,12 @@ export function CrypticConnectionUI({
       }
 
       setMysteryWord(parsed.mysteryWord);
-      setHint(parsed.hint);
       setWords(parsed.words);
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate puzzle:', err);
       // Fallback puzzle
       setMysteryWord('BAR');
-      setHint('Think compounds and phrases');
       setWords([
         'soap', 'tender', 'mars', 'exam', 'stool',
         'none', 'raiser', 'code', 'bell', 'space',
@@ -206,7 +206,6 @@ export function CrypticConnectionUI({
           turnId,
           {
             mysteryWord,
-            hint,
             wordOptions: words,
             selectedWords,
             score: result.score,
@@ -275,128 +274,17 @@ export function CrypticConnectionUI({
             </motion.div>
           )}
 
-          {/* Intro Phase - Dramatic Full Screen */}
+          {/* Intro Phase */}
           {phase === 'intro' && (
-            <motion.div
-              key="intro"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gradient-to-br from-violet-500/20 via-void to-violet-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-x-hidden overflow-y-auto"
-            >
-              {/* Animated background elements */}
-              <div className="absolute inset-0 overflow-hidden">
-                <motion.div
-                  className="absolute top-1/3 left-1/4 w-64 h-64 bg-violet-500/20 rounded-full blur-3xl"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <motion.div
-                  className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-violet-600/30 rounded-full blur-3xl"
-                  animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                />
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                className="relative z-10 text-center space-y-6 max-w-lg"
-              >
-                {/* Mini-game badge */}
-                <motion.div
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 rounded-full bg-violet-500/30 border border-violet-400"
-                >
-                  <span className="font-mono text-sm text-violet-400 uppercase tracking-widest">
-                    Mini-Game
-                  </span>
-                </motion.div>
-
-                {/* Game icon */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', delay: 0.3 }}
-                  className="text-7xl"
-                >
-                  🔮
-                </motion.div>
-
-                {/* Title */}
-                <motion.h1
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-4xl md:text-5xl font-black text-frost"
-                >
-                  Cryptic Connection
-                </motion.h1>
-
-                {/* The Mystery Word */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="glass rounded-xl p-6 border border-violet-400/30 space-y-3"
-                >
-                  <p className="font-mono text-xs text-violet-400 uppercase">Mystery Word</p>
-                  <p className="text-frost text-5xl font-black tracking-wider">
-                    {mysteryWord.toUpperCase()}
-                  </p>
-                  {hint && (
-                    <p className="text-steel-500 text-sm italic">Hint: {hint}</p>
-                  )}
-                </motion.div>
-
-                {/* Instructions */}
-                <motion.p
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="text-steel-400"
-                >
-                  Select words that connect to this mystery word
-                </motion.p>
-
-                {/* Place phone reminder */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.65 }}
-                  className="flex items-center justify-center gap-2 text-steel-500"
-                >
-                  <span className="text-lg">📱</span>
-                  <p className="text-sm">Place phone on table so everyone can see!</p>
-                </motion.div>
-
-                {/* Start button */}
-                <motion.button
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  onClick={() => setPhase('playing')}
-                  className="w-full bg-violet-500 hover:bg-violet-400 text-frost font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]"
-                >
-                  Solve the Riddle
-                </motion.button>
-
-                {onSkip && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.9 }}
-                    onClick={onSkip}
-                    className="text-steel-500 hover:text-frost text-sm py-2"
-                  >
-                    Skip this challenge
-                  </motion.button>
-                )}
-              </motion.div>
-            </motion.div>
+            <IntroScreen
+              theme={theme}
+              title="Cryptic Connection"
+              description={`Select words connected to "${mysteryWord.toUpperCase()}".`}
+              iconImage={crypticIcon}
+              onStart={() => setPhase('playing')}
+              onSkip={onSkip}
+              startButtonText="Start"
+            />
           )}
 
           {/* Playing Phase - 5x5 Grid */}

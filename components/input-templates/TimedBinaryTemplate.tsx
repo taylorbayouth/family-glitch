@@ -22,9 +22,11 @@ export function TimedBinaryTemplate({
   rightText,
   seconds,
   orientation = 'vertical',
+  neitherLabel,
   onSubmit,
   onTimeout,
 }: TimedBinaryParams) {
+  const resolvedNeitherLabel = neitherLabel || 'Neither';
   const [timeLeft, setTimeLeft] = useState(seconds);
   const [hasSelected, setHasSelected] = useState(false);
 
@@ -69,7 +71,7 @@ export function TimedBinaryTemplate({
       setHasSelected(true);
       onSubmit({
         choice,
-        selectedText: choice === 'left' ? leftText : choice === 'right' ? rightText : 'Neither',
+        selectedText: choice === 'left' ? leftText : choice === 'right' ? rightText : resolvedNeitherLabel,
         timeRemaining: timeLeft,
         timedOut: false,
       });
@@ -190,7 +192,7 @@ export function TimedBinaryTemplate({
           tabIndex={-1}
           className="flex-shrink-0 py-4 rounded-xl bg-steel-800/50 border-2 border-steel-700 hover:border-steel-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
         >
-          <span className="font-bold text-steel-400 text-lg">Neither</span>
+          <span className="font-bold text-steel-400 text-lg">{resolvedNeitherLabel}</span>
         </motion.button>
       </div>
     </div>

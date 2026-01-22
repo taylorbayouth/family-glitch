@@ -19,7 +19,14 @@ import type { Turn } from '@/lib/types/game-state';
 // MINI-GAME TYPES (extensible)
 // ============================================================================
 
-export type MiniGameType = 'trivia_challenge' | 'personality_match' | 'madlibs_challenge' | 'cryptic_connection' | 'hard_trivia' | 'the_filter';
+export type MiniGameType =
+  | 'trivia_challenge'
+  | 'personality_match'
+  | 'madlibs_challenge'
+  | 'cryptic_connection'
+  | 'hard_trivia'
+  | 'the_filter'
+  | 'lighting_round';
 
 export type MiniGameStatus =
   | 'intro'       // Showing challenge intro
@@ -53,7 +60,7 @@ export interface MiniGameContext {
  * Base result returned by all mini-games
  */
 export interface MiniGameResult {
-  /** Score awarded (0-5 scale) */
+  /** Score awarded (0-5 scale, or negative when penalties apply) */
   score: number;
 
   /** Max possible score */

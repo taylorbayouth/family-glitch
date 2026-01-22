@@ -6,6 +6,54 @@
  */
 
 /**
+ * When a transition event should trigger
+ */
+export interface TransitionTrigger {
+  /** Which act boundary (1 = end of act 1, 2 = end of act 2) */
+  afterAct: 1 | 2;
+}
+
+/**
+ * A response collected from a player during a transition event
+ */
+export interface TransitionResponse {
+  /** The event this response belongs to */
+  eventId: string;
+
+  /** ID of the player who provided this response */
+  playerId: string;
+
+  /** Player name (cached for display) */
+  playerName: string;
+
+  /** The question that was asked */
+  question: string;
+
+  /** Category tag for organizing/filtering responses */
+  category: string;
+
+  /** The player's response */
+  response: string;
+
+  /** When this response was collected */
+  timestamp: string;
+}
+
+/**
+ * Tracks the state of a single transition event
+ */
+export interface TransitionEventState {
+  /** The event ID */
+  eventId: string;
+
+  /** Whether this event has been completed */
+  complete: boolean;
+
+  /** IDs of players who have completed this event */
+  collectedFrom: string[];
+}
+
+/**
  * Represents a single turn in the game
  */
 export interface Turn {
@@ -85,6 +133,12 @@ export interface GameState {
     /** Number of players in this game (stored at game start) */
     numberOfPlayers?: number;
   };
+
+  /** Responses collected from players during transition events */
+  transitionResponses?: TransitionResponse[];
+
+  /** Tracks which transition events have been completed */
+  transitionEvents?: Record<string, TransitionEventState>;
 }
 
 /**
@@ -92,4 +146,11 @@ export interface GameState {
  */
 export type CreateTurnInput = Omit<Turn, 'turnId' | 'timestamp' | 'status' | 'response'> & {
   response?: Record<string, any>;
+};
+
+// Legacy type aliases for backward compatibility
+export type PlayerInsight = TransitionResponse;
+export type ActTransitions = {
+  act1InsightsComplete: boolean;
+  act1InsightsCollectedFrom: string[];
 };

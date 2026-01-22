@@ -5,7 +5,7 @@
 // Application info
 export const APP_NAME = 'Family Glitch';
 export const APP_DESCRIPTION = 'A family game application with AI integration';
-export const APP_VERSION = '1.1.4';
+export const APP_VERSION = '1.1.5';
 export const APP_TAGLINE = 'DIGITAL NOIR';
 
 // URLs
@@ -79,13 +79,15 @@ export function calculateTotalRounds(numberOfPlayers: number): number {
 
 /**
  * Calculate which act the game is currently in (1, 2, or 3)
- * Acts divide the game into thirds (33%, 66%, 100%)
+ * Uses floor boundaries to ensure consistency with transition events
  */
 export function calculateCurrentAct(currentRound: number, totalRounds: number): 1 | 2 | 3 {
   if (totalRounds === 0) return 1;
-  const progress = currentRound / totalRounds;
-  if (progress < 1 / 3) return 1;
-  if (progress < 2 / 3) return 2;
+  const act1End = Math.floor(totalRounds / 3);
+  const act2End = Math.floor((totalRounds * 2) / 3);
+
+  if (currentRound < act1End) return 1;
+  if (currentRound < act2End) return 2;
   return 3;
 }
 

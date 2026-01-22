@@ -224,6 +224,37 @@ function checkTheFilterEligibility(context: EligibilityContext): EligibilityResu
 }
 
 // ============================================================================
+// LIGHTING ROUND ELIGIBILITY
+// ============================================================================
+
+function checkLightingRoundEligibility(context: EligibilityContext): EligibilityResult {
+  const { currentAct, currentPlayerId, turns } = context;
+
+  // Rule 1: Must be in Act 3
+  if (currentAct < 3) {
+    return {
+      eligible: false,
+      reason: 'Lighting Round unlocks in Act III',
+    };
+  }
+
+  // Rule 2: Need at least one completed turn from another player
+  const eligibleTurns = getEligibleTurnsForPlayer(turns, currentPlayerId);
+
+  if (eligibleTurns.length === 0) {
+    return {
+      eligible: false,
+      reason: 'Need answers from other players first',
+    };
+  }
+
+  return {
+    eligible: true,
+    eligibleTurns,
+  };
+}
+
+// ============================================================================
 // MINI-GAME REGISTRY
 // ============================================================================
 
@@ -269,6 +300,13 @@ export const MINI_GAME_ELIGIBILITY: Record<MiniGameType, MiniGameEligibilityDef>
     description: 'Select items that match a hidden pattern - pattern recognition and deduction',
     minAct: 2,
     checkEligibility: checkTheFilterEligibility,
+  },
+  lighting_round: {
+    type: 'lighting_round',
+    name: 'Lighting Round',
+    description: 'Five rapid-fire binary questions about family members',
+    minAct: 3,
+    checkEligibility: checkLightingRoundEligibility,
   },
 };
 

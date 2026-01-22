@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
+import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { getTheme } from '@/lib/mini-games/themes';
+import hardTriviaIcon from '@/lib/mini-games/hard-trivia/icon.png';
 import type { Turn } from '@/lib/types/game-state';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 import type { MiniGamePlayer } from '@/lib/mini-games/registry';
@@ -184,100 +187,20 @@ export function HardTriviaUI({
     );
   }
 
-  // Intro phase - Dramatic Full Screen
+  const theme = getTheme('hard_trivia');
+
+  // Intro phase
   if (phase === 'intro') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-cyan-500/20 via-void to-cyan-600/10 flex flex-col items-center justify-center p-6 z-50 overflow-x-hidden overflow-y-auto">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute top-1/3 left-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-cyan-600/30 rounded-full blur-3xl"
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
-            transition={{ duration: 2.5, repeat: Infinity }}
-          />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          className="relative z-10 text-center space-y-6 max-w-lg"
-        >
-          {/* Mini-game badge */}
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-block px-4 py-2 rounded-full bg-cyan-500/30 border border-cyan-400"
-          >
-            <span className="font-mono text-sm text-cyan-400 uppercase tracking-widest">
-              Mini-Game
-            </span>
-          </motion.div>
-
-          {/* Game icon */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', delay: 0.3 }}
-            className="text-7xl"
-          >
-            🧠
-          </motion.div>
-
-          {/* Title */}
-          <motion.h1
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-4xl md:text-5xl font-black text-frost"
-          >
-            Hard Trivia
-          </motion.h1>
-
-          {/* Description */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="glass rounded-xl p-6 border border-cyan-400/30 space-y-3"
-          >
-            <p className="text-steel-300 text-lg">
-              Time to test your knowledge, {targetPlayer.name}!
-            </p>
-            <p className="text-cyan-400 text-sm font-medium">
-              Category: <span className="font-bold">{triviaData.category}</span>
-            </p>
-          </motion.div>
-
-          {/* Place phone reminder */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.65 }}
-            className="flex items-center justify-center gap-2 text-steel-500"
-          >
-            <span className="text-lg">📱</span>
-            <p className="text-sm">Place phone on table so everyone can see!</p>
-          </motion.div>
-
-          {/* Start button */}
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            onClick={() => setPhase('question')}
-            className="w-full bg-cyan-500 hover:bg-cyan-400 text-void font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]"
-          >
-            Show Question
-          </motion.button>
-        </motion.div>
-      </div>
+      <IntroScreen
+        theme={theme}
+        title="Hard Trivia"
+        description={`Pick the correct answer to score 5 points.`}
+        iconImage={hardTriviaIcon}
+        category={triviaData?.category}
+        onStart={() => setPhase('question')}
+        startButtonText="Show Question"
+      />
     );
   }
 

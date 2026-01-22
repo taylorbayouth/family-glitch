@@ -74,6 +74,9 @@ export interface TimedBinaryParams extends BaseTemplateParams {
 
   /** Layout orientation */
   orientation?: 'horizontal' | 'vertical';
+
+  /** Label for the "Neither" button (default: "Neither") */
+  neitherLabel?: string;
 }
 
 /**

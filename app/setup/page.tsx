@@ -182,7 +182,7 @@ export default function SetupPage() {
         </motion.header>
 
         {/* Player List */}
-        <div className="flex-1 min-h-0 px-4 pb-4 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 px-4 pb-32 overflow-y-auto custom-scrollbar">
           <AnimatePresence mode="popLayout">
             {playerForms.map((form, index) => (
               <motion.div
@@ -199,10 +199,11 @@ export default function SetupPage() {
                   {!form.isExpanded ? (
                     <motion.button
                       key="collapsed"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2, layout: { duration: 0.3 } }}
                     onClick={() => toggleExpanded(form.id)}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -258,11 +259,12 @@ export default function SetupPage() {
                     /* Expanded view */
                     <motion.div
                       key="expanded"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="glass rounded-xl p-5 border-glitch/30 overflow-hidden"
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2, layout: { duration: 0.3 } }}
+                      className="glass rounded-xl p-5 border-glitch/30"
                     >
                     {/* Header */}
                     <div className="flex items-center justify-between mb-5">

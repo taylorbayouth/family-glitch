@@ -44,13 +44,30 @@ Generate exactly 16 personality words for a 4x4 grid about ${subjectName}${subje
 ${turnsSummary || 'No specific game data yet - use general personality words.'}
 
 ## WORD RULES
-1. EXACTLY 16 words, single-word traits only
-2. Mix positive, negative, and neutral
-3. Include at least 4 strong fits based on evidence above
-4. Include 4 clear decoys that do NOT fit
-5. The rest should be plausible but debatable
-6. Use vocabulary that's engaging and understandable - avoid jargon but respect intelligence
-7. No names, no phrases, no repeats
+
+**Structure (exactly 16 words):**
+- 4 STRONG FITS - clear evidence supports these
+- 4 CLEAR DECOYS - obviously don't match based on evidence
+- 8 DEBATABLE - could go either way, spark discussion
+
+**Quality standards:**
+✅ Single-word traits only (no phrases)
+✅ Mix positive, negative, and neutral
+✅ Based on EVIDENCE, not stereotypes (don't assume based on age/role)
+✅ Engaging vocabulary - avoid jargon but respect intelligence
+✅ No names, no repeats
+
+**Make it CHALLENGING:**
+- Don't make the strong fits too obvious
+- Debatable words should genuinely be arguable
+- Decoys should be tempting but clearly wrong
+- Use specific traits, not generic ones ("adventurous" > "nice")
+
+**Examples of good word sets:**
+Person who said "I love hiking and travel":
+- Strong fits: adventurous, outdoorsy, spontaneous, curious
+- Debatable: introverted, athletic, independent, practical
+- Decoys: sedentary, homebody, cautious, rigid
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
@@ -58,7 +75,7 @@ Respond with valid JSON:
   "words": ["word1", "word2", ... exactly 16 words]
 }
 
-Make the choices fun and arguable so the family debates them together.`;
+The best grids make families debate and laugh together!`;
 }
 
 export interface PersonalityWordGeneratorResponse {
@@ -145,20 +162,34 @@ ${safeSelectedWords.map(w => `- ${w || 'word'}`).join('\n') || '- No words selec
 ## EVIDENCE
 ${turnsSummary || 'No specific data yet - use a cautious, general read.'}
 
-## SCORING RULES (0-5)
-5 = nails it\n4 = strong\n3 = mixed\n2 = weak\n1 = mostly wrong\n0 = random
+## SCORING RUBRIC (0-5)
 
-## TONE
-- Insightful and witty\n- Call out obvious misses\n- Max 10 words for commentary
+**5 points** - Nailed it! Selected words perfectly capture ${subjectName} based on evidence
+**4 points** - Strong read, mostly accurate with minor misses
+**3 points** - Mixed bag, some hits and some misses
+**2 points** - Weak understanding, more wrong than right
+**1 point** - Mostly wrong, picked obvious decoys
+**0 points** - Completely off, random selections
+
+**Score based on EVIDENCE, not vibes:**
+- If they said "I love hiking" and player picked "adventurous, outdoorsy" → strong evidence
+- If they said "I'm a homebody" and player picked "outgoing, spontaneous" → contradicts evidence
+- Reward choices backed by concrete answers
+- Penalize choices that contradict what ${subjectName} revealed
+
+**Be tough but fair:**
+- Don't give 5s for just picking positive words
+- Don't give 0s unless selections are wildly off
+- 3 is the "didn't really know them" score
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
   "score": <0-5>,
-  "commentary": "<max 10 words>",
-  "bestPick": "<most accurate word>",
+  "commentary": "<max 10 words, witty and insightful>",
+  "bestPick": "<most accurate word they selected>",
   "worstPick": "<least accurate word, if any>",
-  "insight": "<optional one-line insight>"
+  "insight": "<optional one-line insight about their read>"
 }`;
 }
 

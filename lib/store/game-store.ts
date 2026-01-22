@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameState as GameStateType, Turn, CreateTurnInput } from '@/lib/types/game-state';
+import type { GameState as GameStateType, Turn, CreateTurnInput, TransitionResponse, TransitionEventState } from '@/lib/types/game-state';
 import { calculateTotalRounds, calculateCurrentAct, calculateProgressPercentage } from '@/lib/constants';
+import { getPendingTransitionEvent, type TransitionEventDefinition } from '@/lib/act-transitions';
 
 interface Player {
   id: string;
@@ -14,20 +15,19 @@ interface GameStoreState extends Omit<GameStateType, 'startedAt' | 'endedAt'> {
   startedAt: string;
   endedAt?: string;
 
-  // Legacy fields (keep for backwards compatibility)
+  // Legacy field for backwards compatibility (used in getPlayerCount fallback)
   players: Player[];
-  currentRound: number;
-  gameStarted: boolean;
+
+  // Transition events state (generic system)
+  transitionResponses: TransitionResponse[];
+  transitionEvents: Record<string, TransitionEventState>;
 
   // Actions
-  addPlayer: (player: Player) => void;
-  removePlayer: (playerId: string) => void;
   startGame: (numberOfPlayers?: number) => void;
   startNewGame: () => void;
   resetGame: () => void;
-  nextRound: () => void;
 
-  // New turn-based actions
+  // Turn-based actions
   addTurn: (turn: CreateTurnInput) => string;
   updateTurnResponse: (turnId: string, response: Record<string, any>) => void;
   completeTurn: (turnId: string, response: Record<string, any>, duration?: number) => void;
@@ -35,12 +35,22 @@ interface GameStoreState extends Omit<GameStateType, 'startedAt' | 'endedAt'> {
   updatePlayerScore: (playerId: string, points: number) => void;
   getCurrentTurn: () => Turn | null;
 
+  // Generic transition event actions
+  addTransitionResponse: (response: Omit<TransitionResponse, 'timestamp'>) => void;
+  markTransitionEventComplete: (eventId: string) => void;
+  getTransitionResponses: (eventId?: string) => TransitionResponse[];
+
   // Computed properties (read-only)
   getTotalRounds: () => number;
   getCurrentRound: () => number;
   getCurrentAct: () => 1 | 2 | 3;
   getProgressPercentage: () => number;
   isGameComplete: () => boolean;
+
+  // Generic transition event computed properties
+  getPendingTransitionEvent: () => TransitionEventDefinition | null;
+  getNextPlayerForEvent: (eventId: string, allPlayerIds: string[]) => string | null;
+  getEventState: (eventId: string) => TransitionEventState | null;
 }
 
 /**
@@ -75,31 +85,21 @@ export const useGameStore = create<GameStoreState>()(
         numberOfPlayers: 0,
       },
 
-      // Legacy state (for backwards compatibility)
+      // Legacy state
       players: [],
-      currentRound: 0,
-      gameStarted: false,
 
-      // Legacy Actions
-      addPlayer: (player) =>
-        set((state) => ({
-          players: [...state.players, player],
-        })),
+      // Transition events state (generic)
+      transitionResponses: [],
+      transitionEvents: {},
 
-      removePlayer: (playerId) =>
-        set((state) => ({
-          players: state.players.filter((p) => p.id !== playerId),
-        })),
-
+      // Actions
       startGame: (numberOfPlayers) =>
         set((state) => {
           const resolvedPlayerCount = numberOfPlayers || state.players.length;
           return {
-            gameStarted: true,
             gameId: crypto.randomUUID(),
             startedAt: new Date().toISOString(),
             status: 'playing',
-            currentRound: 1,
             settings: {
               ...state.settings,
               numberOfPlayers: resolvedPlayerCount,
@@ -117,8 +117,9 @@ export const useGameStore = create<GameStoreState>()(
           currentTurnIndex: -1,
           status: 'setup',
           scores: {},
-          currentRound: 0,
-          gameStarted: false,
+          // Reset transition events for new game
+          transitionResponses: [],
+          transitionEvents: {},
           // Keeps players intact
         }),
 
@@ -132,16 +133,12 @@ export const useGameStore = create<GameStoreState>()(
           status: 'setup',
           scores: {},
           players: [],
-          currentRound: 0,
-          gameStarted: false,
+          // Reset transition events
+          transitionResponses: [],
+          transitionEvents: {},
         }),
 
-      nextRound: () =>
-        set((state) => ({
-          currentRound: state.currentRound + 1,
-        })),
-
-      // New Turn-based Actions
+      // Turn-based Actions
       addTurn: (turnInput) => {
         const turnId = crypto.randomUUID();
         set((state) => {
@@ -210,6 +207,58 @@ export const useGameStore = create<GameStoreState>()(
         return null;
       },
 
+      // Generic transition event actions
+      addTransitionResponse: (response) =>
+        set((state) => {
+          // Initialize event state if not exists
+          const eventState = state.transitionEvents[response.eventId] || {
+            eventId: response.eventId,
+            complete: false,
+            collectedFrom: [],
+          };
+
+          return {
+            transitionResponses: [
+              ...state.transitionResponses,
+              { ...response, timestamp: new Date().toISOString() },
+            ],
+            transitionEvents: {
+              ...state.transitionEvents,
+              [response.eventId]: {
+                ...eventState,
+                collectedFrom: [...eventState.collectedFrom, response.playerId],
+              },
+            },
+          };
+        }),
+
+      markTransitionEventComplete: (eventId) =>
+        set((state) => {
+          const eventState = state.transitionEvents[eventId] || {
+            eventId,
+            complete: false,
+            collectedFrom: [],
+          };
+
+          return {
+            transitionEvents: {
+              ...state.transitionEvents,
+              [eventId]: {
+                ...eventState,
+                complete: true,
+              },
+            },
+          };
+        }),
+
+      getTransitionResponses: (eventId) => {
+        const state = get();
+        if (eventId) {
+          return state.transitionResponses.filter((r) => r.eventId === eventId);
+        }
+        return state.transitionResponses;
+      },
+
       // Computed properties for game progression
       getTotalRounds: () => {
         const state = get();
@@ -225,22 +274,49 @@ export const useGameStore = create<GameStoreState>()(
       getCurrentAct: () => {
         const state = get();
         const currentRound = state.turns.filter(t => t.status === 'completed').length;
-        const totalRounds = get().getTotalRounds(); // Reuse getTotalRounds logic
+        const totalRounds = get().getTotalRounds();
         return calculateCurrentAct(currentRound, totalRounds);
       },
 
       getProgressPercentage: () => {
         const state = get();
         const currentRound = state.turns.filter(t => t.status === 'completed').length;
-        const totalRounds = get().getTotalRounds(); // Reuse getTotalRounds logic
+        const totalRounds = get().getTotalRounds();
         return calculateProgressPercentage(currentRound, totalRounds);
       },
 
       isGameComplete: () => {
         const state = get();
         const currentRound = state.turns.filter(t => t.status === 'completed').length;
-        const totalRounds = get().getTotalRounds(); // Reuse getTotalRounds logic
+        const totalRounds = get().getTotalRounds();
         return currentRound >= totalRounds;
+      },
+
+      // Generic transition event computed properties
+      getPendingTransitionEvent: () => {
+        const state = get();
+        const currentRound = state.turns.filter(t => t.status === 'completed').length;
+        const totalRounds = get().getTotalRounds();
+        return getPendingTransitionEvent(currentRound, totalRounds, state.transitionEvents);
+      },
+
+      getNextPlayerForEvent: (eventId, allPlayerIds) => {
+        const state = get();
+        const eventState = state.transitionEvents[eventId];
+        const collectedFrom = eventState?.collectedFrom || [];
+
+        // Find the first player who hasn't completed this event yet
+        for (const playerId of allPlayerIds) {
+          if (!collectedFrom.includes(playerId)) {
+            return playerId;
+          }
+        }
+        return null; // All players have completed this event
+      },
+
+      getEventState: (eventId) => {
+        const state = get();
+        return state.transitionEvents[eventId] || null;
       },
     }),
     {

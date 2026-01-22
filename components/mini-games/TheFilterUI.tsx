@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/lib/store';
+import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { getTheme } from '@/lib/mini-games/themes';
+import theFilterIcon from '@/lib/mini-games/the-filter/icon.png';
 import { sendChatRequest } from '@/lib/ai/client';
 import {
   buildFilterGeneratorPrompt,
@@ -54,7 +57,6 @@ export function TheFilterUI({
 }: TheFilterUIProps) {
   const [phase, setPhase] = useState<FilterPhase>('loading');
   const [rule, setRule] = useState('');
-  const [hint, setHint] = useState<string | undefined>();
   const [gridItems, setGridItems] = useState<FilterGenerateResponse['gridItems']>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [result, setResult] = useState<MiniGameResult | null>(null);
@@ -66,6 +68,7 @@ export function TheFilterUI({
   const addTurn = useGameStore((state) => state.addTurn);
   const completeTurn = useGameStore((state) => state.completeTurn);
   const updatePlayerScore = useGameStore((state) => state.updatePlayerScore);
+  const theme = getTheme('the_filter');
 
   // Generate puzzle on mount
   useEffect(() => {
@@ -81,14 +84,13 @@ export function TheFilterUI({
         prompt: `Select items that match: "${rule}".`,
         templateParams: {
           rule,
-          hint,
           gridItems,
         },
       });
       setTurnId(createdTurnId);
       setTurnStartTime(Date.now());
     }
-  }, [addTurn, gridItems, hint, rule, targetPlayer.id, targetPlayer.name, turnId]);
+  }, [addTurn, gridItems, rule, targetPlayer.id, targetPlayer.name, turnId]);
 
   const generatePuzzle = async () => {
     setPhase('loading');
@@ -115,14 +117,12 @@ export function TheFilterUI({
       }
 
       setRule(parsed.rule);
-      setHint(parsed.hint);
       setGridItems(parsed.gridItems);
       setPhase('intro');
     } catch (err) {
       console.error('Failed to generate puzzle:', err);
       // Fallback puzzle
       setRule('Invented before 1900');
-      setHint('Think twice about the modern stuff');
       setGridItems([
         { label: 'Bicycle', isCorrect: true, reason: '1817' },
         { label: 'Sliced Bread', isCorrect: false, isTrick: true, reason: '1928' },
@@ -212,7 +212,6 @@ export function TheFilterUI({
           turnId,
           {
             rule,
-            hint,
             gridItems,
             selectedItems,
             correctItems,
@@ -290,126 +289,15 @@ export function TheFilterUI({
 
           {/* Intro Phase */}
           {phase === 'intro' && (
-            <motion.div
-              key="intro"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gradient-to-br from-cyan-400/20 via-void to-cyan-500/10 flex flex-col items-center justify-center p-6 z-50 overflow-x-hidden overflow-y-auto"
-            >
-              {/* Animated background */}
-              <div className="absolute inset-0 overflow-hidden">
-                <motion.div
-                  className="absolute top-1/3 left-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <motion.div
-                  className="absolute bottom-1/4 right-1/3 w-48 h-48 bg-cyan-600/30 rounded-full blur-3xl"
-                  animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                />
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                className="relative z-10 text-center space-y-6 max-w-lg"
-              >
-                {/* Mini-game badge */}
-                <motion.div
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 rounded-full bg-cyan-500/30 border border-cyan-400"
-                >
-                  <span className="font-mono text-sm text-cyan-400 uppercase tracking-widest">
-                    Mini-Game
-                  </span>
-                </motion.div>
-
-                {/* Game icon */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', delay: 0.3 }}
-                  className="text-7xl"
-                >
-                  🎯
-                </motion.div>
-
-                {/* Title */}
-                <motion.h1
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-4xl md:text-5xl font-black text-frost"
-                >
-                  The Filter
-                </motion.h1>
-
-                {/* The Rule */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="glass rounded-xl p-6 border border-cyan-400/30 space-y-3"
-                >
-                  <p className="font-mono text-xs text-cyan-400 uppercase">The Rule</p>
-                  <p className="text-frost text-2xl font-bold">
-                    {rule}
-                  </p>
-                  {hint && (
-                    <p className="text-steel-500 text-sm italic">Hint: {hint}</p>
-                  )}
-                </motion.div>
-
-                {/* Instructions */}
-                <motion.p
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="text-steel-400"
-                >
-                  Select ALL items that pass the filter
-                </motion.p>
-
-                {/* Place phone reminder */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.65 }}
-                  className="flex items-center justify-center gap-2 text-steel-500"
-                >
-                  <span className="text-lg">📱</span>
-                  <p className="text-sm">Place phone on table so everyone can see!</p>
-                </motion.div>
-
-                {/* Start button */}
-                <motion.button
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  onClick={() => setPhase('playing')}
-                  className="w-full bg-cyan-500 hover:bg-cyan-400 text-void font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]"
-                >
-                  Apply the Filter
-                </motion.button>
-
-                {onSkip && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.9 }}
-                    onClick={onSkip}
-                    className="text-steel-500 hover:text-frost text-sm py-2"
-                  >
-                    Skip this challenge
-                  </motion.button>
-                )}
-              </motion.div>
-            </motion.div>
+            <IntroScreen
+              theme={theme}
+              title="The Filter"
+              description={`Rule: ${rule}. Select all items that pass.`}
+              iconImage={theFilterIcon}
+              onStart={() => setPhase('playing')}
+              onSkip={onSkip}
+              startButtonText="Start"
+            />
           )}
 
           {/* Playing Phase - 3x3 or 3x4 Grid */}

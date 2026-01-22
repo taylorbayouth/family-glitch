@@ -148,6 +148,7 @@ registerTool<{
   rightText: string;
   seconds: number;
   orientation?: 'horizontal' | 'vertical';
+  neitherLabel?: string;
 }>(
   {
     type: 'function',
@@ -184,6 +185,10 @@ registerTool<{
           description: 'Layout direction for the two options (default: vertical)',
           default: 'vertical',
         },
+        neitherLabel: {
+          type: 'string',
+          description: 'Optional label for the "Neither" button (default: "Neither")',
+        },
       },
       required: ['prompt', 'leftText', 'rightText', 'seconds'],
       additionalProperties: false,
@@ -199,6 +204,7 @@ registerTool<{
         rightText: args.rightText,
         seconds: args.seconds,
         orientation: args.orientation || 'vertical',
+        neitherLabel: args.neitherLabel,
       },
     };
   }
@@ -651,6 +657,38 @@ registerTool<{
       templateType: 'the_filter',
       params: {
         intro: args.intro || 'Apply the filter!',
+      },
+    };
+  }
+);
+
+/**
+ * Tool: Trigger Lighting Round
+ * Five rapid-fire binary questions about family members.
+ */
+registerTool<{
+  intro?: string;
+}>(
+  {
+    type: 'function',
+    name: 'trigger_lighting_round',
+    description: 'Start a LIGHTING ROUND mini-game. Five timed binary questions about family members. +5 right, -5 wrong.',
+    parameters: {
+      type: 'object',
+      properties: {
+        intro: {
+          type: 'string',
+          description: 'Optional intro text for the challenge (e.g., "Rapid fire time!")',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  async (args) => {
+    return {
+      templateType: 'lighting_round',
+      params: {
+        intro: args.intro || 'Lighting Round incoming!',
       },
     };
   }

@@ -7,16 +7,17 @@
  * Features:
  * - Animated gradient background with pulsing blobs
  * - Game badge, icon, title, and description
- * - Optional category and hint display
+ * - Optional category display
  * - "Place phone on table" reminder
  * - Start and skip buttons
  *
- * This component replaces 80% of duplicate intro code across all 6 games.
+ * This component replaces 80% of duplicate intro code across all 7 games.
  */
 
 'use client';
 
 import { motion } from 'framer-motion';
+import Image, { type StaticImageData } from 'next/image';
 import type { MiniGameTheme } from '@/lib/mini-games/themes';
 
 interface IntroScreenProps {
@@ -32,11 +33,12 @@ interface IntroScreenProps {
   /** Optional game icon (emoji or image) */
   icon?: string;
 
+  /** Optional icon image (preferred over emoji) */
+  iconImage?: StaticImageData | string;
+
   /** Optional category label (e.g., "Science", "History") */
   category?: string;
 
-  /** Optional hint text */
-  hint?: string;
 
   /** Callback when player clicks "Let's Go!" */
   onStart: () => void;
@@ -64,12 +66,13 @@ export function IntroScreen({
   title,
   description,
   icon,
+  iconImage,
   category,
-  hint,
   onStart,
   onSkip,
   startButtonText = "Let's Go!",
 }: IntroScreenProps) {
+  const showImageIcon = Boolean(iconImage);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -119,7 +122,26 @@ export function IntroScreen({
         </motion.div>
 
         {/* Game icon/emoji */}
-        {icon && (
+        {showImageIcon && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', delay: 0.3 }}
+            className="flex justify-center"
+            aria-hidden="true"
+          >
+            <div className="w-24 h-24 rounded-2xl bg-void-light/70 border border-steel-800 flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.25)]">
+              <Image
+                src={iconImage as StaticImageData}
+                alt=""
+                width={64}
+                height={64}
+                className="object-contain"
+              />
+            </div>
+          </motion.div>
+        )}
+        {!showImageIcon && icon && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -162,12 +184,6 @@ export function IntroScreen({
             </p>
           )}
 
-          {/* Optional hint */}
-          {hint && (
-            <p className="text-steel-500 text-sm italic">
-              Hint: {hint}
-            </p>
-          )}
         </motion.div>
 
         {/* "Place phone on table" reminder */}

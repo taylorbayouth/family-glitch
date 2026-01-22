@@ -21,7 +21,11 @@
       "Bash(git checkout:*)",
       "Bash(ls:*)",
       "Bash(perl -i -pe:*)",
-      "Bash(failed, retrying\" error.\n\nChanged prompt threshold from >= 1 to >= 3 to match actual eligibility.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(failed, retrying\" error.\n\nChanged prompt threshold from >= 1 to >= 3 to match actual eligibility.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx tsx:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)",
+      "Bash(test:*)"
     ]
   }
 }

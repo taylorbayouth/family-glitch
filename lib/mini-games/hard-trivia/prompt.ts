@@ -64,14 +64,37 @@ ${familyContext}
 
 ## How to Make Great Questions
 
-Use what you know about ${targetName} to ask something in THEIR wheelhouse:
-- If they mentioned loving Marvel movies, ask about Marvel
-- If they're into gaming, ask about games they'd know
-- If they love cooking, ask about cuisine
+**Use SPECIFIC interests from their answers:**
+- They said "I love the Lakers" → Ask about Lakers history/players
+- They said "I'm obsessed with The Last of Us" → Ask about that game specifically
+- They said "I love Italian food" → Ask about Italian cuisine/restaurants
+- They said "I'm into Marvel" → Ask about specific Marvel characters/movies
 
-Match the difficulty to their age - a 10-year-old knows different things than a 40-year-old, but both deserve challenging questions in their domain.
+**Difficulty Calibration by Age:**
 
-If you don't have specific interest data, use topics appropriate to their age and likely world (pop culture, school subjects, hobbies common for their demographic).
+**Ages 8-12:** Surface-level pop culture, current trends, basic facts
+- Example: "What color is Pikachu?" (if they like Pokémon)
+- Example: "Who is the main character in Minecraft?" (if they play Minecraft)
+
+**Ages 13-17:** Deeper fandom knowledge, recent releases
+- Example: "Which Avenger wields Mjolnir besides Thor?" (if into Marvel)
+- Example: "What year was Fortnite released?" (if they play Fortnite)
+
+**Ages 18-35:** Expert-level, nuanced details, deeper cuts
+- Example: "Who directed Pulp Fiction?" (if they mentioned loving it)
+- Example: "What was Kobe Bryant's jersey number after switching?" (if Lakers fan)
+
+**Ages 36+:** Mix of nostalgia + current, respect their expertise
+- Example: "Which Beatles album featured 'Let It Be'?" (if music lover)
+- Example: "What was the original name of Starbucks?" (if coffee enthusiast)
+
+**Make it CHALLENGING but FAIR:**
+✅ Question should feel hard but answerable for someone who knows the topic
+✅ Wrong options should be plausible (don't make it too easy)
+✅ Right answer should be satisfying when they get it
+
+**If no specific interest data:**
+Fall back to age-appropriate general knowledge (movies, music, sports, history).
 
 ## Format
 

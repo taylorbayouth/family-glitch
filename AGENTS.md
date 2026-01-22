@@ -4,10 +4,11 @@ AI agent context for the Family Glitch project.
 
 ## Project Overview
 
-Family Glitch is a pass-and-play party game where a snarky AI host runs short turns, asks questions with dynamic input templates, and occasionally triggers mini-games. The app is built with Next.js 15, GPT-5.2 tool calling, and Google OAuth (NextAuth).
+Family Glitch is a pass-and-play party game where a snarky AI host runs short turns, asks questions with dynamic input templates, and triggers mini-games. Built with Next.js 15, GPT-5.2 tool calling, and Google OAuth (NextAuth).
 
 Live Site: https://family-glitch.vercel.app
 Repository: https://github.com/taylorbayouth/family-glitch
+Version: 1.1.5
 
 ## Tech Stack
 
@@ -21,434 +22,363 @@ Repository: https://github.com/taylorbayouth/family-glitch
 - Animations: Framer Motion 12.27.1
 - Package manager: npm
 
-## Recent Changes (v1.1.3 - 2026-01-21)
+## Recent Changes (v1.1.5 - 2026-01-22)
 
-### AI Prompt Philosophy Shift
-Changed from restriction-heavy prompts to goal-focused prompts:
-- **Before**: Long lists of what NOT to do → bloated, confusing
-- **After**: Clear goals of what TO accomplish → concise, effective
+### Critical Bug Fixes
 
-### Game Master Prompt Rewrite
-- Removed "family-friendly" language causing overly cautious questions
-- Treat 10+ year-olds as pre-teens/teens, not young children
-- Expanded Act 1 examples: passions, skills, entertainment, local flavor, binary debates, interest grids
-- Added explicit rule: "Avoid memory-check questions in Act 1 (answers are secret)"
-- Reduced from ~200 lines to ~80 lines
+**Act Boundary Consistency** ([constants.ts:84](lib/constants.ts#L84))
+- Fixed fractional vs floor boundary mismatch between `calculateCurrentAct` and `getPendingTransitionEvent`
+- Changed from `progress < 1/3` to `currentRound < Math.floor(totalRounds/3)`
+- Eliminates bug where "Act 1 Complete" showed but currentAct was still 1
+- Insights now inject at correct moment
 
-### Trivia Challenge Improvements
-- Fixed "ordinal problem": AI was asking "What was the SECOND thing?" (impossible to answer)
-- Added guidance: "Ask about MEMORABLE or DISTINCTIVE parts, not list order"
+**Consecutive Turns After Transitions** ([page.tsx:357](app/play/page.tsx#L357))
+- Fixed same player getting back-to-back turns across Act boundaries
+- After transition completes, now advances `currentPlayerIndex` and `turnNumber` before loading next question
+- Ensures fair turn distribution
 
-### Mad Libs Enhancement
-- Changed to exactly 2 blanks per template (was variable)
-- Added Cards Against Humanity energy with witty templates
-- Goal shifted to "Make players feel WITTY, not just shocking"
-- 8 strong example templates that reward cleverness over crude answers
+**Trivia Eligibility Gate** ([page.tsx:151](app/play/page.tsx#L151))
+- Changed eligibility requirement from `≥ 3` to `≥ 1` turns
+- Unlocks Trivia Challenge and Personality Match earlier in Act 2
+- Improves mini-game variety in small/early games
 
-### Mini-Game Eligibility Relaxed
-- Removed artificial `>= 3 turns` constraint
-- Now available with just 1 eligible turn from another player
-- Rationale: Act 1 already collects data, constraint was redundant
+**The Filter Visibility** ([game-master-prompt.ts:107](lib/ai/game-master-prompt.ts#L107))
+- The Filter now visible in Act 2+ block (was Act 3+ only)
+- AI can select it starting in Act 2 as intended
+- Mad Libs and Cryptic Connection remain Act 3+ exclusive
 
-### Timed Binary UX Fixes
-- Added "Neither" button as third option below main choices
-- Fixed pre-selection bug (first button appeared selected on load)
-- Added `focus:outline-none` and blur-on-mount to prevent auto-focus
+### Code Cleanup
+
+- Removed unused `getActBoundaries()` function from constants and game-store
+- Removed unused `nextRound()` method from game-store
+- Removed unused `addPlayer()` and `removePlayer()` methods from game-store (player-store handles this)
+- Removed redundant `currentAct` filter in `formatAllTransitionResponses()` - events can only be complete after advancing to next act
+- Removed `currentRound` and `gameStarted` field assignments (calculated from turns instead)
 
 ## App Routes and Flow
 
-- `/` Home page with Google sign-in CTA. If a session exists, the client redirects to `/setup`.
-- `/auth/signin` Custom sign-in page using a server action (`signIn('google')`).
+- `/` Home page with Google sign-in CTA. If session exists, redirects to `/setup`.
+- `/auth/signin` Custom sign-in page using server action `signIn('google')`.
 - `/setup` Player roster setup (3 to 7 players). Saves to `usePlayerStore`.
-- `/play` Main game flow (pass screen -> question or mini-game -> commentary -> next player).
+- `/play` Main game flow (pass screen → question/mini-game → commentary → next player).
 - `/chat` AI chat demo page for testing `/api/chat`.
 
-## Game Flow (Current Implementation)
+## Game Flow
 
-1. Setup players in `/setup` (name, role, age, avatar image).
-2. `/play` loads, starts the game (if `gameId` is empty), and preloads a question during the pass screen.
-3. Player taps the pass screen button to reveal their question or mini-game.
-4. For normal questions, a template component renders and submits a structured response.
-5. The app requests short AI commentary (toolChoice: `none`) and shows a manual "Pass to {next}" button.
-6. Game ends when `useGameStore().isGameComplete()` returns true, then `/play` shows `EndGameResults` which calls `/api/announcer` for rankings.
+1. Setup players in `/setup` (name, role, age, avatar).
+2. `/play` starts game and preloads question during pass screen.
+3. Player taps to reveal their question or mini-game.
+4. Template component renders and submits structured response.
+5. AI provides short commentary (`toolChoice: none`).
+6. Manual "Pass to {next}" button advances to next player.
+7. Game ends when `isGameComplete()` returns true.
+8. `EndGameResults` calls `/api/announcer` for final rankings.
 
 ### 3-Act Structure
 
-The game divides into acts based on progress (calculated in `lib/constants.ts`):
+Acts are based on completed turns (calculated in [constants.ts:84](lib/constants.ts#L84)):
+- Act 1 ends at `Math.floor(totalRounds / 3)`
+- Act 2 ends at `Math.floor(totalRounds * 2 / 3)`
+- Act 3 ends at `totalRounds`
 
-**Act 1 (0-33% of rounds)**: Data Collection
-- AI asks questions using input templates to learn about each player
-- Questions reveal interests, skills, preferences, stories, local knowledge
-- **Critical constraint**: Questions must NOT test memory of other players' answers (those are secret until Act 2)
-- Examples: "What could you talk about for hours?" "Beatles or Stones?" "Favorite YouTuber?"
-- Goal: Build knowledge database for mini-games in Acts 2-3
+**Act 1 (0 to floor(1/3) turns): SECRET INTEL GATHERING 🤫**
+- **PRIVATE PHASE** - Each player answers alone
+- AI asks questions using input templates
+- Questions reveal interests, skills, preferences, local knowledge
+- **NO MINI-GAMES** - Only input templates
+- NO memory-check questions (answers are secret until Act 2)
+- Goal: Build knowledge database for mini-games
+- **After Act 1 completes**: Transition event collects insights from all players
 
-**Act 2 (33-66%)**: Mini-Games Unlocked (Trivia, Personality Match, Hard Trivia)
-- AI switches from questions to mini-games that test family knowledge
-- Eligibility: At least 1 completed turn from another player
-- Games reference Act 1 answers to create personalized challenges
+**Act 2 (floor(1/3) to floor(2/3) turns): PUBLIC MINI-GAMES BEGIN 📱**
+- **PUBLIC PHASE** - Phone in center, everyone watches
+- AI switches from questions to mini-games
+- **4 mini-games unlock:**
+  1. **Trivia Challenge** - Guess what someone would say (requires ≥1 turn from others)
+  2. **Personality Match** - Describe family member with words (requires ≥1 turn from others)
+  3. **Hard Trivia** - Custom trivia based on interests (standalone)
+  4. **The Filter** - Pattern recognition game (standalone)
+- Games reference Act 1 answers for personalization
 
-**Act 3 (66-100%)**: All Mini-Games Available
-- All 6 mini-games unlocked: + Mad Libs, Cryptic Connection, The Filter
-- More challenging games appear as the knowledge base grows
+**Act 3 (floor(2/3) to totalRounds turns): ADVANCED GAMES UNLOCK 🎮**
+- All Act 2 mini-games remain available
+- **3 additional games unlock:**
+  1. **Mad Libs Challenge** - Fill-in-the-blank wordplay (2 blanks, Cards Against Humanity energy)
+  2. **Cryptic Connection** - Find hidden connection in 5×5 word grid
+  3. **Lighting Round** - 5 rapid-fire timed binary questions (+5 right, -5 wrong, Pass allowed)
+- **All 7 mini-games** available
 
-### Mini-Game Handoff Process
+### Act Transition Events
 
-When AI returns a mini-game template type (e.g., `trivia_challenge`):
+**System**: Declarative event registry in [lib/act-transitions/index.ts](lib/act-transitions/index.ts)
 
-1. `/play` detects `isMiniGame(templateType)` → true
-2. Loads registry config from `lib/mini-games/registry.ts`
-3. Calls `extractConfig()` to build game-specific props from AI tool params
-4. Renders mini-game UI component (e.g., `TriviaChallengeUI`)
-5. Mini-game owns:
-   - Its own AI calls (generation + scoring)
-   - User interaction
-   - Turn creation via `addTurn()`
-   - Score calculation (0-5 points)
-6. On completion: `onComplete(MiniGameResult)`
-7. `/play` calls `updatePlayerScore()` and shows commentary
+**Act 1 → Act 2 Transition** (ACT1_INSIGHTS):
+1. After Act 1's final turn completes, `getPendingTransitionEvent()` detects the event
+2. Game pauses normal flow and enters transition mode
+3. Each player answers a personalized insight question (interests, learning, family facts, secrets, focus)
+4. Questions use age-appropriate variants (kid/teen/adult)
+5. Responses are saved to `transitionResponses` array
+6. Event marked complete when all players finish
+7. Game advances to next player and resumes normal Act 2 gameplay
 
-All mini-games follow a **2-turn AI pattern**:
-- Turn 1: Generate puzzle/question
-- Turn 2: Score the player's response
+**Insight Injection**: After event completes, `formatAllTransitionResponses()` formats responses into markdown and injects them into the Game Master prompt for Acts 2-3.
 
-### Implementation Notes
+### Mini-Game Architecture
 
-- The pass screen uses a large button, not the `SlideToUnlock` component. `SlideToUnlock` exists but is not wired into `/play`.
-- Both regular questions and mini-games create `Turn` entries in the game store for proper progress tracking.
-- Scores from mini-games are applied to the player's total via `updatePlayerScore()`.
-- All AI prompts include defensive null checks to prevent generation failures.
+**Registry Pattern**: Each game has:
+- `register.ts` - Registers with central registry
+- `prompt.ts` - AI prompts for generation and scoring
+- Component in `components/mini-games/` - UI and game logic
+
+**2-Turn AI Pattern** (most mini-games follow this):
+1. **Generation turn**: AI creates puzzle/question content
+2. **Scoring turn**: AI evaluates response and assigns 0-5 points
+
+**Turn Tracking**: Mini-games call `addTurn()` themselves for proper game progression.
+
+**Lighting Round exception**: Uses repeated single-turn generation (5 questions) with local scoring (+5/-5/0).
+
+**Available Mini-Games** (7 total):
+
+| Game | Act | Requires Data | Theme |
+|------|-----|---------------|-------|
+| Trivia Challenge | 2+ | Other players' turns | 💜 Purple |
+| Personality Match | 2+ | Other players' turns | 💚 Mint |
+| Hard Trivia | 2+ | Player's own interests | 🩵 Cyan |
+| The Filter | 2+ | None (standalone) | 🩵 Teal |
+| Mad Libs | 3 | None (standalone) | 🧡 Amber |
+| Cryptic Connection | 3 | None (standalone) | 💜 Violet |
+| Lighting Round | 3 | Other players' turns | ⚡ Glitch |
+
+**Eligibility**: [lib/mini-games/eligibility.ts](lib/mini-games/eligibility.ts)
+- `getEligibleTurnsForPlayer(turns, currentPlayerId)` returns completed turns from other players
+- Trivia Challenge, Personality Match, and Lighting Round require ≥1 eligible turn
+- All others: No requirements (available in their unlocked act)
 
 ## Project Structure (Key Paths)
 
 ```
 app/
   api/
-    announcer/route.ts          # End-game announcer API
+    announcer/route.ts          # End-game announcer
     auth/[...nextauth]/route.ts # NextAuth handlers
-    chat/route.ts               # GPT-5.2 chat API with tools
+    chat/route.ts               # GPT-5.2 with tools
     health/route.ts             # Health check
-  auth/signin/page.tsx          # Custom sign-in page
-  chat/page.tsx                 # AI demo page
-  layout.tsx                    # Root layout with SessionProvider + HamburgerMenu
-  page.tsx                      # Home page (CTA + redirect if session)
-  play/page.tsx                 # Main game flow
+  auth/signin/page.tsx          # Sign-in page
+  chat/page.tsx                 # AI demo
+  layout.tsx                    # SessionProvider + HamburgerMenu
+  page.tsx                      # Home
+  play/page.tsx                 # Main game
   setup/page.tsx                # Player setup
 
 components/
-  GameHeader.tsx                # Leaderboard + progress bar
+  GameHeader.tsx                # Leaderboard + progress
   GameProgressBar.tsx           # Acts + progress
   Leaderboard.tsx               # Score list
-  EndGameResults.tsx            # Announcer-driven results
-  HamburgerMenu.tsx             # Auth-only menu and modals
+  EndGameResults.tsx            # Announcer results
+  HamburgerMenu.tsx             # Auth menu
   PassToPlayerScreen.tsx        # Pass screen
-  SlideToUnlock.tsx             # Unused slide interaction
   SessionProvider.tsx           # NextAuth provider
   input-templates/              # 6 input templates + registry
-  mini-games/                   # Mini-game UIs
-  ui/                           # Button/Input/Card components
+  mini-games/                   # Mini-game UIs + shared components
+  ui/                           # Button/Input/Card
 
 lib/
+  act-transitions/              # Transition event system
+    index.ts                    # Event registry + formatting
   ai/
     client.ts                   # sendChatRequest + useChat hook
     config.ts                   # Defaults + model config
-    tools.ts                    # Tool registry (lazy loads template tools)
+    tools.ts                    # Tool registry
     template-tools.ts           # Input template tools + mini-game triggers
-    game-master-prompt.ts       # Game Master system prompt
-    announcer-prompt.ts         # Announcer prompt
+    game-master-prompt.ts       # Dynamic Game Master prompt builder
+    announcer-prompt.ts         # End-game announcer prompt
+    sanitize.ts                 # Sanitize responses for AI context
     types.ts                    # AI types
-  mini-games/                   # Registry, prompts, eligibility
-  store/                        # Zustand stores
+  mini-games/                   # Registry, prompts, eligibility, themes, utils
+  store/
+    player-store.ts             # Player roster (persisted)
+    game-store.ts               # Game state (persisted)
   types/                        # Game state and announcer types
   constants.ts                  # Game and app constants
-
-public/avatars/                 # Avatar PNGs (1.png to 14.png)
 ```
 
 ## AI System
 
 ### Chat API (`/api/chat`)
 
-- Uses `openai.chat.completions.create()`.
-- Implements a tool execution loop.
-- Template tools return immediately as JSON (stringified in the `text` field).
-- For non-template tools, tool results are appended and the loop continues.
-- `GET /api/chat` returns the list of tool names.
+- Uses `openai.chat.completions.create()`
+- Implements tool execution loop
+- Template tools return immediately as JSON (stringified in `text` field)
+- Tool results appended for non-template tools, loop continues
+- `GET /api/chat` returns tool list and model info
 
 ### Tool Registry
 
-- Defined in `lib/ai/tools.ts` with a `ToolRegistry` singleton.
-- Template tools are lazy-loaded via `ensureTemplateToolsLoaded()` to avoid circular imports.
+- [lib/ai/tools.ts](lib/ai/tools.ts) - `ToolRegistry` singleton
+- Template tools lazy-loaded via `ensureTemplateToolsLoaded()`
+- Prevents circular imports
 
 ### Template Tools (Input Templates)
 
-Tools in `lib/ai/template-tools.ts`:
-- `ask_for_text` -> `tpl_text_area`
-- `ask_for_list` -> `tpl_text_input`
-- `ask_binary_choice` -> `tpl_timed_binary`
-- `ask_word_selection` -> `tpl_word_grid`
-- `ask_rating` -> `tpl_slider`
-- `ask_player_vote` -> `tpl_player_selector`
+**Tools in [lib/ai/template-tools.ts](lib/ai/template-tools.ts)**:
+- `ask_for_text` → `tpl_text_area`
+- `ask_for_list` → `tpl_text_input`
+- `ask_binary_choice` → `tpl_timed_binary`
+- `ask_word_selection` → `tpl_word_grid`
+- `ask_rating` → `tpl_slider`
+- `ask_player_vote` → `tpl_player_selector`
 
-### Mini-Game Triggers
-
-Template tools that start mini-games:
+**Mini-Game Triggers**:
 - `trigger_trivia_challenge`
 - `trigger_hard_trivia`
 - `trigger_personality_match`
 - `trigger_madlibs_challenge`
 - `trigger_cryptic_connection`
 - `trigger_the_filter`
+- `trigger_lighting_round`
 
 ### Game Master Prompt
 
-`buildGameMasterPrompt()` in `lib/ai/game-master-prompt.ts` injects:
-- Player roster with ages, roles, and current player indicator
+**[buildGameMasterPrompt()](lib/ai/game-master-prompt.ts) dynamically injects**:
+- Current act and mission (Act 1: questions, Act 2+: mini-games)
+- Available mini-games based on current act
+- Player roster with ages, roles, current player indicator
 - Score leaderboard (if any scores exist)
-- Recent turns (last 8) to avoid repeated questions
-- Act-specific mission and available games
-- Eligible trivia turns (if any) with player IDs for `trigger_personality_match`
+- Full turn history (DO NOT use `.slice()` - send all turns)
+- Transition event responses (insights from Act 1)
+- Eligible trivia turns with player IDs
 
-**Act 1 mission**: Ask ONE question per turn to learn about family interests, skills, preferences
-**Act 2+ mission**: Run ONE mini-game per turn, picking games that fit player age and interests
+**Act-specific instructions**:
+- **Act 1**: Ask questions to learn about players (secret answers)
+- **Act 2+**: Run mini-games that test family knowledge (public phase)
 
-Key rules in prompt:
+**Key rules**:
 - ONE question or mini-game per turn
-- NEVER repeat a question that's been asked before
+- NEVER repeat questions
 - Keep questions short (under 20 words)
-- Match content to the player's age and world
-- Be witty - one-liner commentary only (max 10 words)
+- Match content to player's age
+- Witty one-liner commentary only (max 10 words)
 - In Act 1: Avoid memory-check questions (answers are secret)
 
-### Announcer Prompt
+### Dynamic Prompt System
 
-`buildAnnouncerPrompt()` summarizes all turns and scores, then requests a JSON results payload from GPT-5.2. This powers `/api/announcer` and the `EndGameResults` reveal sequence.
+**Rebuilds system prompt every turn** with fresh context:
 
-## Input Templates
+1. Calculate current act from completed turns
+2. Format transition responses (insights from completed events)
+3. Build act-specific instructions and available games
+4. Inject player roster and scores
+5. Include full turn history for context
+6. Replace old system message with new one
+7. Send to AI with act-appropriate tools
 
-All templates are in `components/input-templates/` with a registry in `components/input-templates/index.tsx`.
-
-Templates:
-- `tpl_text_area` (TextAreaTemplate)
-- `tpl_text_input` (TextInputTemplate)
-- `tpl_timed_binary` (TimedBinaryTemplate)
-- `tpl_word_grid` (WordGridTemplate, supports 4/9/16/25)
-- `tpl_slider` (SliderTemplate)
-- `tpl_player_selector` (PlayerSelectorTemplate)
-
-Notes:
-- `TemplateRenderer` injects player data for `tpl_player_selector` in `/play`.
-- `validateTemplateParams` exists but is not called in `/play`.
-
-## Mini-Games
-
-Mini-games are registered in `lib/mini-games/*/register.ts` and discovered via the registry in `lib/mini-games/registry.ts`.
-
-### Available Mini-Games (6 total)
-
-1. **Trivia Challenge** (glitch/purple theme)
-   - Type: `trivia_challenge`
-   - Trigger: `trigger_trivia_challenge`
-   - Uses a past turn from another player
-   - AI asks a question about what that player said
-   - Scores 0-5 based on answer accuracy
-   - Eligibility: ≥1 completed turn from another player
-
-2. **Hard Trivia** (cyan theme)
-   - Type: `hard_trivia`
-   - Trigger: `trigger_hard_trivia`
-   - Multiple-choice trivia based on player's stated interests
-   - Scores 0-5 based on correctness
-   - No special eligibility (always available in Acts 2+)
-
-3. **Personality Match** (mint theme)
-   - Type: `personality_match`
-   - Trigger: `trigger_personality_match` (requires `subjectPlayerId`)
-   - Player describes a family member using word grid
-   - AI scores based on past turns about that person
-   - Eligibility: ≥1 completed turn from another player
-
-4. **Mad Libs Challenge** (amber theme)
-   - Type: `madlibs_challenge`
-   - Trigger: `trigger_madlibs_challenge`
-   - Fill-in-the-blank with 2 blanks, each with a starting letter
-   - Scores 0-5 based on creativity and wit
-   - No special eligibility (always available in Act 3+)
-
-5. **Cryptic Connection** (violet theme)
-   - Type: `cryptic_connection`
-   - Trigger: `trigger_cryptic_connection`
-   - 5×5 word grid, find the mystery connecting word
-   - Scores 0-5 with fuzzy AI matching
-   - No special eligibility (always available in Act 3+)
-
-6. **The Filter** (teal theme)
-   - Type: `the_filter`
-   - Trigger: `trigger_the_filter`
-   - Grid-based selection game with pattern recognition
-   - Select items that match a secret rule
-   - Scores 0-5 based on selections
-   - No special eligibility (always available in Act 3+)
-
-### Mini-Game Architecture
-
-**Registry pattern**: Each game has:
-- `register.ts` - Registers with central registry
-- `prompt.ts` - AI prompts for generation and scoring
-- Component in `components/mini-games/` - UI and game logic
-
-**2-turn AI pattern** (all mini-games follow this):
-1. **Generation turn**: AI creates puzzle/question content
-2. **Scoring turn**: AI evaluates player's response and assigns 0-5 points
-
-**Config extraction**: Registry's `extractConfig()` validates AI params and builds game-specific props
-
-**Turn tracking**: Mini-games call `addTurn()` themselves for proper game progression
-
-### Eligibility System
-
-`lib/mini-games/eligibility.ts` provides:
-- `getEligibleTurnsForPlayer(turns, currentPlayerId)` - Returns completed turns from other players
-- Used by `/play` to build `triviaEligibleTurns` for Game Master prompt
-- Used by `trivia-challenge/register.ts` and `personality-match/register.ts` for config extraction
-
-**Current eligibility requirements** (as of v1.1.3):
-- Trivia Challenge: ≥1 eligible turn
-- Personality Match: ≥1 eligible turn
-- All others: No requirements (always available in their unlocked act)
+**Why this works**:
+- State-aware: AI sees different instructions/tools based on progress
+- Context-rich: Full history, insights, scores in every turn
+- No stale data: Perfect context regenerated each turn
+- Act progression: Behavior changes automatically as game advances
 
 ## State Management
 
-### Player Store (`lib/store/player-store.ts`)
+### Player Store ([lib/store/player-store.ts](lib/store/player-store.ts))
 
 - localStorage key: `family-glitch-players`
 - Fields: `id`, `name`, `role`, `age`, `avatar`
-- `hasHydrated` flag + `setHasHydrated()` for hydration tracking
-- Avatars in the UI are PNGs `1.png` to `14.png` in `public/avatars`
+- `hasHydrated` flag for hydration tracking
+- Avatars: `1.png` to `14.png` in `public/avatars`
 
-### Game Store (`lib/store/game-store.ts`)
+### Game Store ([lib/store/game-store.ts](lib/store/game-store.ts))
 
 - localStorage key: `family-glitch-game`
-- New state shape (turn-based):
-  - `gameId`, `startedAt`, `endedAt`, `turns`, `currentTurnIndex`, `status`, `scores`, `settings`
-- Legacy fields retained: `players`, `currentRound`, `gameStarted`
-- Actions:
-  - `addTurn()` returns the generated turnId
-  - `completeTurn()`, `updateTurnResponse()`, `skipTurn()`
-  - `updatePlayerScore()`
-  - `startGame()`, `startNewGame()` (keeps players), `resetGame()` (clears players)
-- Computed helpers:
-  - `getTotalRounds()` uses `calculateTotalRounds(players.length)`
-  - `getCurrentRound()`, `getCurrentAct()`, `getProgressPercentage()`
-  - `isGameComplete()`
+- State: `gameId`, `startedAt`, `endedAt`, `turns`, `currentTurnIndex`, `status`, `scores`, `settings`
+- Transition state: `transitionResponses`, `transitionEvents`
+- Legacy field retained: `players` (for backwards compatibility in `getPlayerCount`)
+
+**Actions**:
+- `addTurn()` returns generated turnId
+- `completeTurn()`, `updateTurnResponse()`, `skipTurn()`
+- `updatePlayerScore()`
+- `startGame()`, `startNewGame()`, `resetGame()`
+- `addTransitionResponse()`, `markTransitionEventComplete()`
+
+**Computed helpers**:
+- `getTotalRounds()` - Uses `calculateTotalRounds(numberOfPlayers)`
+- `getCurrentRound()` - Count of completed turns
+- `getCurrentAct()` - Current act (1, 2, or 3)
+- `getProgressPercentage()` - 0-100%
+- `isGameComplete()` - True when currentRound >= totalRounds
+- `getPendingTransitionEvent()` - Checks for transition events to trigger
+- `getNextPlayerForEvent()` - Next player for transition event
+- `getEventState()` - Get transition event state
 
 ## Authentication
 
-- NextAuth v5 with Google OAuth.
-- Custom sign-in page at `/auth/signin`.
-- Root layout wraps the app with `SessionProvider`.
-- `HamburgerMenu` only renders when `useSession()` has a user session.
+- NextAuth v5 with Google OAuth
+- Custom sign-in page at `/auth/signin`
+- Root layout wraps app with `SessionProvider`
+- `HamburgerMenu` only renders when session exists
 
-## Styling and Design System
+## Styling
 
-- Tailwind v4 config is in `app/globals.css` (`@theme`).
-- `tailwind.config.ts` is present for reference only and is not used.
+- Tailwind v4 config in `app/globals.css` (`@theme`)
+- `tailwind.config.ts` present for reference only (not used)
 
-Theme tokens include:
-- Colors: `void`, `void-light`, `void-dark`, `glitch`, `glitch-bright`, `glitch-deep`, `frost`, `mint`, `alert`, `steel-100` through `steel-900`
-- Fonts: `Inter` and `JetBrains Mono`
-- Radius: `--radius-control` (12px), `--radius-card` (16px), `--radius-pill`
+**Theme tokens**:
+- Colors: `void`, `glitch`, `frost`, `mint`, `alert`, `steel-*`
+- Fonts: Inter, JetBrains Mono
+- Radius: `--radius-control` (12px), `--radius-card` (16px)
 - Shadows: `--shadow-glow`, `--shadow-glow-strong`, `--shadow-glow-mint`
 
-Custom classes in `app/globals.css`:
+**Custom classes** in `app/globals.css`:
 - `.glass`, `.scan-line`, `.glitch-text`, `.bg-grid-pattern`, `.noise-overlay`
-- Utility helpers: `.tap-shrink`, `.text-glow`, `.custom-scrollbar`
+- `.tap-shrink`, `.text-glow`, `.custom-scrollbar`
 
-## UI Components
+## Critical Guidelines
 
-- `components/ui/Button.tsx` with variants: primary, secondary, ghost, danger
-- `components/ui/Input.tsx` with label and error states
-- `components/ui/Card.tsx` with default/glass/void variants
+### AI Context Requirements ⚠️
 
-Some pages still use inline styles:
-- `/auth/signin`
-- `/chat`
+**MANDATORY: Always send FULL game state to AI prompts when context is needed.**
 
-## Common Pitfalls and Debugging
+Modern AI models have massive context windows (200K+ tokens). DO NOT artificially limit context with `.slice()` unless you have a documented reason.
+
+**Examples**:
+- ✅ All game turns: `gameState.turns.map(...)`
+- ❌ Limited turns: `gameState.turns.slice(-8)` - causes question repetition
+- ✅ All player turns: `playerTurns.map(...)`
+- ❌ Limited player turns: `playerTurns.slice(-5)` - limits personalization
+
+**Cost is not a concern.** Better AI experience > ~$0.01 per game in token costs.
 
 ### Act Boundaries
-- Acts are calculated as 33%/66% splits, NOT 25%/75%
-- Calculated in `lib/constants.ts` by `calculateCurrentAct()`
+
+- Acts are 33%/66% splits using `Math.floor()`
 - Must match `GameProgressBar.tsx` divider positions
+- Calculated in [constants.ts:84](lib/constants.ts#L84)
 
 ### Mini-Game Eligibility
-- Don't add artificial turn count requirements (e.g., `>= 3`)
-- Act 1 already collects data - just need ≥1 eligible turn
-- Trivia/Personality Match require eligible turns; others don't
+
+- Don't add artificial turn count requirements
+- Act 1 collects data - just need ≥1 eligible turn
+- Only Trivia/Personality Match require eligible turns
 
 ### AI Prompt Design
+
 - **Goal-focused** beats restriction-heavy
-- Show examples of what you WANT, not endless lists of what NOT to do
-- Keep prompts concise - long prompts confuse the AI
-- Treat 10+ year-olds as pre-teens/teens, not young kids
+- Show examples of what you WANT
+- Keep prompts concise
+- Treat 10+ year-olds as pre-teens/teens
 
 ### Turn Creation
-- Both regular questions AND mini-games must call `addTurn()`
+
+- Both questions AND mini-games must call `addTurn()`
 - Without turn creation, game progress stalls
-- Mini-games should call `addTurn()` during generation phase
+- Mini-games call `addTurn()` during generation phase
 
 ### Score Application
+
 - Mini-games return `MiniGameResult` with score
 - `/play` must call `updatePlayerScore()` to apply it
-- Don't forget this step or scores won't update
-
-### Template Type Mismatches
-- Always check if template type is in registry before rendering
-- Use `isMiniGame(templateType)` to detect mini-games
-- Use `getTemplateComponent(templateType)` for regular templates
-
-### Defensive Coding
-- All AI prompt builders should have null checks
-- Use patterns like: `const safeName = player?.name || 'Player'`
-- Filter arrays defensively: `(arr || []).filter(x => x && x.property)`
-
-### AI Context Requirements ⚠️ CRITICAL
-
-**MANDATORY RULE: Always send FULL game state to AI prompts when context is needed.**
-
-Modern AI models (GPT-5.2, Claude Sonnet, etc.) have massive context windows (200K+ tokens). There is NO need to artificially limit the data we send. Limiting context causes critical bugs like:
-- Question repetition (AI "forgets" old questions and repeats them)
-- Poor personalization (AI can't see full player history)
-- Inconsistent mini-game scoring (AI lacks complete context)
-
-**DO NOT use `.slice(-N)` to limit context unless you have a specific, documented reason.**
-
-**Examples of what to send:**
-- ✅ All game turns (`gameState.turns.map(...)`) - NOT `.slice(-8)`
-- ✅ All player turns (`playerTurns.map(...)`) - NOT `.slice(-5)`
-- ✅ Full conversation history
-- ✅ Complete player profiles
-
-**Previous bugs caused by artificial limits:**
-- `gameState.turns.slice(-8)` caused question repetition after 8+ turns (FIXED in v1.1.4)
-- `playerTurns.slice(-5)` in Hard Trivia limited personalization (FIXED in v1.1.4)
-- `safeTurns.slice(-5)` in Personality Match limited accuracy (FIXED in v1.1.4)
-
-**When to limit context (rare cases):**
-- User-facing UI displays (e.g., "Show last 5 messages")
-- Performance-critical real-time updates
-- Explicit user preferences
-
-**Cost is not a concern:** The benefit of full context far outweighs token costs. A better AI experience is worth the extra ~$0.01 per game.
-
-## API Endpoints
-
-- `POST /api/chat` Chat completions with tool execution loop
-- `GET /api/chat` Tool list + model info
-- `GET /api/health` Runtime diagnostics
-- `POST /api/announcer` End-game results (JSON)
-- `GET /api/announcer` Health check
-- `GET/POST /api/auth/[...nextauth]` NextAuth handlers
 
 ## Environment Variables
 
@@ -468,113 +398,36 @@ npm run build
 npm start
 ```
 
-## Files That Are Intentionally Empty or Legacy
-
-- `lib/store/facts-store.ts` is intentionally empty (turns are the source of truth).
-- `tailwind.config.ts` is deprecated in Tailwind v4.
-
-## Recent Updates
-
-### v1.2.0 - Code Quality & Accessibility Refactor
-
-**Shared Component Library**:
-- Created 5 shared mini-game components: `LoadingSpinner`, `ScoreDisplay`, `CommentaryCard`, `ErrorToast`, `IntroScreen`
-- Extracted common utilities to `lib/mini-games/utils.ts` (JSON parsing, score colors, null safety helpers)
-- Centralized game themes in `lib/mini-games/themes.ts` with unique color schemes for each game
-
-**TypeScript Improvements**:
-- Added `'the_filter'` to `MiniGameType` union for complete type coverage
-- Fixed all 6 register files to use proper `ComponentType<BaseMiniGameProps>` instead of `as any` casts
-- Added `TheFilterUI` to barrel exports in `components/mini-games/index.ts`
-- Removed unused exports: `isTriviaEligible()` and `createTriviaChallengeSession()`
-
-**Code Quality**:
-- Extracted magic numbers to named constants (`TURN_SELECTION_WEIGHTS`, `CRYPTIC_GRID_SIZE`)
-- Reduced code duplication by ~40% through shared components
-- Standardized border radius (`rounded-xl`) across all grid items
-
-**Accessibility**:
-- Added ARIA labels to all shared components (`role="status"`, `aria-label`, `aria-live="polite"`)
-- Fixed z-index conflicts in error toasts (`z-[60]` to appear above intro screens)
-- Improved responsive grid layouts (mobile: 3 cols → tablet: 4 cols → desktop: 5 cols)
-
-**Documentation**:
-- Updated all *.md files to reflect v1.1.1 fixes and v1.2.0 changes
-- Created CHANGELOG.md for version history
-- Added shared component documentation to lib/mini-games/README.md
-
-### v1.1.1 - Critical Bug Fixes
-
-### Critical Bug Fixes
-1. **React Hooks Violation**: Moved `useState` call out of conditional error render block in `/play` to comply with Rules of Hooks.
-2. **Hard Trivia Props Mismatch**: Renamed `currentPlayer` to `targetPlayer` in `HardTriviaUI` to match mini-game convention. Added `turns` prop to all mini-game renders.
-3. **Mini-game Progress Tracking**: Mini-games now create turn entries via `addTurn()` and complete them with results, fixing game progression stalls in Act 2+.
-4. **Score Application**: `handleMiniGameComplete()` now properly calls `updatePlayerScore()` to apply mini-game scores to the leaderboard.
-5. **Play Again Reset**: End-game "Play Again" now calls `resetGame()` before routing to setup, clearing stale state.
-
-### AI Prompt Improvements
-- All mini-game prompt builders (`trivia-challenge`, `cryptic-connection`, `madlibs-challenge`, `personality-match`, `hard-trivia`) now include comprehensive null safety checks.
-- Defensive patterns: `const safeName = object?.name || 'Default'` and `const safeArray = (array || []).filter(p => p && p.name)`.
-- Prevents "undefined is not an object" errors during AI generation.
-
-### UI/UX Improvements
-- Removed vertical scrolling from all input templates by replacing vertical centering with top-aligned flex layouts.
-- Increased leaderboard player tile spacing (6px → 12px).
-- Made progress bar taller (12px → 20px) with more vibrant colors and stronger glow.
-- Reduced margin under game header to eliminate gap between header and content.
-- Reduced top padding on all template content areas (16px → 4px).
-
-## Testing
-
-No test runner is configured yet. There are no automated tests in the repo.
-
 ## Version History
 
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history. See [ROADMAP.md](ROADMAP.md) for planned features.
+### v1.1.5 - Critical Bug Fixes (2026-01-22)
 
-### v1.1.3 - AI Prompt Improvements & UX Fixes (2026-01-21)
+**Bug Fixes**:
+- Fixed act boundary inconsistency (fractional vs floor)
+- Fixed consecutive turns after transitions
+- Fixed trivia eligibility gate (≥3 → ≥1)
+- Fixed The Filter visibility in Act 2
 
-**AI Prompt Philosophy Shift**: Changed from restriction-heavy to goal-focused prompts.
+**Code Cleanup**:
+- Removed unused `getActBoundaries()`, `nextRound()`, `addPlayer()`, `removePlayer()`
+- Removed redundant `currentAct` filter in transition formatting
 
-**Game Master Prompt Rewrite**:
-- Removed "family-friendly" language causing overly cautious questions
-- Treat 10+ year-olds as pre-teens/teens, not young children
-- Expanded Act 1 examples: passions, skills, entertainment, local flavor, binary debates, interest grids
-- Added explicit rule: "Avoid memory-check questions in Act 1 (answers are secret)"
-- Reduced from ~200 lines to ~80 lines
+### v1.1.4 - Critical Rollback (2026-01-21)
 
-**Trivia Challenge**: Fixed ordinal problem (AI asking "What was the SECOND thing?")
-**Mad Libs**: Exactly 2 blanks, Cards Against Humanity energy, focus on wit
-**Mini-Game Eligibility**: Removed `>= 3 turns` constraint (now just ≥1 eligible turn)
-**Timed Binary**: Added "Neither" button, fixed pre-selection bug
+Fixed question repetition bug by sending full turn history instead of `.slice(-8)`.
+
+### v1.1.3 - AI Prompt Improvements (2026-01-21)
+
+Goal-focused prompts, expanded Act 1 examples, Trivia Challenge ordinal fix, Mad Libs energy, mini-game eligibility relaxed, Timed Binary UX fixes.
 
 ### v1.1.1 - Critical Bug Fixes (2026-01-18)
 
-**Critical Fixes**:
-- React Hooks violation in `/play`
-- Hard Trivia props mismatch (`currentPlayer` → `targetPlayer`)
-- Mini-games now create turn entries for proper progression
-- Score application via `updatePlayerScore()`
-- Play Again reset clears stale state
-
-**AI Prompts**: Comprehensive null safety checks in all mini-game prompt builders
-**UI/UX**: Removed scrolling, improved spacing, vibrant progress bar
+React Hooks violation, Hard Trivia props, mini-game turn tracking, score application, Play Again reset.
 
 ### v1.1.0 - Feature Additions (2026-01-15)
 
-- Fixed game header with leaderboard and progress bar
-- Hard Trivia mini-game
-- The Filter mini-game
-- 0-5 scoring standardization
-- Mini-games only in Acts 2-3
-- Announcer API uses GPT-5.2
+Fixed game header, Hard Trivia, The Filter, 0-5 scoring.
 
 ### v1.0.0 - Initial Release (2026-01-10)
 
-- Next.js 15 + React 19 + TypeScript
-- Google OAuth via NextAuth v5
-- GPT-5.2 chat completions with tool execution
-- 6 input templates
-- 4 mini-games (Trivia, Personality Match, Mad Libs, Cryptic Connection)
-- 3-act game structure
-- Pass-and-play gameplay
+Next.js 15 + React 19 + TypeScript, Google OAuth, GPT-5.2 tool calling, 6 input templates, 4 mini-games, 3-act structure.

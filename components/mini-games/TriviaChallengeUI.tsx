@@ -6,6 +6,9 @@ import Image from 'next/image';
 import { useGameStore } from '@/lib/store';
 import { sendChatRequest } from '@/lib/ai/client';
 import type { MiniGameResult } from '@/lib/mini-games/types';
+import { IntroScreen } from '@/components/mini-games/shared/IntroScreen';
+import { getTheme } from '@/lib/mini-games/themes';
+import triviaIcon from '@/lib/mini-games/trivia-challenge/icon.png';
 import {
   buildTriviaChallengePrompt,
   buildScoringPrompt,
@@ -61,7 +64,6 @@ export function TriviaChallengeUI({
 }: TriviaChallengeUIProps) {
   const [phase, setPhase] = useState<ChallengePhase>('intro');
   const [question, setQuestion] = useState('');
-  const [hint, setHint] = useState<string | undefined>();
   const [playerAnswer, setPlayerAnswer] = useState('');
   const [scoreResult, setScoreResult] = useState<TriviaScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +107,6 @@ export function TriviaChallengeUI({
       }
 
       setQuestion(parsed.question);
-      setHint(parsed.hint);
       setPhase('question');
 
       if (!turnId) {
@@ -115,7 +116,6 @@ export function TriviaChallengeUI({
           templateType: 'trivia_challenge',
           prompt: parsed.question,
           templateParams: {
-            hint: parsed.hint,
             sourceTurnId: sourceTurn.turnId,
             sourcePlayerId: sourceTurn.playerId,
             sourcePlayerName: sourceTurn.playerName,
@@ -194,7 +194,6 @@ export function TriviaChallengeUI({
           turnId,
           {
             question,
-            hint,
             playerAnswer,
             score: scoreResult.score,
             commentary: scoreResult.commentary,
@@ -233,132 +232,20 @@ export function TriviaChallengeUI({
   const sourcePlayer = allPlayers.find(p => p.id === sourceTurn.playerId);
   const sourcePlayerAvatar = sourcePlayer?.avatar || 1;
 
+  const theme = getTheme('trivia_challenge');
+
   // Intro screen (before loading)
   if (phase === 'intro') {
     return (
-      <div className="min-h-dvh bg-gradient-to-br from-glitch/20 via-void to-glitch/10 flex flex-col items-center justify-center p-6 safe-bottom-gap relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute top-1/4 left-1/4 w-64 h-64 bg-glitch/20 rounded-full blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-glitch/30 rounded-full blur-3xl"
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.6, 0.4] }}
-            transition={{ duration: 2.5, repeat: Infinity }}
-          />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          className="relative z-10 text-center space-y-6 max-w-lg"
-        >
-          {/* Mini-game badge */}
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-block px-4 py-2 rounded-full bg-glitch/30 border border-glitch"
-          >
-            <span className="font-mono text-sm text-glitch uppercase tracking-widest">
-              Mini-Game
-            </span>
-          </motion.div>
-
-          {/* Game icon */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', delay: 0.3 }}
-            className="text-7xl"
-          >
-            🎯
-          </motion.div>
-
-          {/* Title */}
-          <motion.h1
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-4xl md:text-5xl font-black text-frost"
-          >
-            Trivia Challenge
-          </motion.h1>
-
-          {/* Source Player Testimonial */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="glass rounded-xl p-5 border border-glitch/30"
-          >
-            <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 rounded-full overflow-hidden ring-3 ring-glitch shadow-glow">
-                  <Image
-                    src={`/avatars/${sourcePlayerAvatar}.png`}
-                    alt={sourceTurn.playerName}
-                    width={64}
-                    height={64}
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-              {/* Speech bubble content */}
-              <div className="flex-1 text-left">
-                <p className="text-glitch font-bold text-lg mb-1">
-                  {sourceTurn.playerName}
-                </p>
-                <p className="text-steel-400 text-sm">
-                  Do you remember what they said earlier?
-                </p>
-              </div>
-            </div>
-            <p className="text-steel-500 text-sm mt-4 text-center">
-              Answer correctly to earn up to 5 points!
-            </p>
-          </motion.div>
-
-          {/* Place phone reminder */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.55 }}
-            className="flex items-center justify-center gap-2 text-steel-500"
-          >
-            <span className="text-lg">📱</span>
-            <p className="text-sm">Place phone on table so everyone can see!</p>
-          </motion.div>
-
-          {/* Start button */}
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            onClick={handleStartChallenge}
-            className="w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-8 rounded-xl transition-all shadow-glow hover:shadow-glow-strong"
-          >
-            Let's Go!
-          </motion.button>
-
-          {onSkip && (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              onClick={onSkip}
-              className="text-steel-500 hover:text-frost text-sm py-2"
-            >
-              Skip this challenge
-            </motion.button>
-          )}
-        </motion.div>
-      </div>
+      <IntroScreen
+        theme={theme}
+        title="Trivia Challenge"
+        description={`Guess what ${sourceTurn.playerName} would say. One question, 0-5 points.`}
+        iconImage={triviaIcon}
+        onStart={handleStartChallenge}
+        onSkip={onSkip}
+        startButtonText="Start"
+      />
     );
   }
 
@@ -422,9 +309,6 @@ export function TriviaChallengeUI({
                 <h3 className="text-xl md:text-2xl font-bold text-frost leading-relaxed">
                   {question}
                 </h3>
-                {hint && (
-                  <p className="text-sm text-steel-500 italic">Hint: {hint}</p>
-                )}
               </div>
 
               <button

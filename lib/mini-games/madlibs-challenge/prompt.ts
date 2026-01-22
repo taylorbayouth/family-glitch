@@ -61,21 +61,39 @@ Generate one Mad Libs-style sentence for ${targetName}${roleInfo}${ageInfo} to c
 Respond with valid JSON:
 {
   \"template\": \"The sentence with ___ for each blank\",
-  \"blankCount\": 1-3,
-  \"hint\": \"Optional playful hint about the theme\"
+  \"blankCount\": 1-3
 }
 
-## STRONG TEMPLATE SHAPES (2 blanks, reward cleverness)
-- \"Scientists discovered that ___ is actually just ___ in disguise.\"
-- \"The secret to a happy marriage is ___ and plenty of ___.\"
-- \"In my defense, the ___ was already ___ when I got there.\"
-- \"Nothing says 'I love you' like ___ covered in ___.\"
-- \"Step 1: ___. Step 2: ___. Step 3: Profit.\"
-- \"According to my horoscope, I should avoid ___ near ___.\"
-- \"The recipe calls for two cups of ___ and a pinch of ___.\"
-- \"Life hack: Replace your ___ with ___ for instant results.\"
+## STRONG TEMPLATE EXAMPLES (2 blanks, reward cleverness)
 
-The best templates reward WIT - they're open-ended, not obviously dirty.
+**Science/Discovery:**
+- \"Scientists discovered that ___ is actually just ___ in disguise.\"
+- \"Research shows that ___ can cure ___\"
+
+**Life Advice:**
+- \"The secret to a happy marriage is ___ and plenty of ___.\"
+- \"Life hack: Replace your ___ with ___ for instant results.\"
+- \"According to my horoscope, I should avoid ___ near ___.\"
+
+**Explanations:**
+- \"In my defense, the ___ was already ___ when I got there.\"
+- \"I'm not saying it was ___, but it was definitely ___.\"
+
+**Instructions:**
+- \"Step 1: ___. Step 2: ___. Step 3: Profit.\"
+- \"To impress your in-laws, simply combine ___ with ___.\"
+
+**Comparisons:**
+- \"Nothing says 'I love you' like ___ covered in ___.\"
+- \"The recipe calls for two cups of ___ and a pinch of ___.\"
+- \"The difference between ___ and ___ is surprisingly small.\"
+
+**Age-Appropriate Guidance:**
+- Ages 10-14: Keep it silly and wholesome (food, animals, school)
+- Ages 15-17: Allow mild edge (embarrassment, awkwardness)
+- Ages 18+: Full creative freedom (still favor wit over crude)
+
+The best templates are OPEN-ENDED - they don't obviously beg for dirty answers. Wit > Shock.
 
 Generate ONE creative template.`;
 }
@@ -115,17 +133,42 @@ ${safeFilledWords.map((word, i) => `Blank ${i + 1}: \"${word || 'blank'}\"`).joi
 ## RESULT
 \"${safeSentence}\"
 
-## SCORING RULES (0-5)
-5 = hilarious and clever\n4 = very funny\n3 = decent\n2 = safe\n1 = lazy\n0 = no effort
+## SCORING RUBRIC (0-5)
 
-## TONE
-- Reward unexpected combinations\n- Call out lazy choices\n- Max 10 words for commentary
+**5 points** - Hilarious and CLEVER! Unexpected combo that's witty, not just crude
+- Example: "Scientists discovered that PIZZA is actually just SADNESS in disguise"
+
+**4 points** - Very funny, creative word choices
+- Example: "The secret to happiness is SILENCE and plenty of SNACKS"
+
+**3 points** - Decent attempt, got a chuckle
+- Example: "Life hack: Replace your STRESS with NAPS"
+
+**2 points** - Safe/predictable, went for obvious choices
+- Example: "Nothing says 'I love you' like FLOWERS covered in CHOCOLATE"
+
+**1 point** - Lazy/no effort, just filled blanks
+- Example: "Step 1: THING. Step 2: STUFF. Step 3: Profit"
+
+**0 points** - Literally no effort or nonsense
+
+**What makes answers GREAT:**
+✅ Unexpected combinations that make sense together
+✅ Words that create irony or absurdity
+✅ Cleverness over crudeness
+✅ Shows personality and humor style
+
+**What makes answers LAZY:**
+❌ Generic filler words (stuff, thing, person)
+❌ Too obvious/predictable
+❌ Just going for shock value
+❌ Didn't try to be funny
 
 ## RESPONSE FORMAT
 Respond with valid JSON:
 {
   \"score\": 0-5,
-  \"commentary\": \"<max 10 words>\",
+  \"commentary\": \"<max 10 words, witty and sharp>\",
   \"bestWord\": \"<funniest word>\",
   \"worstWord\": \"<weakest word, if any>\",
   \"filledSentence\": \"<the complete filled sentence>\"
@@ -135,7 +178,6 @@ Respond with valid JSON:
 export interface MadLibsGenerateResponse {
   template: string;
   blankCount: number;
-  hint?: string;
 }
 
 export interface MadLibsScoreResponse {
@@ -167,7 +209,6 @@ export function parseMadLibsGeneratorResponse(text: string): MadLibsGenerateResp
     return {
       template: parsed.template,
       blankCount: actualBlanks || parsed.blankCount,
-      hint: parsed.hint,
     };
   } catch {
     return null;

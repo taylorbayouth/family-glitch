@@ -47,9 +47,31 @@ Generate a JSON object for a word association game for ${targetName}${roleInfo}$
 - Use words and cultural references they'd understand
 
 ## STEP 1: Choose a "Mystery Word"
-Pick a polysemous word with multiple meanings appropriate for the player's age:
-- Kids: Simple words like "STAR", "ROCK", "LIGHT", "PLAY"
-- Teens/Adults: More complex like "BAR", "POUND", "BANK", "SPRING", "PITCH"
+
+Pick a word with MULTIPLE meanings/uses (polysemous). The best words work as nouns, verbs, adjectives, or in compound words.
+
+**Ages 8-12** (simple, accessible):
+- STAR (celebrity, sky object, to star in)
+- LIGHT (brightness, not heavy, to light)
+- ROCK (stone, music, to rock)
+- PLAY (game, performance, to play)
+- FIRE (flame, to fire someone, on fire)
+
+**Ages 13-17** (moderate complexity):
+- FALL (season, to fall, waterfall)
+- STRIKE (hit, labor strike, bowling)
+- POOL (swimming, car pool, pool resources)
+- PARK (playground, to park, theme park)
+- KEY (unlock, piano key, key point)
+
+**Ages 18+** (expert-level):
+- BAR (tavern, chocolate bar, bar exam, to bar entry)
+- BANK (money, river bank, to bank on)
+- SPRING (season, coil, to spring forth, water spring)
+- PITCH (throw, sales pitch, tar pitch, musical pitch)
+- POUND (weight, to pound, dog pound, British pound)
+
+Choose words where connections are CLEVER, not obvious!
 
 ## STEP 2: Generate 25 Grid Words
 Create an array of exactly 25 UNIQUE single words with intentional layers:
@@ -69,8 +91,7 @@ Create an array of exactly 25 UNIQUE single words with intentional layers:
 Respond with valid JSON only:
 {
   "mysteryWord": "WORD",
-  "words": ["word1", "word2", ... exactly 25 words],
-  "hint": "Optional cryptic hint (keep vague, max 10 words)"
+  "words": ["word1", "word2", ... exactly 25 words]
 }
 
 Generate ONE puzzle now.`;
@@ -108,16 +129,39 @@ ${safeAllWords.join(', ')}
 ${safeSelectedWords.join(', ')}
 
 ## SCORING RULES (Per-Word, 0-5 points)
-Evaluate EACH selected word individually:
-- 0 pts: No logical connection (Distractor)
-- 1-2 pts: Obvious/Literal connection (e.g., "Tender" for "BAR" = Bartender)
-- 3-4 pts: Clever metaphor, idiom, or compound word (e.g., "Exam" for "BAR" = Bar Exam)
-- 5 pts: Brilliant lateral thinking or deep wordplay (e.g., "Mars" for "BAR" = Mars Bar)
 
-## FUZZY LOGIC
-- If a player finds a valid connection you didn't think of, REWARD IT
-- Example: "Space" for "BAR" could be "Space Bar" (keyboard) = 4-5 points
-- Be generous with creative interpretations if they make semantic sense
+Evaluate EACH word they selected:
+
+**0 points** - No connection, pure distractor
+- Example (BAR): "Ocean" - no relationship at all
+
+**1-2 points** - Obvious/literal connection, first thing you'd think of
+- Example (BAR): "Beer" - too obvious (bar serves beer)
+- Example (BAR): "Stool" - too literal (barstool)
+
+**3-4 points** - Clever connection, compound word, idiom, or metaphor
+- Example (BAR): "Exam" - Bar Exam (professional test)
+- Example (BAR): "Code" - Bar Code (product scanner)
+- Example (BAR): "Gold" - Gold Bar (bullion)
+
+**5 points** - Brilliant lateral thinking, unexpected but valid
+- Example (BAR): "Mars" - Mars Bar (candy)
+- Example (BAR): "Space" - Space Bar (keyboard)
+- Example (BAR): "Raise" - "Raise the bar" (idiom)
+
+**REWARD CREATIVITY:**
+- If they found a connection you didn't plan, give full credit if it's valid
+- Multiple meanings count: "Scales" could be fish scales, music scales, or weight scales
+- Compound words are valuable: "Ball" + "Park" = Ballpark
+- Idioms and phrases count: "Raise" + "Bar" = "Raise the bar"
+
+**Final Score (0-5):**
+Average the individual word scores, then normalize:
+- High average (4-5 pts/word) → 5 points
+- Good average (3-4 pts/word) → 4 points
+- Decent average (2-3 pts/word) → 3 points
+- Weak average (1-2 pts/word) → 2 points
+- Poor average (<1 pt/word) → 0-1 points
 
 ## RESPONSE FORMAT
 Return JSON only:
@@ -135,7 +179,6 @@ The totalScore should be normalized to 0-5 based on the average quality of selec
 
 export interface CrypticGenerateResponse {
   mysteryWord: string;
-  hint?: string;
   words: string[];
 }
 
@@ -177,7 +220,6 @@ export function parseCrypticGeneratorResponse(text: string): CrypticGenerateResp
 
     return {
       mysteryWord: parsed.mysteryWord,
-      hint: parsed.hint,
       words: parsed.words,
     };
   } catch {

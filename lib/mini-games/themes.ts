@@ -27,7 +27,7 @@ export interface MiniGameTheme {
 }
 
 /**
- * Theme definitions for all 6 mini-games
+ * Theme definitions for all mini-games
  *
  * Note: Each game has a unique color scheme to make them instantly recognizable
  * and to provide visual variety throughout the gameplay experience.
@@ -92,6 +92,16 @@ export const MINI_GAME_THEMES: Record<string, MiniGameTheme> = {
     gradientTo: 'to-teal-600/10',
     shadowColor: 'rgba(20, 184, 166, 0.3)',
     emoji: '🎯',
+  },
+
+  lighting_round: {
+    name: 'Lighting Round',
+    primary: 'glitch-bright',
+    secondary: 'glitch',
+    gradientFrom: 'from-glitch/20',
+    gradientTo: 'to-glitch/10',
+    shadowColor: 'rgba(162, 155, 254, 0.35)',
+    emoji: '⚡',
   },
 };
 

@@ -7,9 +7,11 @@ import { buildGameMasterPrompt } from '@/lib/ai/game-master-prompt';
 import { sendChatRequest } from '@/lib/ai/client';
 import { TemplateRenderer } from '@/components/input-templates';
 import { PassToPlayerScreen } from '@/components/PassToPlayerScreen';
+import { InsightsCollectionScreen } from '@/components/InsightsCollectionScreen';
 import { GameHeader } from '@/components/GameHeader';
 import { EndGameResults } from '@/components/EndGameResults';
 import { calculateCurrentAct, calculateTotalRounds } from '@/lib/constants';
+import { selectQuestionForPlayer, type TransitionEventDefinition } from '@/lib/act-transitions';
 // Import registry - this also triggers all mini-game registrations
 import {
   getMiniGame,
@@ -21,7 +23,7 @@ import type { ChatMessage } from '@/lib/ai/types';
 import type { MiniGameResult } from '@/lib/mini-games/types';
 
 // Core game phases - mini-games are handled dynamically via 'minigame' phase
-type GamePhase = 'pass' | 'question' | 'loading' | 'minigame' | 'endgame';
+type GamePhase = 'pass' | 'question' | 'loading' | 'minigame' | 'endgame' | 'transition-pass' | 'transition-question';
 
 // Active mini-game state
 interface ActiveMiniGame {
@@ -53,6 +55,13 @@ export default function PlayPage() {
     completeTurn,
     startGame,
     isGameComplete,
+    // Generic transition events
+    transitionResponses,
+    transitionEvents,
+    addTransitionResponse,
+    markTransitionEventComplete,
+    getPendingTransitionEvent,
+    getNextPlayerForEvent,
   } = useGameStore();
 
   // Game state
@@ -76,7 +85,17 @@ export default function PlayPage() {
   // Mini-game state (unified for ALL mini-games via registry)
   const [activeMiniGame, setActiveMiniGame] = useState<ActiveMiniGame | null>(null);
 
+  // Generic transition event state
+  const [activeTransitionEvent, setActiveTransitionEvent] = useState<TransitionEventDefinition | null>(null);
+  const [transitionPlayerIndex, setTransitionPlayerIndex] = useState(0);
+  const [currentTransitionQuestion, setCurrentTransitionQuestion] = useState<{
+    question: string;
+    category: string;
+    placeholder: string;
+  } | null>(null);
+
   const currentPlayer = players[currentPlayerIndex];
+  const transitionPlayer = players[transitionPlayerIndex];
 
   // Initialize game
   useEffect(() => {
@@ -129,7 +148,7 @@ export default function PlayPage() {
         : [];
 
       // Create a summary of eligible turns for the prompt
-      const triviaEligibleTurns = eligibleTurns.length >= 3
+      const triviaEligibleTurns = eligibleTurns.length >= 1
         ? [...new Map(eligibleTurns.map(t => [t.playerId, t])).values()].map(t => ({
             playerId: t.playerId,
             playerName: t.playerName,
@@ -137,10 +156,10 @@ export default function PlayPage() {
           }))
         : undefined;
 
-      // Update system prompt with current game state and trivia eligibility
+      // Update system prompt with current game state, trivia eligibility, and transition responses
       const systemPrompt = buildGameMasterPrompt(
         players,
-        { gameId, turns, scores, status: 'playing' },
+        { gameId, turns, scores, status: 'playing', transitionResponses, transitionEvents },
         { currentPlayerId: targetPlayer?.id, triviaEligibleTurns }
       );
 
@@ -266,6 +285,99 @@ CRITICAL RULES:
   };
 
   /**
+   * Start a transition event (generic)
+   * Called when a transition event is pending
+   */
+  const startTransitionEvent = (event: TransitionEventDefinition) => {
+    setActiveTransitionEvent(event);
+
+    // Find the first player who hasn't completed this event
+    const nextPlayerId = getNextPlayerForEvent(event.id, players.map(p => p.id));
+
+    if (!nextPlayerId) {
+      // All players have completed - mark complete and continue
+      markTransitionEventComplete(event.id);
+      setActiveTransitionEvent(null);
+      setPhase('pass');
+      loadQuestion(currentPlayerIndex);
+      return;
+    }
+
+    // Find the player index
+    const playerIndex = players.findIndex(p => p.id === nextPlayerId);
+    if (playerIndex === -1) {
+      console.error('Could not find player for transition event:', nextPlayerId);
+      return;
+    }
+
+    setTransitionPlayerIndex(playerIndex);
+
+    // Select a question for this player
+    const eventState = transitionEvents[event.id];
+    const collectedCount = eventState?.collectedFrom.length || 0;
+    const questionData = selectQuestionForPlayer(event, players[playerIndex], collectedCount);
+    setCurrentTransitionQuestion(questionData);
+
+    // Show the pass screen for transition event
+    setPhase('transition-pass');
+  };
+
+  /**
+   * Handle unlocking the transition question
+   */
+  const handleTransitionUnlock = () => {
+    setPhase('transition-question');
+  };
+
+  /**
+   * Handle submitting a transition response
+   */
+  const handleTransitionResponse = (response: string) => {
+    if (!currentTransitionQuestion || !transitionPlayer || !activeTransitionEvent) return;
+
+    // Store the response
+    addTransitionResponse({
+      eventId: activeTransitionEvent.id,
+      playerId: transitionPlayer.id,
+      playerName: transitionPlayer.name,
+      question: currentTransitionQuestion.question,
+      category: currentTransitionQuestion.category,
+      response,
+    });
+
+    // Check if there are more players
+    const nextPlayerId = getNextPlayerForEvent(activeTransitionEvent.id, players.map(p => p.id));
+
+    if (!nextPlayerId) {
+      // All players done - mark complete and resume normal gameplay
+      markTransitionEventComplete(activeTransitionEvent.id);
+      setActiveTransitionEvent(null);
+      setCurrentTransitionQuestion(null);
+
+      // Advance to next player (don't give same player consecutive turns)
+      const nextIndex = (currentPlayerIndex + 1) % players.length;
+      setCurrentPlayerIndex(nextIndex);
+      setTurnNumber(turnNumber + 1);
+
+      setPhase('pass');
+      loadQuestion(nextIndex);
+    } else {
+      // Move to next player for this event
+      const nextIndex = players.findIndex(p => p.id === nextPlayerId);
+      setTransitionPlayerIndex(nextIndex);
+
+      // Select their question
+      const eventState = transitionEvents[activeTransitionEvent.id];
+      const collectedCount = eventState?.collectedFrom.length || 0;
+      const questionData = selectQuestionForPlayer(activeTransitionEvent, players[nextIndex], collectedCount);
+      setCurrentTransitionQuestion(questionData);
+
+      // Show pass screen for next player
+      setPhase('transition-pass');
+    }
+  };
+
+  /**
    * Handle player unlocking the question
    */
   const handleUnlock = () => {
@@ -321,6 +433,13 @@ CRITICAL RULES:
     // Check if game is complete
     if (isGameComplete()) {
       setPhase('endgame');
+      return;
+    }
+
+    // Check if we need to trigger a transition event
+    const pendingEvent = getPendingTransitionEvent();
+    if (pendingEvent) {
+      startTransitionEvent(pendingEvent);
       return;
     }
 
@@ -427,6 +546,85 @@ CRITICAL RULES:
         isLoadingQuestion={isLoadingQuestion}
         turnNumber={turnNumber}
       />
+    );
+  }
+
+  // Transition event pass screen
+  if (phase === 'transition-pass' && transitionPlayer && activeTransitionEvent) {
+    const eventState = transitionEvents[activeTransitionEvent.id];
+    const playersRemaining = players.length - (eventState?.collectedFrom.length || 0);
+    return (
+      <InsightsCollectionScreen
+        player={transitionPlayer}
+        onUnlock={handleTransitionUnlock}
+        transitionMessage={activeTransitionEvent.transitionMessage(playersRemaining)}
+        isFirst={(eventState?.collectedFrom.length || 0) === 0}
+      />
+    );
+  }
+
+  // Transition event question screen
+  if (phase === 'transition-question' && transitionPlayer && currentTransitionQuestion && activeTransitionEvent) {
+    const eventState = transitionEvents[activeTransitionEvent.id];
+    const collectedCount = eventState?.collectedFrom.length || 0;
+
+    return (
+      <div className="min-h-dvh h-dvh bg-void relative flex flex-col overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
+
+        {/* Header */}
+        <div className="relative z-10 p-4 border-b border-steel-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-glitch to-glitch-bright flex items-center justify-center text-frost font-bold">
+                {transitionPlayer.name[0]}
+              </div>
+              <div>
+                <p className="text-frost font-medium">{transitionPlayer.name}</p>
+                <p className="text-steel-400 text-sm">{activeTransitionEvent.questionSubtitle}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-glitch text-sm font-mono">
+                {collectedCount + 1} / {players.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Question Content */}
+        <div className="relative z-10 flex-1 flex flex-col p-6">
+          <div className="flex-1 flex flex-col justify-center max-w-lg mx-auto w-full">
+            <p className="text-steel-400 text-sm mb-2 uppercase tracking-wider">
+              {currentTransitionQuestion.category.replace('_', ' ')}
+            </p>
+            <h2 className="text-frost text-2xl font-bold mb-8">
+              {currentTransitionQuestion.question}
+            </h2>
+
+            <textarea
+              id="transition-response"
+              className="w-full h-32 bg-void-light border border-steel-700 rounded-xl p-4 text-frost placeholder-steel-500 focus:border-glitch focus:outline-none resize-none"
+              placeholder={currentTransitionQuestion.placeholder}
+              autoFocus
+            />
+
+            <button
+              onClick={() => {
+                const textarea = document.getElementById('transition-response') as HTMLTextAreaElement;
+                const response = textarea?.value?.trim();
+                if (response) {
+                  handleTransitionResponse(response);
+                }
+              }}
+              className="mt-6 w-full bg-glitch hover:bg-glitch-bright text-frost font-bold py-4 px-6 rounded-xl transition-colors"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

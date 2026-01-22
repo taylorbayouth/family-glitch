@@ -29,6 +29,7 @@ import './madlibs-challenge/register';
 import './cryptic-connection/register';
 import './hard-trivia/register';
 import './the-filter/register';
+import './lighting-round/register';
 
 // Types and utilities
 export * from './types';
@@ -85,3 +86,13 @@ export {
   toMiniGameResult as filterToResult,
 } from './the-filter';
 export type { FilterGenerateResponse, FilterScoreResponse } from './the-filter';
+
+export {
+  buildLightingRoundQuestionPrompt,
+  parseLightingRoundQuestionResponse,
+} from './lighting-round';
+export type {
+  LightingRoundHistoryItem,
+  LightingRoundPromptContext,
+  LightingRoundQuestionResponse,
+} from './lighting-round';

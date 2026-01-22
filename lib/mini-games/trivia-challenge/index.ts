@@ -35,7 +35,6 @@ interface Player {
 export interface TriviaQuestionResponse {
   phase: 'question';
   question: string;
-  hint?: string;
 }
 
 export interface TriviaScoreResponse {

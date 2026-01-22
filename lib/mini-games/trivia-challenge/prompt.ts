@@ -60,20 +60,34 @@ Answer: ${responseText}
 
 Frame questions as "How well do you know ${sourceName}?" challenges - NOT "Do you remember" questions.
 
-Good: "What show do you think ${sourceName} is obsessed with?"
-Good: "Where would ${sourceName} want to travel?"
-Good: "What would ${sourceName} call their secret talent?"
+**If the answer is complex, extract the CORE FACT:**
+- Answer: "I'm obsessed with The Last of Us, but also love Stranger Things and Breaking Bad"
+- Extract: "The Last of Us" (the FIRST thing mentioned is usually most important)
+- Question: "What show is ${sourceName} currently obsessed with?"
 
-Bad: "What did ${sourceName} say about..." (implies they heard it)
-Bad: "Do you remember what ${sourceName} said?" (this isn't a memory test!)
-Bad: "What was the SECOND thing ${sourceName} listed?" (nobody knows - it was secret!)
+**Make it challenging but fair:**
+- If answer is specific (e.g., "Lakers"), ask for that exact thing
+- If answer is a list, ask for their TOP choice or favorite
+- If answer is about preferences, make it a simple guess
 
-Focus on the MEMORABLE or DISTINCTIVE part of the answer - something family members would know about each other even without hearing the answer.
+**Good question examples:**
+✅ "What show do you think ${sourceName} is obsessed with?"
+✅ "Where would ${sourceName} want to travel most?"
+✅ "What's ${sourceName}'s go-to coffee order?"
+✅ "What food could ${sourceName} eat every day?"
+
+**Bad questions (avoid these):**
+❌ "What did ${sourceName} say about..." (implies they heard it)
+❌ "Do you remember what ${sourceName} said?" (not a memory test!)
+❌ "What was the SECOND thing ${sourceName} listed?" (nobody knows - it was secret!)
+❌ "Name all the things ${sourceName} mentioned" (too hard, unfun)
+
+The best questions test if ${targetName} really KNOWS ${sourceName}, not if they memorized details.
 
 ## Format
 
 Question phase:
-{"phase": "question", "question": "Your question here", "hint": "Optional hint"}
+{"phase": "question", "question": "Your question here"}
 
 Score phase (0-5):
 {"phase": "score", "score": 0-5, "commentary": "Max 10 words", "correctAnswer": "The answer"}
@@ -105,8 +119,23 @@ export function buildScoringPrompt(
 
 Correct answer (what ${sourceName} said): ${responseText}
 
-Score 0-5 and respond:
+## Scoring Rubric (0-5)
+
+**5 points** - Exact match or clearly correct (shows they really know ${sourceName})
+**4 points** - Very close, right idea, minor details off
+**3 points** - Partially right, shows some knowledge
+**2 points** - Weak connection, mostly wrong but attempted
+**1 point** - Completely wrong but creative/funny
+**0 points** - Total miss, no connection
+
+**Be generous with partial credit:**
+- "Lakers" vs "Los Angeles Lakers" → 5 points (same thing)
+- "The Last of Us" vs "some zombie show" → 3-4 points (right idea)
+- "Italy" vs "Europe" → 3 points (right region, not specific enough)
+- "Pizza" vs "Italian food" → 3 points (same category)
+
+Respond as JSON:
 {"phase": "score", "score": <0-5>, "commentary": "<max 10 words>", "correctAnswer": "<the answer>"}
 
-Be fair. Give partial credit for close answers.`;
+Keep commentary witty and concise.`;
 }
