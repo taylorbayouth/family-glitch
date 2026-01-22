@@ -104,7 +104,7 @@ export default function Home() {
           >
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
-                { label: 'Players', value: '3-7' },
+                { label: 'Players', value: '2-7' },
                 { label: 'Length', value: '15 min' },
                 { label: 'Device', value: '1 phone' },
               ].map((item) => (

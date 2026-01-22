@@ -59,7 +59,7 @@ Version: 1.1.5
 
 - `/` Home page with Google sign-in CTA. If session exists, redirects to `/setup`.
 - `/auth/signin` Custom sign-in page using server action `signIn('google')`.
-- `/setup` Player roster setup (3 to 7 players). Saves to `usePlayerStore`.
+- `/setup` Player roster setup (2 to 7 players). Saves to `usePlayerStore`.
 - `/play` Main game flow (pass screen → question/mini-game → commentary → next player).
 - `/chat` AI chat demo page for testing `/api/chat`.
 

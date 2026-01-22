@@ -37,8 +37,8 @@ File: `lib/store/game-store.ts`
 File: `app/setup/page.tsx`
 
 - Requires hydration before rendering (`useHydration`).
-- Creates 3 default player forms if the store is empty.
-- Supports 3 to 7 players.
+- Creates 2 default player forms if the store is empty.
+- Supports 2 to 7 players.
 - Each player form collects:
   - Name (required)
   - Role (13 options)
@@ -60,7 +60,7 @@ Two localStorage keys are used:
 ## User Flow Summary
 
 1. User signs in -> `/setup`
-2. Configure players (3 to 7)
+2. Configure players (2 to 7)
 3. Continue -> `/play`
 4. Hamburger Menu is available during authenticated pages
 

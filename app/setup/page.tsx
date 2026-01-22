@@ -45,7 +45,7 @@ export default function SetupPage() {
           isExpanded: i === 0,
         })));
       } else {
-        setPlayerForms(Array.from({ length: 3 }, (_, i) => ({
+        setPlayerForms(Array.from({ length: 2 }, (_, i) => ({
           id: crypto.randomUUID(),
           name: '',
           role: 'Friend' as PlayerRole,
@@ -90,7 +90,7 @@ export default function SetupPage() {
   };
 
   const handleRemovePlayer = (id: string) => {
-    if (playerForms.length > 3) {
+    if (playerForms.length > 2) {
       setPlayerForms(playerForms.filter((p) => p.id !== id));
       removePlayer(id);
     }
@@ -177,7 +177,7 @@ export default function SetupPage() {
         >
           <h1 className="text-3xl font-black text-frost mb-1">Player Setup</h1>
           <p className="text-steel-500 text-sm font-mono">
-            Add 3-7 players to begin
+            Add 2-7 players to begin
           </p>
         </motion.header>
 
@@ -279,7 +279,7 @@ export default function SetupPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {playerForms.length > 3 && (
+                        {playerForms.length > 2 && (
                           <button
                             onClick={() => handleRemovePlayer(form.id)}
                             className="p-2 text-steel-600 hover:text-alert transition-colors"
