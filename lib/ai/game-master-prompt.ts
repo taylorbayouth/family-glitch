@@ -9,7 +9,7 @@ import type { Player } from '@/lib/store/player-store';
 import type { GameState, TransitionResponse, TransitionEventState } from '@/lib/types/game-state';
 import { calculateCurrentAct, calculateTotalRounds } from '@/lib/constants';
 import { formatAllTransitionResponses } from '@/lib/act-transitions';
-import { sanitizeForAI } from './sanitize';
+import { sanitizeForAIPretty } from './sanitize';
 
 interface PromptOptions {
   currentPlayerId?: string;
@@ -118,7 +118,7 @@ ${transitionData}
 
 ${!isNewGame && gameState?.turns && gameState.turns.length > 0 ? `## What's Been Asked (DO NOT REPEAT)
 
-${gameState.turns.map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : sanitizeForAI(t.response)}`).join('\n')}
+${gameState.turns.map(t => `- ${t.playerName}: "${t.prompt}" → ${typeof t.response === 'string' ? t.response : `\n\`\`\`json\n${sanitizeForAIPretty(t.response)}\n\`\`\``}`).join('\n')}
 
 Every question must be DIFFERENT from these.` : ''}
 
@@ -141,7 +141,7 @@ export function buildFollowUpPrompt(
   response: any,
   allPlayers: Player[]
 ): string {
-  return `${playerName} responded: ${typeof response === 'string' ? response : sanitizeForAI(response)}
+  return `${playerName} responded: ${typeof response === 'string' ? response : `\n\`\`\`json\n${sanitizeForAIPretty(response)}\n\`\`\``}
 
 Provide commentary only. One sharp line, max 10 words.
 

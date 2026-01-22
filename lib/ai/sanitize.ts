@@ -93,3 +93,14 @@ export function sanitizeForAI(obj: any): string {
   json = labelTemplateTypes(json);
   return json;
 }
+
+/**
+ * Pretty-printed sanitization for readability in prompts.
+ */
+export function sanitizeForAIPretty(obj: any): string {
+  let json = JSON.stringify(obj, null, 2);
+  json = compressIds(json);
+  json = stripTimestamps(json);
+  json = labelTemplateTypes(json);
+  return json;
+}
